@@ -1,5 +1,7 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Background from '../components/Background';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
 import EnemyView from '../components/EnemyView';
@@ -11,6 +13,7 @@ import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
 import { GameState, InputState } from '../game/types';
+import { palette } from '../theme';
 
 export default function GameScreen({ onExit }: { onExit: () => void }) {
   const { width: windowWidth } = useWindowDimensions();
@@ -51,6 +54,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
   return (
     <View style={styles.outer}>
       <View style={[styles.stage, { width: windowWidth, height: VIEWPORT_HEIGHT }]}>
+        <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportHeight={VIEWPORT_HEIGHT} />
         <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
           {level.platforms.map((p) => (
             <PlatformView key={p.id} platform={p} />
@@ -78,15 +82,27 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 
       {gameState.phase !== 'playing' && (
         <View style={styles.overlay}>
-          <Text style={styles.overlayTitle}>{gameState.phase === 'win' ? '🎉 클리어!' : '💀 게임 오버'}</Text>
-          <Text style={styles.overlayScore}>코인 {gameState.score}점</Text>
-          <View style={styles.overlayButtons}>
-            <Pressable style={styles.overlayButton} onPress={restart}>
-              <Text style={styles.overlayButtonText}>다시 시작</Text>
-            </Pressable>
-            <Pressable style={[styles.overlayButton, styles.secondaryButton]} onPress={onExit}>
-              <Text style={styles.overlayButtonText}>메인 메뉴</Text>
-            </Pressable>
+          <View style={styles.card}>
+            <Text style={styles.overlayTitle}>{gameState.phase === 'win' ? '🎉 클리어!' : '💀 게임 오버'}</Text>
+            <View style={styles.overlayScoreRow}>
+              <View style={styles.coinDot} />
+              <Text style={styles.overlayScore}>{gameState.score}점</Text>
+            </View>
+            <View style={styles.overlayButtons}>
+              <Pressable onPress={restart}>
+                <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.overlayButton}>
+                  <Text style={styles.overlayButtonText}>다시 시작</Text>
+                </LinearGradient>
+              </Pressable>
+              <Pressable onPress={onExit}>
+                <LinearGradient
+                  colors={[palette.uiSecondary, palette.uiSecondaryDark]}
+                  style={styles.overlayButton}
+                >
+                  <Text style={styles.overlayButtonTextLight}>메인 메뉴</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
           </View>
         </View>
       )}
@@ -97,13 +113,13 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 const styles = StyleSheet.create({
   outer: {
     flex: 1,
-    backgroundColor: '#87ceeb',
+    backgroundColor: palette.skyBottom,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stage: {
     overflow: 'hidden',
-    backgroundColor: '#87ceeb',
+    borderRadius: 12,
   },
   world: {
     position: 'absolute',
@@ -112,37 +128,64 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: palette.overlayBg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+  },
+  card: {
+    backgroundColor: palette.cardBg,
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
   },
   overlayTitle: {
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '800',
-    color: '#fff',
+    color: palette.textDark,
+  },
+  overlayScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  coinDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: palette.coinGold,
+    borderWidth: 1.5,
+    borderColor: palette.coinGoldDark,
   },
   overlayScore: {
     fontSize: 18,
-    color: '#fff',
+    fontWeight: '700',
+    color: palette.textDark,
   },
   overlayButtons: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 8,
+    gap: 14,
+    marginTop: 6,
   },
   overlayButton: {
-    backgroundColor: '#ffd54a',
-    paddingHorizontal: 24,
+    paddingHorizontal: 22,
     paddingVertical: 12,
-    borderRadius: 24,
-  },
-  secondaryButton: {
-    backgroundColor: '#9aa0a6',
+    borderRadius: 22,
   },
   overlayButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#3a2a00',
+    color: '#5a3d00',
+  },
+  overlayButtonTextLight: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
