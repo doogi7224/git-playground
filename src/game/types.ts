@@ -97,6 +97,8 @@ export interface Level {
   worldWidth: number;
   groundY: number;
   spawn: { x: number; y: number };
+  /** Respawn points reached by crossing their x, in order; [0] matches spawn. Death respawns at the highest one crossed, not always the level start. */
+  checkpoints: { x: number; y: number }[];
   platforms: Platform[];
   enemies: Enemy[];
   coins: Coin[];
@@ -155,6 +157,8 @@ export interface GameState {
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
   steamBlowers: SteamBlower[];
+  /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
+  checkpointIndex: number;
 }
 
 export interface InputState {

@@ -115,6 +115,7 @@ export function createInitialState(level: Level): GameState {
     pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
     steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
+    checkpointIndex: 0,
   };
 }
 
@@ -201,6 +202,12 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   if (prev.phase !== 'playing') return prev;
 
   const player = { ...prev.player };
+
+  // Decided from the pre-frame checkpoint index, consistent with the rest of
+  // this function's "pre-frame state decides this frame's behavior" pattern:
+  // every respawn-on-death site below sends the player here, not always the
+  // absolute level start.
+  const respawnPoint = level.checkpoints[prev.checkpointIndex];
 
   // Overdrive: accumulated across dash/stomp events this frame, applied to the
   // combo gauge at the end of the function (after every hazard resolution
@@ -398,8 +405,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       lives -= 1;
       player.invulnerableFor = INVULNERABLE_TIME;
       if (lives > 0) {
-        player.x = level.spawn.x;
-        player.y = level.spawn.y;
+        player.x = respawnPoint.x;
+        player.y = respawnPoint.y;
         player.vx = 0;
         player.vy = 0;
       }
@@ -429,8 +436,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       lives -= 1;
       player.invulnerableFor = INVULNERABLE_TIME;
       if (lives > 0) {
-        player.x = level.spawn.x;
-        player.y = level.spawn.y;
+        player.x = respawnPoint.x;
+        player.y = respawnPoint.y;
         player.vx = 0;
         player.vy = 0;
       }
@@ -458,8 +465,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
         lives -= 1;
         player.invulnerableFor = INVULNERABLE_TIME;
         if (lives > 0) {
-          player.x = level.spawn.x;
-          player.y = level.spawn.y;
+          player.x = respawnPoint.x;
+          player.y = respawnPoint.y;
           player.vx = 0;
           player.vy = 0;
         }
@@ -488,8 +495,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       lives -= 1;
       player.invulnerableFor = INVULNERABLE_TIME;
       if (lives > 0) {
-        player.x = level.spawn.x;
-        player.y = level.spawn.y;
+        player.x = respawnPoint.x;
+        player.y = respawnPoint.y;
         player.vx = 0;
         player.vy = 0;
       }
@@ -505,8 +512,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       lives -= 1;
       player.invulnerableFor = INVULNERABLE_TIME;
       if (lives > 0) {
-        player.x = level.spawn.x;
-        player.y = level.spawn.y;
+        player.x = respawnPoint.x;
+        player.y = respawnPoint.y;
         player.vx = 0;
         player.vy = 0;
       }
@@ -563,8 +570,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   if (player.y > DEATH_Y) {
     lives -= 1;
     if (lives > 0) {
-      player.x = level.spawn.x;
-      player.y = level.spawn.y;
+      player.x = respawnPoint.x;
+      player.y = respawnPoint.y;
       player.vx = 0;
       player.vy = 0;
       player.invulnerableFor = INVULNERABLE_TIME;
@@ -575,6 +582,15 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     phase = 'gameover';
   } else if (rectIntersect(player, level.flag)) {
     phase = 'win';
+  }
+
+  // Advance past any checkpoint(s) now behind the player. Using the final
+  // (post-respawn-if-any) position is safe: a death this same frame snaps
+  // player.x back to respawnPoint.x, which by construction never reaches the
+  // next checkpoint's x, so this can't accidentally skip one on a death frame.
+  let checkpointIndex = prev.checkpointIndex;
+  while (checkpointIndex + 1 < level.checkpoints.length && player.x >= level.checkpoints[checkpointIndex + 1].x) {
+    checkpointIndex++;
   }
 
   return {
@@ -590,6 +606,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     pressurePistons,
     bioCoils: resolvedBioCoils,
     steamBlowers: resolvedSteamBlowers,
+    checkpointIndex,
   };
 }
 

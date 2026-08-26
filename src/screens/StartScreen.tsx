@@ -19,7 +19,9 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
 
       <Text style={styles.title}>GEARWOOD</Text>
       <Text style={styles.tagline}>The Broken Spring · 파괴된 태엽</Text>
-      <Text style={styles.subtitle}>새싹 스프라우트와 함께 점프해서 코그마이트를 밟고, 기어숲의 깃발까지 도착하세요!</Text>
+      <Text style={styles.subtitle}>
+        새싹 스프라우트와 함께 기어숲의 깃발까지! 시프트 노드로 기계↔자연 지형을 바꾸고, 대시와 루트훅으로 위험을 돌파하세요.
+      </Text>
 
       <Pressable onPressIn={pressIn} onPressOut={pressOut} onPress={onStart}>
         <Animated.View style={[styles.startButtonShadow, { transform: [{ scale }] }]}>
@@ -29,7 +31,10 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
         </Animated.View>
       </Pressable>
 
-      <Text style={styles.hint}>◀▶ 로 이동, ▲ 로 점프{'\n'}적을 위에서 밟으면 처치됩니다</Text>
+      <Text style={styles.hint}>
+        ◀▶ 이동 · ▲ 점프 · » 대시(짧은 무적) · ◎ 루트훅(그래플 스윙){'\n'}
+        적은 위에서 밟아 처치 · 체크포인트를 지나면 그 지점부터 부활
+      </Text>
     </LinearGradient>
   );
 }

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Background from '../components/Background';
 import BioCoilView from '../components/BioCoilView';
+import CheckpointView from '../components/CheckpointView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
 import EnemyView from '../components/EnemyView';
@@ -81,6 +82,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           ))}
           {level.rootPoints.map((r) => (
             <RootPointView key={r.id} point={r} />
+          ))}
+          {level.checkpoints.slice(1).map((c, i) => (
+            <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
           ))}
           {gameState.pressurePistons.map((p) => (
             <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />

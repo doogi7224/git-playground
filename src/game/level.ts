@@ -222,11 +222,28 @@ function makeCoins(): Coin[] {
   }));
 }
 
+// Respawn points, one near the start of each later ground segment (well clear
+// of pit edges). [0] matches spawn — death respawns at the highest one the
+// player has already crossed, not always the level start; with the level now
+// spanning 4700px, sending every death back to x=40 would make the back half
+// of the level feel disproportionately punishing.
+function makeCheckpoints(): { x: number; y: number }[] {
+  return [
+    { x: 40, y: GROUND_Y - 100 },
+    { x: 900, y: GROUND_Y - 100 },
+    { x: 1560, y: GROUND_Y - 100 },
+    { x: 2380, y: GROUND_Y - 100 },
+    { x: 3390, y: GROUND_Y - 100 },
+    { x: 4060, y: GROUND_Y - 100 },
+  ];
+}
+
 export function createLevel(): Level {
   return {
     worldWidth: 4700,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
+    checkpoints: makeCheckpoints(),
     platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
