@@ -85,3 +85,12 @@ export const FLAME_LOB_CYCLE = 5;
 export const FLAME_LOB_CHARGE = 0.5;
 export const FLAME_LOB_ACTIVE = 0.4; // damage window
 export const FLAME_LOB_RANGE = 110; // px, wider than the steam gust since it's a ranged lob
+
+export const ROOTHOOK_RANGE = 90; // px, distance from a root point within which the grapple can attach
+export const ROOTHOOK_SIZE = 18;
+// Deliberately softer than normal GRAVITY for a controllable, slightly floaty swing feel
+// rather than a fast, twitchy pendulum given the short radii involved.
+export const ROOTHOOK_SWING_GRAVITY = 900;
+export const ROOTHOOK_DAMPING = 0.999; // slight per-frame angular velocity decay, avoids perpetual motion
+export const ROOTHOOK_PUMP_ACCEL = 8; // rad/s^2 added while holding a direction, to let the player pump the swing
+export const ROOTHOOK_MAX_ANGULAR_VEL = 6; // rad/s, clamp to prevent runaway spin

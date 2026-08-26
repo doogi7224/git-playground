@@ -33,6 +33,11 @@ import {
   PISTON_CYCLE,
   PLAYER_HEIGHT,
   PLAYER_WIDTH,
+  ROOTHOOK_DAMPING,
+  ROOTHOOK_MAX_ANGULAR_VEL,
+  ROOTHOOK_PUMP_ACCEL,
+  ROOTHOOK_RANGE,
+  ROOTHOOK_SWING_GRAVITY,
   SPORE_AMPLITUDE,
   SPORE_PERIOD,
   SPORE_RADIUS_MECHANICAL,
@@ -92,6 +97,12 @@ export function createInitialState(level: Level): GameState {
       overdriveGauge: 0,
       comboIdleFor: 0,
       overdriveTimer: 0,
+      grappling: false,
+      grappleAnchorX: 0,
+      grappleAnchorY: 0,
+      grappleAngle: 0,
+      grappleAngularVel: 0,
+      grappleRadius: 0,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -216,79 +227,126 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   }
   const platforms = activePlatforms(level, bloomState);
 
-  // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
-  // this frame's move speed matches what's shown (no one-frame mismatch).
-  const moveSpeed = (prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED) * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
-  const jumpVelocity = JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
-
-  // Dash: a fixed-velocity horizontal burst with brief invincibility (per the
-  // GDD's control spec). One charge while airborne, refilled on landing;
-  // grounded dashes are free but everything shares a short cooldown so
-  // mashing the button can't produce near-permanent invulnerability.
-  player.dashTimer = Math.max(0, prev.player.dashTimer - dt);
-  player.dashCooldown = Math.max(0, prev.player.dashCooldown - dt);
-  const canDash = player.dashTimer <= 0 && player.dashCooldown <= 0 && (player.onGround || player.airDashAvailable);
-  if (input.dashPressed && canDash) {
-    player.dashTimer = DASH_DURATION;
-    player.dashCooldown = DASH_COOLDOWN;
-    if (!player.onGround) player.airDashAvailable = false;
-    player.invulnerableFor = Math.max(player.invulnerableFor, DASH_INVULN);
-    gaugeGain += OVERDRIVE_DASH_GAIN;
+  // Root-Hook: attach on demand to a nearby fixed root point, then a simple
+  // pendulum takes over position/velocity entirely (no normal movement,
+  // gravity, or platform collision) until the button is released, at which
+  // point the last tangential velocity carries straight into normal physics
+  // next frame — "관성이 그대로 점프에 가산된다" from the GDD's control spec.
+  if (!player.grappling && input.grappleHeld) {
+    const pc = rectCenter(player);
+    const anchor = level.rootPoints.find((r) => {
+      const rc = rectCenter(r);
+      return Math.hypot(rc.x - pc.x, rc.y - pc.y) <= ROOTHOOK_RANGE;
+    });
+    if (anchor) {
+      const rc = rectCenter(anchor);
+      player.grappling = true;
+      player.grappleAnchorX = rc.x;
+      player.grappleAnchorY = rc.y;
+      player.grappleRadius = Math.max(20, Math.hypot(pc.x - rc.x, pc.y - rc.y));
+      player.grappleAngle = Math.atan2(pc.x - rc.x, pc.y - rc.y);
+      player.grappleAngularVel = 0;
+    }
   }
 
-  if (player.dashTimer > 0) {
-    player.vx = player.facing * DASH_SPEED;
-    player.vy = 0;
-  } else {
-    if (input.left && !input.right) {
-      player.vx = -moveSpeed;
-      player.facing = -1;
-    } else if (input.right && !input.left) {
-      player.vx = moveSpeed;
-      player.facing = 1;
-    } else if (player.vx > 0) {
-      player.vx = Math.max(0, player.vx - FRICTION * dt);
-    } else if (player.vx < 0) {
-      player.vx = Math.min(0, player.vx + FRICTION * dt);
-    }
-
-    if (input.jumpPressed && player.onGround) {
-      player.vy = jumpVelocity;
+  let grappledThisFrame = false;
+  if (player.grappling) {
+    if (!input.grappleHeld) {
+      player.grappling = false; // released; vx/vy already hold last frame's tangential velocity
+    } else {
+      const pump = input.right ? ROOTHOOK_PUMP_ACCEL : input.left ? -ROOTHOOK_PUMP_ACCEL : 0;
+      const angularAccel = -(ROOTHOOK_SWING_GRAVITY / player.grappleRadius) * Math.sin(player.grappleAngle) + pump;
+      player.grappleAngularVel = clamp(
+        (player.grappleAngularVel + angularAccel * dt) * ROOTHOOK_DAMPING,
+        -ROOTHOOK_MAX_ANGULAR_VEL,
+        ROOTHOOK_MAX_ANGULAR_VEL
+      );
+      player.grappleAngle += player.grappleAngularVel * dt;
+      player.x = player.grappleAnchorX + player.grappleRadius * Math.sin(player.grappleAngle) - player.width / 2;
+      player.y = player.grappleAnchorY + player.grappleRadius * Math.cos(player.grappleAngle) - player.height / 2;
+      player.vx = player.grappleRadius * player.grappleAngularVel * Math.cos(player.grappleAngle);
+      player.vy = -player.grappleRadius * player.grappleAngularVel * Math.sin(player.grappleAngle);
+      player.facing = player.vx >= 0 ? 1 : -1;
       player.onGround = false;
-    }
-
-    player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
-  }
-
-  // Horizontal movement + collision
-  player.x += player.vx * dt;
-  for (const plat of platforms) {
-    if (rectIntersect(player, plat)) {
-      if (player.vx > 0) player.x = plat.x - player.width;
-      else if (player.vx < 0) player.x = plat.x + plat.width;
-      player.vx = 0;
+      grappledThisFrame = true;
     }
   }
-  player.x = clamp(player.x, 0, level.worldWidth - player.width);
 
-  // Vertical movement + collision
-  player.onGround = false;
-  player.y += player.vy * dt;
-  for (const plat of platforms) {
-    if (rectIntersect(player, plat)) {
-      if (player.vy > 0) {
-        player.y = plat.y - player.height;
-        player.vy = 0;
-        player.onGround = true;
-      } else if (player.vy < 0) {
-        player.y = plat.y + plat.height;
-        player.vy = 0;
+  if (!grappledThisFrame) {
+    // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
+    // this frame's move speed matches what's shown (no one-frame mismatch).
+    const moveSpeed = (prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED) * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
+    const jumpVelocity = JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
+
+    // Dash: a fixed-velocity horizontal burst with brief invincibility (per the
+    // GDD's control spec). One charge while airborne, refilled on landing;
+    // grounded dashes are free but everything shares a short cooldown so
+    // mashing the button can't produce near-permanent invulnerability.
+    player.dashTimer = Math.max(0, prev.player.dashTimer - dt);
+    player.dashCooldown = Math.max(0, prev.player.dashCooldown - dt);
+    const canDash = player.dashTimer <= 0 && player.dashCooldown <= 0 && (player.onGround || player.airDashAvailable);
+    if (input.dashPressed && canDash) {
+      player.dashTimer = DASH_DURATION;
+      player.dashCooldown = DASH_COOLDOWN;
+      if (!player.onGround) player.airDashAvailable = false;
+      player.invulnerableFor = Math.max(player.invulnerableFor, DASH_INVULN);
+      gaugeGain += OVERDRIVE_DASH_GAIN;
+    }
+
+    if (player.dashTimer > 0) {
+      player.vx = player.facing * DASH_SPEED;
+      player.vy = 0;
+    } else {
+      if (input.left && !input.right) {
+        player.vx = -moveSpeed;
+        player.facing = -1;
+      } else if (input.right && !input.left) {
+        player.vx = moveSpeed;
+        player.facing = 1;
+      } else if (player.vx > 0) {
+        player.vx = Math.max(0, player.vx - FRICTION * dt);
+      } else if (player.vx < 0) {
+        player.vx = Math.min(0, player.vx + FRICTION * dt);
+      }
+
+      if (input.jumpPressed && player.onGround) {
+        player.vy = jumpVelocity;
+        player.onGround = false;
+      }
+
+      player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
+    }
+
+    // Horizontal movement + collision
+    player.x += player.vx * dt;
+    for (const plat of platforms) {
+      if (rectIntersect(player, plat)) {
+        if (player.vx > 0) player.x = plat.x - player.width;
+        else if (player.vx < 0) player.x = plat.x + plat.width;
+        player.vx = 0;
       }
     }
-  }
+    player.x = clamp(player.x, 0, level.worldWidth - player.width);
 
-  if (player.onGround) {
-    player.airDashAvailable = true;
+    // Vertical movement + collision
+    player.onGround = false;
+    player.y += player.vy * dt;
+    for (const plat of platforms) {
+      if (rectIntersect(player, plat)) {
+        if (player.vy > 0) {
+          player.y = plat.y - player.height;
+          player.vy = 0;
+          player.onGround = true;
+        } else if (player.vy < 0) {
+          player.y = plat.y + plat.height;
+          player.vy = 0;
+        }
+      }
+    }
+
+    if (player.onGround) {
+      player.airDashAvailable = true;
+    }
   }
 
   if (player.invulnerableFor > 0) {

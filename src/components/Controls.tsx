@@ -25,6 +25,8 @@ interface Props {
   onRightOut: () => void;
   onJump: () => void;
   onDash: () => void;
+  onGrappleIn: () => void;
+  onGrappleOut: () => void;
 }
 
 interface Rect {
@@ -62,30 +64,42 @@ function ButtonFace({ label, big, scale }: { label: string; big?: boolean; scale
 // event we recompute which buttons are under an active touch from
 // `nativeEvent.touches` (the full, current list of fingers down), which is
 // naturally multi-touch since it's just coordinates, not a single gesture.
-export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, onJump, onDash }: Props) {
+export default function Controls({
+  onLeftIn,
+  onLeftOut,
+  onRightIn,
+  onRightOut,
+  onJump,
+  onDash,
+  onGrappleIn,
+  onGrappleOut,
+}: Props) {
   const leftRef = useRef<View>(null);
   const rightRef = useRef<View>(null);
   const jumpRef = useRef<View>(null);
   const dashRef = useRef<View>(null);
+  const grappleRef = useRef<View>(null);
 
-  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null; dash: Rect | null }>({
+  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null; dash: Rect | null; grapple: Rect | null }>({
     left: null,
     right: null,
     jump: null,
     dash: null,
+    grapple: null,
   });
-  const held = useRef({ left: false, right: false, jump: false, dash: false });
+  const held = useRef({ left: false, right: false, jump: false, dash: false, grapple: false });
 
   const leftScale = useRef(new Animated.Value(1)).current;
   const rightScale = useRef(new Animated.Value(1)).current;
   const jumpScale = useRef(new Animated.Value(1)).current;
   const dashScale = useRef(new Animated.Value(1)).current;
+  const grappleScale = useRef(new Animated.Value(1)).current;
 
   const animateTo = (value: Animated.Value, toValue: number) => {
     Animated.spring(value, { toValue, useNativeDriver: true, speed: toValue < 1 ? 30 : 20 }).start();
   };
 
-  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump' | 'dash') => {
+  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump' | 'dash' | 'grapple') => {
     ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
       rects.current[key] = { pageX, pageY, width, height };
     });
@@ -103,6 +117,7 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
       const hitRight = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.right));
       const hitJump = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.jump));
       const hitDash = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.dash));
+      const hitGrapple = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.grapple));
 
       if (hitLeft !== held.current.left) {
         held.current.left = hitLeft;
@@ -126,8 +141,28 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
         if (hitDash) onDash();
         held.current.dash = hitDash;
       }
+      if (hitGrapple !== held.current.grapple) {
+        held.current.grapple = hitGrapple;
+        animateTo(grappleScale, hitGrapple ? 0.88 : 1);
+        if (hitGrapple) onGrappleIn();
+        else onGrappleOut();
+      }
     },
-    [onLeftIn, onLeftOut, onRightIn, onRightOut, onJump, onDash, leftScale, rightScale, jumpScale, dashScale]
+    [
+      onLeftIn,
+      onLeftOut,
+      onRightIn,
+      onRightOut,
+      onJump,
+      onDash,
+      onGrappleIn,
+      onGrappleOut,
+      leftScale,
+      rightScale,
+      jumpScale,
+      dashScale,
+      grappleScale,
+    ]
   );
 
   return (
@@ -158,6 +193,9 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
         </View>
       </View>
       <View style={styles.actionPad}>
+        <View ref={grappleRef} onLayout={() => measure(grappleRef, 'grapple')}>
+          <ButtonFace label="◎" scale={grappleScale} />
+        </View>
         <View ref={dashRef} onLayout={() => measure(dashRef, 'dash')}>
           <ButtonFace label="»" scale={dashScale} />
         </View>

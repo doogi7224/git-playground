@@ -86,6 +86,13 @@ export interface SteamBlower extends Rect {
   alive: boolean;
 }
 
+// A fixed anchor the player can grapple onto with Root-Hook. Unlike a free
+// grapple, it only responds at these designated points, so the level
+// designer controls exactly where a swing can happen.
+export interface RootPoint extends Rect {
+  id: string;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -99,6 +106,7 @@ export interface Level {
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
   steamBlowers: SteamBlower[];
+  rootPoints: RootPoint[];
 }
 
 export interface Player extends Rect {
@@ -121,6 +129,14 @@ export interface Player extends Rect {
   comboIdleFor: number;
   /** Seconds remaining on an active Overdrive boost (speed/jump/coin bonus). */
   overdriveTimer: number;
+  /** True while attached to a Root-Hook point; normal movement/gravity are suspended in favor of pendulum physics. */
+  grappling: boolean;
+  grappleAnchorX: number;
+  grappleAnchorY: number;
+  /** Radians from straight down (0 = hanging at rest). */
+  grappleAngle: number;
+  grappleAngularVel: number;
+  grappleRadius: number;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -146,4 +162,6 @@ export interface InputState {
   right: boolean;
   jumpPressed: boolean;
   dashPressed: boolean;
+  /** Held (not edge-triggered) — stays attached to a Root-Hook point for as long as this is true. */
+  grappleHeld: boolean;
 }

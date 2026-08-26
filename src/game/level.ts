@@ -8,6 +8,7 @@ import {
   FLAG_WIDTH,
   PISTON_HEIGHT,
   PISTON_WIDTH,
+  ROOTHOOK_SIZE,
   SHIFT_NODE_SIZE,
   SPORE_SPRITE_HEIGHT,
   SPORE_SPRITE_WIDTH,
@@ -16,7 +17,7 @@ import {
   STEAMBLOWER_WIDTH,
   VIEWPORT_HEIGHT,
 } from './constants';
-import { BioCoil, Coin, Enemy, Level, Platform, PressurePiston, ShiftNode, SporeSprite, SteamBlower } from './types';
+import { BioCoil, Coin, Enemy, Level, Platform, PressurePiston, RootPoint, ShiftNode, SporeSprite, SteamBlower } from './types';
 
 const GROUND_Y = VIEWPORT_HEIGHT - 40;
 const GROUND_HEIGHT = 200; // extends below the visible viewport so pits look bottomless
@@ -148,6 +149,14 @@ function makeSteamBlowers(): SteamBlower[] {
   }));
 }
 
+function makeRootPoints(): RootPoint[] {
+  const defs: [string, number, number][] = [
+    ['root1', 780, GROUND_Y - 150], // over the first pit, an alternate to the p1/p2 jump route
+    ['root2', 3275, GROUND_Y - 160], // over the pit into area 2, alongside the p11 bridge
+  ];
+  return defs.map(([id, x, y]) => ({ id, x, y, width: ROOTHOOK_SIZE, height: ROOTHOOK_SIZE }));
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -227,5 +236,6 @@ export function createLevel(): Level {
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),
     steamBlowers: makeSteamBlowers(),
+    rootPoints: makeRootPoints(),
   };
 }

@@ -11,6 +11,7 @@ import Hud from '../components/Hud';
 import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
 import PressurePistonView from '../components/PressurePistonView';
+import RootPointView from '../components/RootPointView';
 import ShiftNodeView from '../components/ShiftNodeView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import SteamBlowerView from '../components/SteamBlowerView';
@@ -25,7 +26,13 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
   const level = useMemo(() => createLevel(), []);
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(level));
 
-  const inputRef = useRef<InputState>({ left: false, right: false, jumpPressed: false, dashPressed: false });
+  const inputRef = useRef<InputState>({
+    left: false,
+    right: false,
+    jumpPressed: false,
+    dashPressed: false,
+    grappleHeld: false,
+  });
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
 
@@ -38,6 +45,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           right: inputRef.current.right,
           jumpPressed: inputRef.current.jumpPressed,
           dashPressed: inputRef.current.dashPressed,
+          grappleHeld: inputRef.current.grappleHeld,
         };
         inputRef.current.jumpPressed = false;
         inputRef.current.dashPressed = false;
@@ -70,6 +78,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             ))}
           {level.shiftNodes.map((n) => (
             <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
+          ))}
+          {level.rootPoints.map((r) => (
+            <RootPointView key={r.id} point={r} />
           ))}
           {gameState.pressurePistons.map((p) => (
             <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />
@@ -109,6 +120,8 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         onRightOut={() => (inputRef.current.right = false)}
         onJump={() => (inputRef.current.jumpPressed = true)}
         onDash={() => (inputRef.current.dashPressed = true)}
+        onGrappleIn={() => (inputRef.current.grappleHeld = true)}
+        onGrappleOut={() => (inputRef.current.grappleHeld = false)}
       />
 
       {gameState.phase !== 'playing' && (
