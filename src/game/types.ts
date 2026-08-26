@@ -32,6 +32,17 @@ export interface ShiftNode extends Rect {
   id: string;
 }
 
+// A floating hazard that hovers on a fixed sine-wave path and slows the
+// player on approach instead of dealing direct damage. No stomp/attack
+// defeats it yet — per the monster design doc it's meant to require a dash
+// mechanic that hasn't been built, so for now it's an obstacle to route
+// around rather than a killable enemy.
+export interface SporeSprite extends Rect {
+  id: string;
+  baseY: number;
+  phase: number;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -41,6 +52,7 @@ export interface Level {
   coins: Coin[];
   flag: Flag;
   shiftNodes: ShiftNode[];
+  sporeSprites: SporeSprite[];
 }
 
 export interface Player extends Rect {
@@ -49,6 +61,8 @@ export interface Player extends Rect {
   onGround: boolean;
   facing: 1 | -1;
   invulnerableFor: number;
+  /** Seconds remaining on the Spore Sprite proximity slow debuff. */
+  slowFor: number;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -63,6 +77,7 @@ export interface GameState {
   bloomState: BloomState;
   /** True once the player has left every shift node's rect, so touching one again re-triggers a toggle. */
   bloomNodeArmed: boolean;
+  sporeSprites: SporeSprite[];
 }
 
 export interface InputState {

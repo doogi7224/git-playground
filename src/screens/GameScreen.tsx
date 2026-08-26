@@ -10,6 +10,7 @@ import Hud from '../components/Hud';
 import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
 import ShiftNodeView from '../components/ShiftNodeView';
+import SporeSpriteView from '../components/SporeSpriteView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
@@ -71,6 +72,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           ))}
           {gameState.enemies.map((e) => (
             <EnemyView key={e.id} enemy={e} />
+          ))}
+          {gameState.sporeSprites.map((s) => (
+            <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />
           ))}
           <PlayerView player={gameState.player} />
         </View>

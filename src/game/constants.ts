@@ -26,3 +26,12 @@ export const STARTING_LIVES = 3;
 export const INVULNERABLE_TIME = 1.2; // seconds after taking damage
 
 export const SHIFT_NODE_SIZE = 28;
+
+export const SPORE_SPRITE_WIDTH = 28;
+export const SPORE_SPRITE_HEIGHT = 32;
+export const SPORE_AMPLITUDE = 20; // px, vertical sine-wave travel
+export const SPORE_PERIOD = 2.4; // seconds per full float cycle
+export const SPORE_RADIUS_WILD = 80; // px, proximity radius in the sprite's natural (wild) state
+export const SPORE_RADIUS_MECHANICAL = 110; // wider net once shifted to its brass-drone form
+export const SPORE_SLOW_DURATION = 2; // seconds the speed debuff lingers after leaving range
+export const SPORE_SLOW_FACTOR = 0.85; // multiplier on MOVE_SPEED while slowed
