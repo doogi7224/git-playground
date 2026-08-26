@@ -140,8 +140,12 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (player.invulnerableFor <= 0) {
       lives -= 1;
       player.invulnerableFor = INVULNERABLE_TIME;
-      player.vx = player.facing === 1 ? -200 : 200;
-      player.vy = -300;
+      if (lives > 0) {
+        player.x = level.spawn.x;
+        player.y = level.spawn.y;
+        player.vx = 0;
+        player.vy = 0;
+      }
     }
     return e;
   });
