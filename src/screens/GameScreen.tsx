@@ -103,7 +103,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <CoinView key={c.id} coin={c} />
           ))}
           {gameState.enemies.map((e) => (
-            <EnemyView key={e.id} enemy={e} />
+            <EnemyView key={e.id} enemy={e} bloomState={gameState.bloomState} />
           ))}
           {gameState.bioCoils.map((c) => (
             <BioCoilView key={c.id} coil={c} />

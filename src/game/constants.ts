@@ -15,6 +15,16 @@ export const PLAYER_HEIGHT = 40;
 export const ENEMY_WIDTH = 34;
 export const ENEMY_HEIGHT = 30;
 export const ENEMY_SPEED = 60; // px/s
+// Cogmite detection/charge, per the monster design doc: it detects the player
+// and switches to a straight-line 120px/s charge (no cliff avoidance — the
+// doc calls luring it into a pit a valid strategy; this prototype keeps
+// charges within the existing patrol bounds instead of adding fall physics
+// for enemies, ending the charge at a bound rather than running off it).
+// Neutralized entirely in the wild Bloom Shift state, which also slows its
+// normal patrol to 60%.
+export const ENEMY_CHARGE_SPEED = 120;
+export const ENEMY_DETECT_RANGE = 160; // px; not given a number in the doc, a judgment call
+export const ENEMY_WILD_PATROL_MULT = 0.6;
 
 export const COIN_SIZE = 22;
 export const FLAG_WIDTH = 24;

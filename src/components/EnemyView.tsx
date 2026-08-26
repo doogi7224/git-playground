@@ -1,24 +1,30 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
-import { Enemy } from '../game/types';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { BloomState, Enemy } from '../game/types';
+import { palette } from '../theme';
 
 // Cogmite is drawn larger than its collision box (a full-body AI-generated
 // sprite with legs splayed wide) and anchored so its feet sit on the
 // hitbox's bottom edge, centered on the hitbox's horizontal center.
 const VISUAL_SIZE = 56;
 
-export default function EnemyView({ enemy }: { enemy: Enemy }) {
+export default function EnemyView({ enemy, bloomState }: { enemy: Enemy; bloomState: BloomState }) {
+  const charging = enemy.chargeDir !== 0;
+  const docile = bloomState === 'wild';
+  // Wild tames it (slower, stiffer waddle); charging is urgent (faster).
+  const walkDuration = charging ? 220 : docile ? 700 : 440;
+
   const walk = useRef(new Animated.Value(0)).current;
   const turn = useRef(new Animated.Value(1)).current;
   const prevFacing = useRef(enemy.vx >= 0 ? 1 : -1);
 
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.timing(walk, { toValue: 1, duration: 440, useNativeDriver: true, easing: Easing.linear })
+      Animated.timing(walk, { toValue: 1, duration: walkDuration, useNativeDriver: true, easing: Easing.linear })
     );
     loop.start();
     return () => loop.stop();
-  }, [walk]);
+  }, [walk, walkDuration]);
 
   const facing = enemy.vx >= 0 ? 1 : -1;
 
@@ -40,25 +46,51 @@ export default function EnemyView({ enemy }: { enemy: Enemy }) {
   const top = enemy.y + enemy.height - VISUAL_SIZE;
 
   return (
-    <Animated.Image
-      source={require('../../assets/sprites/cogmite.png')}
-      resizeMode="contain"
-      style={[
-        styles.sprite,
-        {
-          left,
-          top,
-          transform: [{ translateY: bobY }, { scaleX: facing }, { scale: turn }, { rotate: waddle }],
-        },
-      ]}
-    />
+    <View style={[styles.wrap, { left, top }]}>
+      <Animated.Image
+        source={require('../../assets/sprites/cogmite.png')}
+        resizeMode="contain"
+        style={[
+          styles.sprite,
+          { transform: [{ translateY: bobY }, { scaleX: facing }, { scale: turn }, { rotate: waddle }] },
+        ]}
+      />
+      {charging && <View style={styles.alertDot} />}
+      {docile && <View style={styles.mossPatch} />}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sprite: {
+  wrap: {
     position: 'absolute',
     width: VISUAL_SIZE,
     height: VISUAL_SIZE,
+  },
+  sprite: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  alertDot: {
+    position: 'absolute',
+    top: -6,
+    left: '50%',
+    marginLeft: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: palette.uiDanger,
+  },
+  mossPatch: {
+    position: 'absolute',
+    top: 6,
+    left: '50%',
+    marginLeft: -7,
+    width: 14,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: palette.moss,
+    opacity: 0.85,
   },
 });

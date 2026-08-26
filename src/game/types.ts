@@ -19,6 +19,8 @@ export interface Enemy extends Rect {
   minX: number;
   maxX: number;
   alive: boolean;
+  /** Locked-in charge direction once the player is detected (mechanical bloom only); 0 = patrolling normally. */
+  chargeDir: -1 | 0 | 1;
 }
 
 export interface Coin extends Rect {

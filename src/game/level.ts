@@ -210,6 +210,7 @@ function makeEnemies(): Enemy[] {
     minX,
     maxX,
     alive: true,
+    chargeDir: 0,
   }));
 }
 

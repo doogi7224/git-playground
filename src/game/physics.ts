@@ -21,6 +21,10 @@ import {
   DASH_INVULN,
   DASH_SPEED,
   DEATH_Y,
+  ENEMY_CHARGE_SPEED,
+  ENEMY_DETECT_RANGE,
+  ENEMY_SPEED,
+  ENEMY_WILD_PATROL_MULT,
   FLAME_LOB_ACTIVE,
   FLAME_LOB_CHARGE,
   FLAME_LOB_CYCLE,
@@ -479,19 +483,39 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     player.invulnerableFor = Math.max(0, player.invulnerableFor - dt);
   }
 
-  // Enemy patrol
+  // Enemy patrol / charge. Detection and the charge trigger only work in the
+  // mechanical bloom state; wild neutralizes both and slows normal patrol.
+  // Uses this frame's already-updated player position (the movement block
+  // above has already run), same as the stomp/hit checks just below it.
+  const playerCenterX = player.x + player.width / 2;
   const enemies = prev.enemies.map((e) => {
     if (!e.alive) return e;
-    let nx = e.x + e.vx * dt;
-    let vx = e.vx;
+
+    const eCenterX = e.x + e.width / 2;
+    const detects = bloomState === 'mechanical' && Math.abs(playerCenterX - eCenterX) <= ENEMY_DETECT_RANGE;
+    let chargeDir = e.chargeDir;
+    if (detects && chargeDir === 0) {
+      chargeDir = playerCenterX < eCenterX ? -1 : 1;
+    } else if (!detects) {
+      chargeDir = 0;
+    }
+
+    const patrolSpeed = ENEMY_SPEED * (bloomState === 'wild' ? ENEMY_WILD_PATROL_MULT : 1);
+    const dir: 1 | -1 = chargeDir !== 0 ? chargeDir : e.vx >= 0 ? 1 : -1;
+    const speed = chargeDir !== 0 ? ENEMY_CHARGE_SPEED : patrolSpeed;
+
+    let nx = e.x + dir * speed * dt;
+    let vx = dir * speed;
     if (nx < e.minX) {
       nx = e.minX;
       vx = Math.abs(vx);
+      chargeDir = 0; // hit a patrol bound mid-charge: turn around and resume patrol
     } else if (nx + e.width > e.maxX) {
       nx = e.maxX - e.width;
       vx = -Math.abs(vx);
+      chargeDir = 0;
     }
-    return { ...e, x: nx, vx };
+    return { ...e, x: nx, vx, chargeDir };
   });
 
   let score = prev.score;
