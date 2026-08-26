@@ -89,7 +89,12 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
 
   const handleTouches = useCallback(
     (evt: GestureResponderEvent) => {
-      const touches = evt.nativeEvent.touches.length > 0 ? evt.nativeEvent.touches : [evt.nativeEvent];
+      // `touches` is the authoritative list of what's currently down — on a
+      // release/terminate it is correctly empty, which must mean "nothing is
+      // held" rather than falling back to the event's own last-known point
+      // (that point is the finger that just lifted, so treating it as still
+      // touching is exactly what kept movement running after release).
+      const touches = evt.nativeEvent.touches;
       const hitLeft = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.left));
       const hitRight = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.right));
       const hitJump = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.jump));
