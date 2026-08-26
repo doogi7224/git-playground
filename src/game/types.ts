@@ -115,6 +115,12 @@ export interface Player extends Rect {
   dashCooldown: number;
   /** Consumed by dashing while airborne; refills on landing. Grounded dashes don't spend it. */
   airDashAvailable: boolean;
+  /** 0-OVERDRIVE_MAX combo meter, filled by stomps/dashes; resets if the chain goes idle too long. */
+  overdriveGauge: number;
+  /** Seconds since the last stomp/dash; a full reset of this (and the gauge) means the combo broke. */
+  comboIdleFor: number;
+  /** Seconds remaining on an active Overdrive boost (speed/jump/coin bonus). */
+  overdriveTimer: number;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';

@@ -30,6 +30,16 @@ export const DASH_DURATION = 0.18; // seconds movement is locked to the dash bur
 export const DASH_INVULN = 0.15; // seconds of invincibility granted by a dash (per the GDD's control spec)
 export const DASH_COOLDOWN = 0.3; // seconds before another dash can start, to prevent spamming for near-permanent invulnerability
 
+// Overdrive: a combo gauge built from stomp/dash chains (the GDD's full list also includes
+// wall-jump and grind, which don't exist in this prototype yet).
+export const OVERDRIVE_MAX = 100;
+export const OVERDRIVE_STOMP_GAIN = 15;
+export const OVERDRIVE_DASH_GAIN = 10;
+export const OVERDRIVE_COMBO_BREAK_TIME = 1.5; // seconds without a stomp/dash before the chain (and gauge) resets
+export const OVERDRIVE_DURATION = 8; // seconds the boost lasts once the gauge fills
+export const OVERDRIVE_SPEED_MULT = 1.15; // applied to MOVE_SPEED and JUMP_VELOCITY while active
+export const OVERDRIVE_COIN_MULT = 2; // coin value multiplier while active
+
 export const SHIFT_NODE_SIZE = 28;
 
 export const SPORE_SPRITE_WIDTH = 28;

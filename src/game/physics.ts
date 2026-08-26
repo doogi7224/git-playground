@@ -21,6 +21,13 @@ import {
   JUMP_VELOCITY,
   MAX_FALL_SPEED,
   MOVE_SPEED,
+  OVERDRIVE_COIN_MULT,
+  OVERDRIVE_COMBO_BREAK_TIME,
+  OVERDRIVE_DASH_GAIN,
+  OVERDRIVE_DURATION,
+  OVERDRIVE_MAX,
+  OVERDRIVE_SPEED_MULT,
+  OVERDRIVE_STOMP_GAIN,
   PISTON_BLAST_DURATION,
   PISTON_CHARGE_DURATION,
   PISTON_CYCLE,
@@ -82,6 +89,9 @@ export function createInitialState(level: Level): GameState {
       dashTimer: 0,
       dashCooldown: 0,
       airDashAvailable: true,
+      overdriveGauge: 0,
+      comboIdleFor: 0,
+      overdriveTimer: 0,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -181,6 +191,16 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   const player = { ...prev.player };
 
+  // Overdrive: accumulated across dash/stomp events this frame, applied to the
+  // combo gauge at the end of the function (after every hazard resolution
+  // block below has had a chance to add to it).
+  let gaugeGain = 0;
+
+  // Decided from the pre-frame timer, matching the pattern used for Bloom
+  // Shift/slow/dash below: this frame's speed and jump power reflect whether
+  // Overdrive was already active going into it.
+  const overdriveActive = prev.player.overdriveTimer > 0;
+
   // Bloom Shift: decided from where the player was at the start of this
   // frame (before this frame's own movement), so the toggle and the
   // platform set used for this frame's collision stay in sync (no
@@ -198,7 +218,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
   // this frame's move speed matches what's shown (no one-frame mismatch).
-  const moveSpeed = prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED;
+  const moveSpeed = (prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED) * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
+  const jumpVelocity = JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
 
   // Dash: a fixed-velocity horizontal burst with brief invincibility (per the
   // GDD's control spec). One charge while airborne, refilled on landing;
@@ -212,6 +233,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     player.dashCooldown = DASH_COOLDOWN;
     if (!player.onGround) player.airDashAvailable = false;
     player.invulnerableFor = Math.max(player.invulnerableFor, DASH_INVULN);
+    gaugeGain += OVERDRIVE_DASH_GAIN;
   }
 
   if (player.dashTimer > 0) {
@@ -231,7 +253,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
 
     if (input.jumpPressed && player.onGround) {
-      player.vy = JUMP_VELOCITY;
+      player.vy = jumpVelocity;
       player.onGround = false;
     }
 
@@ -310,6 +332,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
       score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
       return { ...e, alive: false };
     }
 
@@ -336,6 +359,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (c.phase === 'landed' && isStomp) {
       player.vy = STOMP_BOUNCE;
       score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
       return { ...c, alive: false };
     }
 
@@ -392,6 +416,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = STOMP_BOUNCE;
       // Cap closed (mechanical): stomp just bounces off, no effect on the boss.
       if (bloomState !== 'wild') return b;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
       const hp = b.hp - 1;
       if (hp <= 0) {
         score += 300;
@@ -433,7 +458,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const resolvedCoins = prev.coins.map((c) => {
     if (c.collected) return c;
     if (rectIntersect(player, c)) {
-      score += 10;
+      score += overdriveActive ? 10 * OVERDRIVE_COIN_MULT : 10;
       return { ...c, collected: true };
     }
     return c;
@@ -457,6 +482,25 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return Math.hypot(c.x - playerCenter.x, c.y - playerCenter.y) <= sporeRadius;
   });
   player.slowFor = nearSporeSprite ? SPORE_SLOW_DURATION : Math.max(0, prev.player.slowFor - dt);
+
+  // Overdrive gauge: filled by this frame's dash/stomp gains (accumulated
+  // above), reset if the combo chain has gone idle too long, and converted
+  // into an active boost once full.
+  let overdriveGauge = prev.player.overdriveGauge;
+  let comboIdleFor = prev.player.comboIdleFor + dt;
+  if (gaugeGain > 0) {
+    overdriveGauge = Math.min(OVERDRIVE_MAX, overdriveGauge + gaugeGain);
+    comboIdleFor = 0;
+  } else if (comboIdleFor > OVERDRIVE_COMBO_BREAK_TIME) {
+    overdriveGauge = 0;
+  }
+  player.overdriveTimer = Math.max(0, prev.player.overdriveTimer - dt);
+  if (overdriveGauge >= OVERDRIVE_MAX && player.overdriveTimer <= 0) {
+    player.overdriveTimer = OVERDRIVE_DURATION;
+    overdriveGauge = 0;
+  }
+  player.overdriveGauge = overdriveGauge;
+  player.comboIdleFor = comboIdleFor;
 
   if (player.y > DEATH_Y) {
     lives -= 1;

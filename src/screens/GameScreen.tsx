@@ -94,7 +94,13 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         </View>
       </View>
 
-      <Hud score={gameState.score} lives={gameState.lives} bloomState={gameState.bloomState} />
+      <Hud
+        score={gameState.score}
+        lives={gameState.lives}
+        bloomState={gameState.bloomState}
+        overdriveGauge={gameState.player.overdriveGauge}
+        overdriveActive={gameState.player.overdriveTimer > 0}
+      />
 
       <Controls
         onLeftIn={() => (inputRef.current.left = true)}
