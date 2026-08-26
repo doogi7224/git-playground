@@ -13,6 +13,7 @@ import PlayerView from '../components/PlayerView';
 import PressurePistonView from '../components/PressurePistonView';
 import ShiftNodeView from '../components/ShiftNodeView';
 import SporeSpriteView from '../components/SporeSpriteView';
+import SteamBlowerView from '../components/SteamBlowerView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
@@ -80,6 +81,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           ))}
           {gameState.bioCoils.map((c) => (
             <BioCoilView key={c.id} coil={c} />
+          ))}
+          {gameState.steamBlowers.map((b) => (
+            <SteamBlowerView key={b.id} blower={b} bloomState={gameState.bloomState} />
           ))}
           {gameState.sporeSprites.map((s) => (
             <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />

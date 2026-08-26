@@ -73,6 +73,19 @@ export interface BioCoil extends Rect {
   alive: boolean;
 }
 
+// Fixed mini-boss with two independently-cycling attacks: a steam gust
+// (knockback only, no damage — the risk is being pushed into a pit) and a
+// flame-spore lob (direct damage). While mechanical its cap is closed, so
+// stomping bounces the player off with no effect; while wild the cap is
+// open and stompable, needing HP hits to defeat.
+export interface SteamBlower extends Rect {
+  id: string;
+  steamTimer: number;
+  sporeTimer: number;
+  hp: number;
+  alive: boolean;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -85,6 +98,7 @@ export interface Level {
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
+  steamBlowers: SteamBlower[];
 }
 
 export interface Player extends Rect {
@@ -112,6 +126,7 @@ export interface GameState {
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
+  steamBlowers: SteamBlower[];
 }
 
 export interface InputState {

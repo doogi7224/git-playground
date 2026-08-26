@@ -7,6 +7,10 @@ import {
   BIOCOIL_RANGE,
   BIOCOIL_WINDUP_WILD,
   DEATH_Y,
+  FLAME_LOB_ACTIVE,
+  FLAME_LOB_CHARGE,
+  FLAME_LOB_CYCLE,
+  FLAME_LOB_RANGE,
   FRICTION,
   GRAVITY,
   INVULNERABLE_TIME,
@@ -24,10 +28,27 @@ import {
   SPORE_RADIUS_WILD,
   SPORE_SLOW_DURATION,
   SPORE_SLOW_FACTOR,
+  STEAM_GUST_ACTIVE,
+  STEAM_GUST_CHARGE,
+  STEAM_GUST_CYCLE,
+  STEAM_GUST_KNOCKBACK,
+  STEAM_GUST_RANGE,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
 } from './constants';
-import { BioCoil, BloomState, GamePhase, GameState, InputState, Level, Platform, PressurePiston, Rect, SporeSprite } from './types';
+import {
+  BioCoil,
+  BloomState,
+  GamePhase,
+  GameState,
+  InputState,
+  Level,
+  Platform,
+  PressurePiston,
+  Rect,
+  SporeSprite,
+  SteamBlower,
+} from './types';
 
 export function rectIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -65,6 +86,7 @@ export function createInitialState(level: Level): GameState {
     sporeSprites: level.sporeSprites.map((s) => ({ ...s })),
     pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
+    steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
   };
 }
 
@@ -126,6 +148,25 @@ function stepBioCoils(prev: BioCoil[], player: Rect, bloomState: BloomState, dt:
     if (timer > 0) return { ...c, timer };
     return { ...c, phase: 'coiled', timer: 0, x: c.homeX, y: c.groundY };
   });
+}
+
+function stepSteamBlowers(prev: SteamBlower[], dt: number): SteamBlower[] {
+  return prev.map((b) => {
+    if (!b.alive) return b;
+    return {
+      ...b,
+      steamTimer: (b.steamTimer + dt) % STEAM_GUST_CYCLE,
+      sporeTimer: (b.sporeTimer + dt) % FLAME_LOB_CYCLE,
+    };
+  });
+}
+
+export function isSteamGustActive(blower: SteamBlower): boolean {
+  return blower.steamTimer >= STEAM_GUST_CHARGE && blower.steamTimer < STEAM_GUST_CHARGE + STEAM_GUST_ACTIVE;
+}
+
+export function isFlameLobActive(blower: SteamBlower): boolean {
+  return blower.sporeTimer >= FLAME_LOB_CHARGE && blower.sporeTimer < FLAME_LOB_CHARGE + FLAME_LOB_ACTIVE;
 }
 
 export function stepGame(prev: GameState, input: InputState, level: Level, dt: number): GameState {
@@ -285,6 +326,64 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return c;
   });
 
+  const resolvedSteamBlowers = stepSteamBlowers(prev.steamBlowers, dt).map((b) => {
+    if (!b.alive) return b;
+
+    // Steam gust: a wide knockback-only zone, active in a short window each 3s cycle.
+    if (isSteamGustActive(b)) {
+      const gustZone: Rect = { x: b.x - STEAM_GUST_RANGE, y: b.y, width: b.width + STEAM_GUST_RANGE * 2, height: b.height };
+      if (rectIntersect(player, gustZone)) {
+        const center = b.x + b.width / 2;
+        const dir = player.x + player.width / 2 < center ? -1 : 1;
+        player.vx = dir * STEAM_GUST_KNOCKBACK;
+      }
+    }
+
+    // Flame spore: a wider damage zone, active in a short window each 5s cycle.
+    if (isFlameLobActive(b)) {
+      const lobZone: Rect = { x: b.x - FLAME_LOB_RANGE, y: b.y - 20, width: b.width + FLAME_LOB_RANGE * 2, height: b.height + 20 };
+      if (rectIntersect(player, lobZone) && player.invulnerableFor <= 0) {
+        lives -= 1;
+        player.invulnerableFor = INVULNERABLE_TIME;
+        if (lives > 0) {
+          player.x = level.spawn.x;
+          player.y = level.spawn.y;
+          player.vx = 0;
+          player.vy = 0;
+        }
+      }
+    }
+
+    if (!rectIntersect(player, b)) return b;
+
+    const isStomp = wasFalling && prevBottom <= b.y + STOMP_TOLERANCE;
+
+    if (isStomp) {
+      player.vy = STOMP_BOUNCE;
+      // Cap closed (mechanical): stomp just bounces off, no effect on the boss.
+      if (bloomState !== 'wild') return b;
+      const hp = b.hp - 1;
+      if (hp <= 0) {
+        score += 300;
+        return { ...b, hp: 0, alive: false };
+      }
+      score += 50;
+      return { ...b, hp };
+    }
+
+    if (player.invulnerableFor <= 0) {
+      lives -= 1;
+      player.invulnerableFor = INVULNERABLE_TIME;
+      if (lives > 0) {
+        player.x = level.spawn.x;
+        player.y = level.spawn.y;
+        player.vx = 0;
+        player.vy = 0;
+      }
+    }
+    return b;
+  });
+
   const pressurePistons = stepPressurePistons(prev.pressurePistons, dt);
   for (const piston of pressurePistons) {
     if (!isPistonDangerous(piston, bloomState)) continue;
@@ -348,6 +447,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     sporeSprites,
     pressurePistons,
     bioCoils: resolvedBioCoils,
+    steamBlowers: resolvedSteamBlowers,
   };
 }
 

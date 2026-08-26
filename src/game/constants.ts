@@ -53,3 +53,20 @@ export const BIOCOIL_LEAP_VX_WILD = 180;
 export const BIOCOIL_LAUNCH_VY_WILD = -520; // big, telegraphed arc
 export const BIOCOIL_LEAP_VX_MECHANICAL = 90;
 export const BIOCOIL_LAUNCH_VY_MECHANICAL = -300; // low, short, untelegraphed ambush hop
+
+export const STEAMBLOWER_WIDTH = 48;
+export const STEAMBLOWER_HEIGHT = 54;
+export const STEAMBLOWER_HP = 3;
+
+export const STEAM_GUST_CYCLE = 3;
+export const STEAM_GUST_CHARGE = 0.4;
+export const STEAM_GUST_ACTIVE = 0.5; // knockback window
+export const STEAM_GUST_RANGE = 90; // px, extends this far on both sides of the blower
+export const STEAM_GUST_KNOCKBACK = 380; // px/s horizontal push, away from the blower
+
+// Named FLAME_LOB (not SPORE_*) to avoid confusion with the unrelated Spore
+// Sprite monster — this is the Steam Blower's "flame spore" ranged attack.
+export const FLAME_LOB_CYCLE = 5;
+export const FLAME_LOB_CHARGE = 0.5;
+export const FLAME_LOB_ACTIVE = 0.4; // damage window
+export const FLAME_LOB_RANGE = 110; // px, wider than the steam gust since it's a ranged lob

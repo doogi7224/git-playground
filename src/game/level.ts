@@ -11,9 +11,12 @@ import {
   SHIFT_NODE_SIZE,
   SPORE_SPRITE_HEIGHT,
   SPORE_SPRITE_WIDTH,
+  STEAMBLOWER_HEIGHT,
+  STEAMBLOWER_HP,
+  STEAMBLOWER_WIDTH,
   VIEWPORT_HEIGHT,
 } from './constants';
-import { BioCoil, Coin, Enemy, Level, Platform, PressurePiston, ShiftNode, SporeSprite } from './types';
+import { BioCoil, Coin, Enemy, Level, Platform, PressurePiston, ShiftNode, SporeSprite, SteamBlower } from './types';
 
 const GROUND_Y = VIEWPORT_HEIGHT - 40;
 const GROUND_HEIGHT = 200; // extends below the visible viewport so pits look bottomless
@@ -114,6 +117,21 @@ function makeBioCoils(): BioCoil[] {
   }));
 }
 
+function makeSteamBlowers(): SteamBlower[] {
+  const defs: [string, number][] = [['blower1', 2980]];
+  return defs.map(([id, x]) => ({
+    id,
+    x,
+    y: GROUND_Y - STEAMBLOWER_HEIGHT,
+    width: STEAMBLOWER_WIDTH,
+    height: STEAMBLOWER_HEIGHT,
+    steamTimer: 0,
+    sporeTimer: 0,
+    hp: STEAMBLOWER_HP,
+    alive: true,
+  }));
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -181,5 +199,6 @@ export function createLevel(): Level {
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),
+    steamBlowers: makeSteamBlowers(),
   };
 }
