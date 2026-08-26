@@ -25,8 +25,33 @@ import { computeCameraX, createInitialState, stepGame } from '../game/physics';
 import { GameState, InputState } from '../game/types';
 import { palette } from '../theme';
 
+// Presentation-only layout constants (not game/constants.ts): how much screen
+// space to reserve above/below the scaled game stage so the HUD and mobile
+// controls never overlap the ground/platform band of the world. Sized to
+// comfortably clear Hud's own content height and Controls' tallest (jump)
+// button + its bottom offset/shadow.
+const HUD_RESERVED_TOP = 96;
+const CONTROLS_RESERVED_BOTTOM = 130;
+// Clamp how far the fixed VIEWPORT_HEIGHT logical space is scaled up/down so
+// very short (landscape phone) or very tall (desktop) windows don't zoom the
+// world to an absurd degree.
+const MIN_STAGE_SCALE = 0.6;
+const MAX_STAGE_SCALE = 3;
+
 export default function GameScreen({ onExit }: { onExit: () => void }) {
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  // The world's Y coordinates (ground, platforms, enemy spawn heights, etc.)
+  // are all authored against the fixed VIEWPORT_HEIGHT logical space and must
+  // stay untouched — see CLAUDE.md 19 ("그래픽과 실제 충돌 박스를 분리한다").
+  // Rather than stretching that logical space, we scale the whole stage up
+  // to fill the actual device screen and shrink how many world-px are
+  // visible horizontally to match, so gameplay math never sees this at all.
+  const availableStageHeight = Math.max(120, windowHeight - HUD_RESERVED_TOP - CONTROLS_RESERVED_BOTTOM);
+  const stageScale = Math.min(
+    MAX_STAGE_SCALE,
+    Math.max(MIN_STAGE_SCALE, availableStageHeight / VIEWPORT_HEIGHT)
+  );
+  const viewportWidth = windowWidth / stageScale;
   const level = useMemo(() => createLevel(), []);
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(level));
 
@@ -68,54 +93,61 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
     setGameState(createInitialState(level));
   }, [level]);
 
-  const cameraX = computeCameraX(gameState.player.x, windowWidth, level.worldWidth);
+  const cameraX = computeCameraX(gameState.player.x, viewportWidth, level.worldWidth);
 
   return (
     <View style={styles.outer}>
-      <View style={[styles.stage, { width: windowWidth, height: VIEWPORT_HEIGHT }]}>
-        <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportHeight={VIEWPORT_HEIGHT} />
-        <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
-          {level.platforms
-            .filter((p) => !p.visibleIn || p.visibleIn === gameState.bloomState)
-            .map((p) => (
-              <PlatformView key={p.id} platform={p} />
+      <View style={[styles.stageClip, { top: HUD_RESERVED_TOP, height: availableStageHeight }]}>
+        <View
+          style={[
+            styles.stage,
+            { width: viewportWidth, height: VIEWPORT_HEIGHT, transform: [{ scale: stageScale }] },
+          ]}
+        >
+          <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportHeight={VIEWPORT_HEIGHT} />
+          <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
+            {level.platforms
+              .filter((p) => !p.visibleIn || p.visibleIn === gameState.bloomState)
+              .map((p) => (
+                <PlatformView key={p.id} platform={p} />
+              ))}
+            {gameState.corpsePlatforms.map((p) => (
+              <CorpsePlatformView key={p.id} platform={p} />
             ))}
-          {gameState.corpsePlatforms.map((p) => (
-            <CorpsePlatformView key={p.id} platform={p} />
-          ))}
-          {level.shiftNodes.map((n) => (
-            <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
-          ))}
-          {level.rootPoints.map((r) => (
-            <RootPointView key={r.id} point={r} />
-          ))}
-          {gameState.cogPickups.map((c) => (
-            <CogPickupView key={c.id} cog={c} />
-          ))}
-          {level.checkpoints.slice(1).map((c, i) => (
-            <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
-          ))}
-          {gameState.pressurePistons.map((p) => (
-            <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />
-          ))}
-          <FlagView flag={level.flag} />
-          {gameState.coins.map((c) => (
-            <CoinView key={c.id} coin={c} />
-          ))}
-          {gameState.enemies.map((e) => (
-            <EnemyView key={e.id} enemy={e} bloomState={gameState.bloomState} />
-          ))}
-          {gameState.bioCoils.map((c) => (
-            <BioCoilView key={c.id} coil={c} />
-          ))}
-          {gameState.steamBlowers.map((b) => (
-            <SteamBlowerView key={b.id} blower={b} bloomState={gameState.bloomState} />
-          ))}
-          {gameState.sporeSprites.map((s) => (
-            <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />
-          ))}
-          <RopeView player={gameState.player} />
-          <PlayerView player={gameState.player} />
+            {level.shiftNodes.map((n) => (
+              <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
+            ))}
+            {level.rootPoints.map((r) => (
+              <RootPointView key={r.id} point={r} />
+            ))}
+            {gameState.cogPickups.map((c) => (
+              <CogPickupView key={c.id} cog={c} />
+            ))}
+            {level.checkpoints.slice(1).map((c, i) => (
+              <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
+            ))}
+            {gameState.pressurePistons.map((p) => (
+              <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />
+            ))}
+            <FlagView flag={level.flag} />
+            {gameState.coins.map((c) => (
+              <CoinView key={c.id} coin={c} />
+            ))}
+            {gameState.enemies.map((e) => (
+              <EnemyView key={e.id} enemy={e} bloomState={gameState.bloomState} />
+            ))}
+            {gameState.bioCoils.map((c) => (
+              <BioCoilView key={c.id} coil={c} />
+            ))}
+            {gameState.steamBlowers.map((b) => (
+              <SteamBlowerView key={b.id} blower={b} bloomState={gameState.bloomState} />
+            ))}
+            {gameState.sporeSprites.map((s) => (
+              <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />
+            ))}
+            <RopeView player={gameState.player} />
+            <PlayerView player={gameState.player} />
+          </View>
         </View>
       </View>
 
@@ -173,12 +205,23 @@ const styles = StyleSheet.create({
   outer: {
     flex: 1,
     backgroundColor: palette.skyBottom,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  stage: {
+  // Fixed-height band between the HUD and the mobile controls; clips the
+  // scaled stage so it can never paint over either.
+  stageClip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     overflow: 'hidden',
-    borderRadius: 12,
+  },
+  // Laid out at its own small logical size (VIEWPORT_HEIGHT-tall) and then
+  // scaled up from its top-left corner to exactly fill stageClip — see the
+  // stageScale comment above. Gameplay coordinates never see this scale.
+  stage: {
+    top: 0,
+    left: 0,
+    overflow: 'hidden',
+    transformOrigin: 'top left',
   },
   world: {
     position: 'absolute',
