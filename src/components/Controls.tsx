@@ -24,6 +24,7 @@ interface Props {
   onRightIn: () => void;
   onRightOut: () => void;
   onJump: () => void;
+  onDash: () => void;
 }
 
 interface Rect {
@@ -61,27 +62,30 @@ function ButtonFace({ label, big, scale }: { label: string; big?: boolean; scale
 // event we recompute which buttons are under an active touch from
 // `nativeEvent.touches` (the full, current list of fingers down), which is
 // naturally multi-touch since it's just coordinates, not a single gesture.
-export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, onJump }: Props) {
+export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, onJump, onDash }: Props) {
   const leftRef = useRef<View>(null);
   const rightRef = useRef<View>(null);
   const jumpRef = useRef<View>(null);
+  const dashRef = useRef<View>(null);
 
-  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null }>({
+  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null; dash: Rect | null }>({
     left: null,
     right: null,
     jump: null,
+    dash: null,
   });
-  const held = useRef({ left: false, right: false, jump: false });
+  const held = useRef({ left: false, right: false, jump: false, dash: false });
 
   const leftScale = useRef(new Animated.Value(1)).current;
   const rightScale = useRef(new Animated.Value(1)).current;
   const jumpScale = useRef(new Animated.Value(1)).current;
+  const dashScale = useRef(new Animated.Value(1)).current;
 
   const animateTo = (value: Animated.Value, toValue: number) => {
     Animated.spring(value, { toValue, useNativeDriver: true, speed: toValue < 1 ? 30 : 20 }).start();
   };
 
-  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump') => {
+  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump' | 'dash') => {
     ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
       rects.current[key] = { pageX, pageY, width, height };
     });
@@ -98,6 +102,7 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
       const hitLeft = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.left));
       const hitRight = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.right));
       const hitJump = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.jump));
+      const hitDash = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.dash));
 
       if (hitLeft !== held.current.left) {
         held.current.left = hitLeft;
@@ -116,8 +121,13 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
         if (hitJump) onJump();
         held.current.jump = hitJump;
       }
+      if (hitDash !== held.current.dash) {
+        animateTo(dashScale, hitDash ? 0.88 : 1);
+        if (hitDash) onDash();
+        held.current.dash = hitDash;
+      }
     },
-    [onLeftIn, onLeftOut, onRightIn, onRightOut, onJump, leftScale, rightScale, jumpScale]
+    [onLeftIn, onLeftOut, onRightIn, onRightOut, onJump, onDash, leftScale, rightScale, jumpScale, dashScale]
   );
 
   return (
@@ -147,8 +157,13 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
           <ButtonFace label="▶" scale={rightScale} />
         </View>
       </View>
-      <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
-        <ButtonFace label="▲" big scale={jumpScale} />
+      <View style={styles.actionPad}>
+        <View ref={dashRef} onLayout={() => measure(dashRef, 'dash')}>
+          <ButtonFace label="»" scale={dashScale} />
+        </View>
+        <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
+          <ButtonFace label="▲" big scale={jumpScale} />
+        </View>
       </View>
     </View>
   );
@@ -167,6 +182,11 @@ const styles = StyleSheet.create({
   },
   dpad: {
     flexDirection: 'row',
+    gap: 14,
+  },
+  actionPad: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: 14,
   },
   buttonShadow: {

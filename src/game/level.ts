@@ -83,6 +83,7 @@ function makeSporeSprites(): SporeSprite[] {
     height: SPORE_SPRITE_HEIGHT,
     baseY,
     phase,
+    alive: true,
   }));
 }
 

@@ -33,14 +33,14 @@ export interface ShiftNode extends Rect {
 }
 
 // A floating hazard that hovers on a fixed sine-wave path and slows the
-// player on approach instead of dealing direct damage. No stomp/attack
-// defeats it yet — per the monster design doc it's meant to require a dash
-// mechanic that hasn't been built, so for now it's an obstacle to route
-// around rather than a killable enemy.
+// player on approach instead of dealing direct damage. Per the monster
+// design doc, normal contact never defeats it — only dashing through it
+// (the Overdrive dash's invincibility frames) does.
 export interface SporeSprite extends Rect {
   id: string;
   baseY: number;
   phase: number;
+  alive: boolean;
 }
 
 // A fixed environmental hazard embedded in the ground. Cycles charge -> blast
@@ -109,6 +109,12 @@ export interface Player extends Rect {
   invulnerableFor: number;
   /** Seconds remaining on the Spore Sprite proximity slow debuff. */
   slowFor: number;
+  /** Seconds remaining on an active dash; while >0, movement is a fixed horizontal burst. */
+  dashTimer: number;
+  /** Seconds until another dash may be started (ground or air). */
+  dashCooldown: number;
+  /** Consumed by dashing while airborne; refills on landing. Grounded dashes don't spend it. */
+  airDashAvailable: boolean;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -133,4 +139,5 @@ export interface InputState {
   left: boolean;
   right: boolean;
   jumpPressed: boolean;
+  dashPressed: boolean;
 }

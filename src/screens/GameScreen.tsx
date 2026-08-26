@@ -25,7 +25,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
   const level = useMemo(() => createLevel(), []);
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(level));
 
-  const inputRef = useRef<InputState>({ left: false, right: false, jumpPressed: false });
+  const inputRef = useRef<InputState>({ left: false, right: false, jumpPressed: false, dashPressed: false });
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
 
@@ -37,8 +37,10 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           left: inputRef.current.left,
           right: inputRef.current.right,
           jumpPressed: inputRef.current.jumpPressed,
+          dashPressed: inputRef.current.dashPressed,
         };
         inputRef.current.jumpPressed = false;
+        inputRef.current.dashPressed = false;
         setGameState((prev) => stepGame(prev, input, level, dt));
       }
       lastTimeRef.current = now;
@@ -100,6 +102,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         onRightIn={() => (inputRef.current.right = true)}
         onRightOut={() => (inputRef.current.right = false)}
         onJump={() => (inputRef.current.jumpPressed = true)}
+        onDash={() => (inputRef.current.dashPressed = true)}
       />
 
       {gameState.phase !== 'playing' && (

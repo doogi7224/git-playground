@@ -6,6 +6,10 @@ import {
   BIOCOIL_LEAP_VX_WILD,
   BIOCOIL_RANGE,
   BIOCOIL_WINDUP_WILD,
+  DASH_COOLDOWN,
+  DASH_DURATION,
+  DASH_INVULN,
+  DASH_SPEED,
   DEATH_Y,
   FLAME_LOB_ACTIVE,
   FLAME_LOB_CHARGE,
@@ -75,6 +79,9 @@ export function createInitialState(level: Level): GameState {
       facing: 1,
       invulnerableFor: 0,
       slowFor: 0,
+      dashTimer: 0,
+      dashCooldown: 0,
+      airDashAvailable: true,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -193,24 +200,43 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // this frame's move speed matches what's shown (no one-frame mismatch).
   const moveSpeed = prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED;
 
-  if (input.left && !input.right) {
-    player.vx = -moveSpeed;
-    player.facing = -1;
-  } else if (input.right && !input.left) {
-    player.vx = moveSpeed;
-    player.facing = 1;
-  } else if (player.vx > 0) {
-    player.vx = Math.max(0, player.vx - FRICTION * dt);
-  } else if (player.vx < 0) {
-    player.vx = Math.min(0, player.vx + FRICTION * dt);
+  // Dash: a fixed-velocity horizontal burst with brief invincibility (per the
+  // GDD's control spec). One charge while airborne, refilled on landing;
+  // grounded dashes are free but everything shares a short cooldown so
+  // mashing the button can't produce near-permanent invulnerability.
+  player.dashTimer = Math.max(0, prev.player.dashTimer - dt);
+  player.dashCooldown = Math.max(0, prev.player.dashCooldown - dt);
+  const canDash = player.dashTimer <= 0 && player.dashCooldown <= 0 && (player.onGround || player.airDashAvailable);
+  if (input.dashPressed && canDash) {
+    player.dashTimer = DASH_DURATION;
+    player.dashCooldown = DASH_COOLDOWN;
+    if (!player.onGround) player.airDashAvailable = false;
+    player.invulnerableFor = Math.max(player.invulnerableFor, DASH_INVULN);
   }
 
-  if (input.jumpPressed && player.onGround) {
-    player.vy = JUMP_VELOCITY;
-    player.onGround = false;
-  }
+  if (player.dashTimer > 0) {
+    player.vx = player.facing * DASH_SPEED;
+    player.vy = 0;
+  } else {
+    if (input.left && !input.right) {
+      player.vx = -moveSpeed;
+      player.facing = -1;
+    } else if (input.right && !input.left) {
+      player.vx = moveSpeed;
+      player.facing = 1;
+    } else if (player.vx > 0) {
+      player.vx = Math.max(0, player.vx - FRICTION * dt);
+    } else if (player.vx < 0) {
+      player.vx = Math.min(0, player.vx + FRICTION * dt);
+    }
 
-  player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
+    if (input.jumpPressed && player.onGround) {
+      player.vy = JUMP_VELOCITY;
+      player.onGround = false;
+    }
+
+    player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
+  }
 
   // Horizontal movement + collision
   player.x += player.vx * dt;
@@ -237,6 +263,10 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
         player.vy = 0;
       }
     }
+  }
+
+  if (player.onGround) {
+    player.airDashAvailable = true;
   }
 
   if (player.invulnerableFor > 0) {
@@ -409,10 +439,20 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return c;
   });
 
-  const sporeSprites = stepSporeSprites(prev.sporeSprites, dt);
+  const resolvedSporeSprites = stepSporeSprites(prev.sporeSprites, dt).map((s) => {
+    if (!s.alive) return s;
+    // Only a dash's invincibility frames let the player punch through it —
+    // normal contact never defeats it, matching the design doc.
+    if (player.dashTimer > 0 && rectIntersect(player, s)) {
+      score += 150;
+      return { ...s, alive: false };
+    }
+    return s;
+  });
   const sporeRadius = bloomState === 'wild' ? SPORE_RADIUS_WILD : SPORE_RADIUS_MECHANICAL;
   const playerCenter = rectCenter(player);
-  const nearSporeSprite = sporeSprites.some((s) => {
+  const nearSporeSprite = resolvedSporeSprites.some((s) => {
+    if (!s.alive) return false;
     const c = rectCenter(s);
     return Math.hypot(c.x - playerCenter.x, c.y - playerCenter.y) <= sporeRadius;
   });
@@ -444,7 +484,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     phase,
     bloomState,
     bloomNodeArmed,
-    sporeSprites,
+    sporeSprites: resolvedSporeSprites,
     pressurePistons,
     bioCoils: resolvedBioCoils,
     steamBlowers: resolvedSteamBlowers,

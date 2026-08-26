@@ -25,6 +25,11 @@ export const DEATH_Y = VIEWPORT_HEIGHT + 200;
 export const STARTING_LIVES = 3;
 export const INVULNERABLE_TIME = 1.2; // seconds after taking damage
 
+export const DASH_SPEED = 480; // px/s, fixed horizontal burst (overrides normal move speed)
+export const DASH_DURATION = 0.18; // seconds movement is locked to the dash burst
+export const DASH_INVULN = 0.15; // seconds of invincibility granted by a dash (per the GDD's control spec)
+export const DASH_COOLDOWN = 0.3; // seconds before another dash can start, to prevent spamming for near-permanent invulnerability
+
 export const SHIFT_NODE_SIZE = 28;
 
 export const SPORE_SPRITE_WIDTH = 28;
