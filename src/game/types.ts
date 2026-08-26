@@ -99,6 +99,21 @@ export interface CorpsePlatform extends Rect {
   timeLeft: number;
 }
 
+// A short-lived, presentation-only record of "something happened here" —
+// physics.ts appends one per stomp/hit/pickup and never reads the list back,
+// so this can't influence gameplay; it only exists for effect components
+// (particle bursts etc.) to render against. Same timeLeft-countdown pattern
+// as CorpsePlatform.
+export type EffectKind = 'impact' | 'hit' | 'pickup' | 'gearPickup';
+
+export interface EffectEvent {
+  id: string;
+  kind: EffectKind;
+  x: number;
+  y: number;
+  timeLeft: number;
+}
+
 // A fixed anchor the player can grapple onto with Root-Hook. Unlike a free
 // grapple, it only responds at these designated points, so the level
 // designer controls exactly where a swing can happen.
@@ -202,6 +217,10 @@ export interface GameState {
   corpsePlatforms: CorpsePlatform[];
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
   checkpointIndex: number;
+  /** Recent stomp/hit/pickup moments for effect components to render; never read by physics itself. */
+  effects: EffectEvent[];
+  /** Monotonic counter used only to mint unique EffectEvent ids. */
+  effectSeq: number;
 }
 
 export interface InputState {

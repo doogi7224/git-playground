@@ -21,6 +21,7 @@ import {
   DASH_INVULN,
   DASH_SPEED,
   DEATH_Y,
+  EFFECT_DURATION,
   ENEMY_CHARGE_SPEED,
   ENEMY_DETECT_RANGE,
   ENEMY_SPEED,
@@ -75,6 +76,8 @@ import {
   BloomState,
   CogPickup,
   CorpsePlatform,
+  EffectEvent,
+  EffectKind,
   GamePhase,
   GameState,
   InputState,
@@ -146,6 +149,8 @@ export function createInitialState(level: Level): GameState {
     cogPickups: level.cogPickups.map((c) => ({ ...c })),
     corpsePlatforms: [],
     checkpointIndex: 0,
+    effects: [],
+    effectSeq: 0,
   };
 }
 
@@ -303,6 +308,18 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     .map((p) => ({ ...p, timeLeft: p.timeLeft - dt }))
     .filter((p) => p.timeLeft > 0);
   const platforms: (Platform | CorpsePlatform)[] = [...activePlatforms(level, bloomState), ...decayedCorpsePlatforms];
+
+  // Same decay pattern as corpse platforms, for the read-only effect log
+  // consumed by particle-burst components — physics never reads this back.
+  const decayedEffects: EffectEvent[] = prev.effects
+    .map((fx) => ({ ...fx, timeLeft: fx.timeLeft - dt }))
+    .filter((fx) => fx.timeLeft > 0);
+  const newEffects: EffectEvent[] = [];
+  let effectSeq = prev.effectSeq;
+  const pushEffect = (kind: EffectKind, x: number, y: number) => {
+    newEffects.push({ id: `fx-${effectSeq}`, kind, x, y, timeLeft: EFFECT_DURATION });
+    effectSeq++;
+  };
 
   // Root-Hook: attach on demand to a nearby fixed root point, then a simple
   // pendulum takes over position/velocity entirely (no normal movement,
@@ -545,11 +562,13 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = STOMP_BOUNCE;
       score += 100;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', e.x + e.width / 2, e.y);
       newCorpsePlatforms.push({ id: `corpse-${e.id}`, x: e.x, y: e.y, width: e.width, height: e.height, source: 'enemy', timeLeft: CORPSE_PLATFORM_DURATION });
       return { ...e, alive: false };
     }
 
     if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
       lives = applyHit(player, lives, respawnPoint);
     }
     return e;
@@ -566,6 +585,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = STOMP_BOUNCE;
       score += 100;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', c.x + c.width / 2, c.y);
       newCorpsePlatforms.push({ id: `corpse-${c.id}`, x: c.x, y: c.y, width: c.width, height: c.height, source: 'bioCoil', timeLeft: CORPSE_PLATFORM_DURATION });
       return { ...c, alive: false };
     }
@@ -575,6 +595,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     // damage same as any other hit (which already sends the player back to
     // the level start, so there's no separate "bounce" velocity to track).
     if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
       lives = applyHit(player, lives, respawnPoint);
     }
     return c;
@@ -597,6 +618,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isFlameLobActive(b)) {
       const lobZone: Rect = { x: b.x - FLAME_LOB_RANGE, y: b.y - 20, width: b.width + FLAME_LOB_RANGE * 2, height: b.height + 20 };
       if (rectIntersect(player, lobZone) && player.invulnerableFor <= 0) {
+        pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
         lives = applyHit(player, lives, respawnPoint);
       }
     }
@@ -607,6 +629,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
+      pushEffect('impact', b.x + b.width / 2, b.y);
       // Cap closed (mechanical): stomp just bounces off, no effect on the boss.
       if (bloomState !== 'wild') return b;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
@@ -630,6 +653,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
 
     if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
       lives = applyHit(player, lives, respawnPoint);
     }
     return b;
@@ -640,6 +664,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (!isPistonDangerous(piston, bloomState)) continue;
     if (!rectIntersect(player, piston)) continue;
     if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
       lives = applyHit(player, lives, respawnPoint);
     }
   }
@@ -654,6 +679,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.equippedBody === 'magnet' && Math.hypot(rectCenter(c).x - playerCenter.x, rectCenter(c).y - playerCenter.y) <= COG_MAGNET_RADIUS;
     if (rectIntersect(player, c) || inMagnetRange) {
       score += overdriveActive ? 10 * OVERDRIVE_COIN_MULT : 10;
+      pushEffect('pickup', c.x + c.width / 2, c.y + c.height / 2);
       return { ...c, collected: true };
     }
     return c;
@@ -669,6 +695,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     } else if (c.cogType === 'mirror') {
       player.equippedHead = c.cogType;
     }
+    pushEffect('gearPickup', c.x + c.width / 2, c.y + c.height / 2);
     return { ...c, collected: true };
   });
 
@@ -678,6 +705,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     // normal contact never defeats it, matching the design doc.
     if (player.dashTimer > 0 && rectIntersect(player, s)) {
       score += 150;
+      pushEffect('impact', s.x + s.width / 2, s.y + s.height / 2);
       return { ...s, alive: false };
     }
     return s;
@@ -757,6 +785,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     cogPickups: resolvedCogPickups,
     corpsePlatforms: [...decayedCorpsePlatforms, ...newCorpsePlatforms],
     checkpointIndex,
+    effects: [...decayedEffects, ...newEffects],
+    effectSeq,
   };
 }
 

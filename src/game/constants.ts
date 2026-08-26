@@ -132,3 +132,8 @@ export const OVERDRIVE_WALLJUMP_GAIN = 10; // GDD lists wall-jump alongside dash
 export const CORPSE_PLATFORM_DURATION = 3; // seconds, per the doc's "3초간 임시 발판" for all three
 export const BIOCOIL_CORPSE_BOUNCE_MULT = 1.3; // doc: jumping off a defeated Bio-Coil's spring gives +30% jump height
 export const STEAMBLOWER_CORPSE_WIDTH_MULT = 2.5; // doc calls its collapse a "wide" platform, vs. the other two using their own body size
+
+// EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
+// gameplay balance number. Sized to comfortably outlast the burst animations
+// that render against these events before physics prunes them.
+export const EFFECT_DURATION = 0.5;
