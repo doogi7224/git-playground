@@ -60,6 +60,7 @@ import {
   InputState,
   Level,
   Platform,
+  Player,
   PressurePiston,
   Rect,
   SporeSprite,
@@ -121,6 +122,22 @@ export function createInitialState(level: Level): GameState {
 
 function rectCenter(r: Rect): { x: number; y: number } {
   return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+}
+
+// Shared by every damage source (enemies, Bio-Coil, Steam Blower, Pressure
+// Piston, falling into a pit): mutates `player` in place and returns the new
+// life count. Callers decide *whether* a hit applies (most gate it behind
+// invulnerableFor <= 0; a pit fall doesn't), this just applies one uniformly.
+function applyHit(player: Player, lives: number, respawnPoint: { x: number; y: number }): number {
+  lives -= 1;
+  player.invulnerableFor = INVULNERABLE_TIME;
+  if (lives > 0) {
+    player.x = respawnPoint.x;
+    player.y = respawnPoint.y;
+    player.vx = 0;
+    player.vy = 0;
+  }
+  return lives;
 }
 
 function stepSporeSprites(prev: SporeSprite[], dt: number): SporeSprite[] {
@@ -402,14 +419,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
 
     if (player.invulnerableFor <= 0) {
-      lives -= 1;
-      player.invulnerableFor = INVULNERABLE_TIME;
-      if (lives > 0) {
-        player.x = respawnPoint.x;
-        player.y = respawnPoint.y;
-        player.vx = 0;
-        player.vy = 0;
-      }
+      lives = applyHit(player, lives, respawnPoint);
     }
     return e;
   });
@@ -433,14 +443,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     // damage same as any other hit (which already sends the player back to
     // the level start, so there's no separate "bounce" velocity to track).
     if (player.invulnerableFor <= 0) {
-      lives -= 1;
-      player.invulnerableFor = INVULNERABLE_TIME;
-      if (lives > 0) {
-        player.x = respawnPoint.x;
-        player.y = respawnPoint.y;
-        player.vx = 0;
-        player.vy = 0;
-      }
+      lives = applyHit(player, lives, respawnPoint);
     }
     return c;
   });
@@ -462,14 +465,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isFlameLobActive(b)) {
       const lobZone: Rect = { x: b.x - FLAME_LOB_RANGE, y: b.y - 20, width: b.width + FLAME_LOB_RANGE * 2, height: b.height + 20 };
       if (rectIntersect(player, lobZone) && player.invulnerableFor <= 0) {
-        lives -= 1;
-        player.invulnerableFor = INVULNERABLE_TIME;
-        if (lives > 0) {
-          player.x = respawnPoint.x;
-          player.y = respawnPoint.y;
-          player.vx = 0;
-          player.vy = 0;
-        }
+        lives = applyHit(player, lives, respawnPoint);
       }
     }
 
@@ -492,14 +488,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
 
     if (player.invulnerableFor <= 0) {
-      lives -= 1;
-      player.invulnerableFor = INVULNERABLE_TIME;
-      if (lives > 0) {
-        player.x = respawnPoint.x;
-        player.y = respawnPoint.y;
-        player.vx = 0;
-        player.vy = 0;
-      }
+      lives = applyHit(player, lives, respawnPoint);
     }
     return b;
   });
@@ -509,14 +498,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (!isPistonDangerous(piston, bloomState)) continue;
     if (!rectIntersect(player, piston)) continue;
     if (player.invulnerableFor <= 0) {
-      lives -= 1;
-      player.invulnerableFor = INVULNERABLE_TIME;
-      if (lives > 0) {
-        player.x = respawnPoint.x;
-        player.y = respawnPoint.y;
-        player.vx = 0;
-        player.vy = 0;
-      }
+      lives = applyHit(player, lives, respawnPoint);
     }
   }
 
@@ -568,14 +550,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   player.comboIdleFor = comboIdleFor;
 
   if (player.y > DEATH_Y) {
-    lives -= 1;
-    if (lives > 0) {
-      player.x = respawnPoint.x;
-      player.y = respawnPoint.y;
-      player.vx = 0;
-      player.vy = 0;
-      player.invulnerableFor = INVULNERABLE_TIME;
-    }
+    lives = applyHit(player, lives, respawnPoint);
   }
 
   if (lives <= 0) {
