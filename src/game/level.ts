@@ -27,6 +27,8 @@ const groundSegments: [number, number][] = [
   [860, 1400],
   [1520, 2200],
   [2340, 3200],
+  [3350, 3900],
+  [4030, 4600],
 ];
 
 function makeGroundPlatforms(): Platform[] {
@@ -50,16 +52,24 @@ const floatingPlatforms: Platform[] = [
   { id: 'p8', x: 2260, y: GROUND_Y - 60, width: 90, height: 20 },
   { id: 'p9', x: 2500, y: GROUND_Y - 110, width: 120, height: 20 },
   { id: 'p10', x: 2800, y: GROUND_Y - 70, width: 110, height: 20 },
+  // Area 2, beyond the original flag position.
+  { id: 'p11', x: 3220, y: GROUND_Y - 70, width: 100, height: 20 }, // bridges the pit into area 2
+  { id: 'p12', x: 3450, y: GROUND_Y - 110, width: 100, height: 20 },
+  { id: 'p13', x: 3700, y: GROUND_Y - 70, width: 90, height: 20 },
+  { id: 'p14', x: 3920, y: GROUND_Y - 60, width: 90, height: 20 }, // bridges the pit before ground-5
+  { id: 'p15', x: 4100, y: GROUND_Y - 100, width: 110, height: 20 },
+  { id: 'p16', x: 4540, y: GROUND_Y - 60, width: 60, height: 20 },
 ];
 
 // Only exist once the world is shifted into the "wild" bloom state — bonus
-// platforms that demonstrate the Bloom Shift mechanic. Three zones are
-// spread across the level: an early tutorial zone, the original mid-level
-// zone, and a late zone just before the flag.
+// platforms that demonstrate the Bloom Shift mechanic. Four zones are spread
+// across the level: an early tutorial zone, the original mid-level zone, a
+// late zone before the original flag, and one more in area 2.
 const bloomPlatforms: Platform[] = [
   { id: 'bloom-early', x: 470, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
   { id: 'bloom1', x: 1910, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
   { id: 'bloom-late', x: 2650, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
+  { id: 'bloom-final', x: 4450, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
 ];
 
 function makeShiftNodes(): ShiftNode[] {
@@ -67,6 +77,7 @@ function makeShiftNodes(): ShiftNode[] {
     { id: 'shift-early', x: 220, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
     { id: 'shift1', x: 1700, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
     { id: 'shift-late', x: 2450, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
+    { id: 'shift-final', x: 4250, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
   ];
 }
 
@@ -74,6 +85,7 @@ function makeSporeSprites(): SporeSprite[] {
   const defs: [string, number, number, number][] = [
     ['spore1', 1150, GROUND_Y - 160, 0],
     ['spore2', 2050, GROUND_Y - 150, Math.PI],
+    ['spore3', 3960, GROUND_Y - 140, Math.PI / 2],
   ];
   return defs.map(([id, x, baseY, phase]) => ({
     id,
@@ -88,7 +100,10 @@ function makeSporeSprites(): SporeSprite[] {
 }
 
 function makePressurePistons(): PressurePiston[] {
-  const defs: [string, number][] = [['piston1', 650]];
+  const defs: [string, number][] = [
+    ['piston1', 650],
+    ['piston2', 4300],
+  ];
   return defs.map(([id, x]) => ({
     id,
     x,
@@ -140,6 +155,8 @@ function makeEnemies(): Enemy[] {
     ['e3', 1560, 2000, GROUND_Y],
     ['e4', 2400, 2700, GROUND_Y],
     ['e5', 2900, 3150, GROUND_Y],
+    ['e6', 3400, 3850, GROUND_Y],
+    ['e7', 4060, 4550, GROUND_Y],
   ];
   return defs.map(([id, minX, maxX, groundY]) => ({
     id,
@@ -176,6 +193,15 @@ function makeCoins(): Coin[] {
     [520, GROUND_Y - 180],
     [2670, GROUND_Y - 170],
     [2700, GROUND_Y - 170],
+    [3250, GROUND_Y - 100],
+    [3480, GROUND_Y - 140],
+    [3510, GROUND_Y - 140],
+    [3730, GROUND_Y - 100],
+    [4130, GROUND_Y - 130],
+    [4160, GROUND_Y - 130],
+    [4470, GROUND_Y - 170],
+    [4500, GROUND_Y - 170],
+    [4550, GROUND_Y - 90],
   ];
   return coinDefs.map(([x, y], i) => ({
     id: `coin-${i}`,
@@ -189,13 +215,13 @@ function makeCoins(): Coin[] {
 
 export function createLevel(): Level {
   return {
-    worldWidth: 3300,
+    worldWidth: 4700,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
-    flag: { x: 3220, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
+    flag: { x: 4620, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
     shiftNodes: makeShiftNodes(),
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
