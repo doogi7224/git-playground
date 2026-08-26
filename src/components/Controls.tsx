@@ -126,7 +126,16 @@ export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, o
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
       onResponderGrant={handleTouches}
+      // onResponderGrant only fires for the *first* touch that establishes
+      // the responder; every touchstart after that (a second finger landing
+      // while the first is still down) is delivered as onResponderStart
+      // instead — without it, a finger added after another was already held
+      // is silently ignored. Likewise a partial release (one of several
+      // fingers lifting while others remain down) fires onResponderEnd, not
+      // onResponderRelease (that's reserved for the *last* finger lifting).
+      onResponderStart={handleTouches}
       onResponderMove={handleTouches}
+      onResponderEnd={handleTouches}
       onResponderRelease={handleTouches}
       onResponderTerminate={handleTouches}
     >
