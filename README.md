@@ -1,6 +1,6 @@
-# Pixel Hopper
+# Gearwood: The Broken Spring (기어우드: 파괴된 태엽)
 
-React Native(Expo)로 만든 사이드스크롤 플랫포머 게임입니다. 좌우로 이동하고 점프해서 적을 밟아 처치하고, 코인을 모아 깃발까지 도달하면 클리어됩니다.
+React Native(Expo)로 만든 사이드스크롤 플랫포머 게임입니다. 반기계 정령 스프라우트가 되어 좌우로 이동하고 점프해서 코그마이트를 밟아 처치하고, 코인을 모아 기어숲의 깃발까지 도달하면 클리어됩니다. (기획 배경은 [GEARWOOD 기획서](./docs/gearwood-design-doc.md) 참고)
 
 ## 실행 방법
 

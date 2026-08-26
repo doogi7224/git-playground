@@ -10,7 +10,11 @@ export default function PlatformView({ platform }: { platform: Platform }) {
   if (isGround) {
     return (
       <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-        <LinearGradient colors={[palette.grassTop, palette.grassMid]} style={styles.grassCap} />
+        <LinearGradient colors={[palette.grassTop, palette.grassMid]} style={styles.grassCap}>
+          {Array.from({ length: Math.ceil(platform.width / 46) }, (_, i) => (
+            <View key={i} style={[styles.rivet, { left: i * 46 + 20 }]} />
+          ))}
+        </LinearGradient>
         <View style={styles.dirtBody}>
           {Array.from({ length: Math.ceil(platform.width / 46) }, (_, i) => (
             <View key={i} style={[styles.dirtSeam, { left: i * 46 + 10 }]} />
@@ -30,6 +34,9 @@ export default function PlatformView({ platform }: { platform: Platform }) {
         {Array.from({ length: Math.max(1, Math.round(platform.width / 34)) }, (_, i) => (
           <View key={i} style={[styles.plankSeam, { left: i * 34 }]} />
         ))}
+        {Array.from({ length: Math.max(1, Math.round(platform.width / 34)) }, (_, i) => (
+          <View key={`r${i}`} style={[styles.rivet, { left: i * 34 + 15, top: '50%', marginTop: -2 }]} />
+        ))}
       </LinearGradient>
       <View style={styles.plankShadow} />
     </View>
@@ -44,6 +51,14 @@ const styles = StyleSheet.create({
     height: 10,
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
+  },
+  rivet: {
+    position: 'absolute',
+    top: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   dirtBody: {
     flex: 1,

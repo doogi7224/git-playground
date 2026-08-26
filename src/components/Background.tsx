@@ -19,6 +19,24 @@ function Cloud({ x, y, scale }: { x: number; y: number; scale: number }) {
   );
 }
 
+function GearSilhouette({ x, size }: { x: number; size: number }) {
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: x,
+        bottom: -size * 0.3,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: size * 0.12,
+        borderColor: 'rgba(140, 100, 50, 0.35)',
+        borderStyle: 'dashed',
+      }}
+    />
+  );
+}
+
 function Hill({ x, size, color }: { x: number; size: number; color: string }) {
   return (
     <View
@@ -58,6 +76,15 @@ export default function Background({ cameraX, worldWidth, viewportHeight }: Prop
     [worldWidth]
   );
 
+  const gears = useMemo(
+    () =>
+      Array.from({ length: Math.ceil(worldWidth / 520) }, (_, i) => ({
+        x: 150 + i * 520 + ((i * 41) % 90),
+        size: 90 + ((i * 53) % 50),
+      })),
+    [worldWidth]
+  );
+
   const nearHills = useMemo(
     () =>
       Array.from({ length: Math.ceil(worldWidth / 320) }, (_, i) => ({
@@ -83,6 +110,9 @@ export default function Background({ cameraX, worldWidth, viewportHeight }: Prop
         ))}
         {farHills.map((h, i) => (
           <Hill key={`far-${i}`} x={h.x} size={h.size} color={palette.hillFar} />
+        ))}
+        {gears.map((g, i) => (
+          <GearSilhouette key={`gear-${i}`} x={g.x} size={g.size} />
         ))}
       </View>
 

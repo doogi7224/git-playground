@@ -3,6 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { Player } from '../game/types';
 import { palette } from '../theme';
 
+// Sprout: half-mechanical, half-nature spirit. A rounded root/wood body with
+// a glowing moss-green LED face and a brass gear-core visible through a
+// glass chest window, topped with a small leaf antenna.
 export default function PlayerView({ player }: { player: Player }) {
   const blinking = player.invulnerableFor > 0 && Math.floor(player.invulnerableFor * 10) % 2 === 0;
 
@@ -22,21 +25,24 @@ export default function PlayerView({ player }: { player: Player }) {
         transform: [{ scaleX: player.facing * scaleX }, { scaleY }],
       }}
     >
-      <View style={styles.shoeLeft} />
-      <View style={styles.shoeRight} />
+      <View style={styles.antennaStemLeft} />
+      <View style={styles.antennaLeafLeft} />
+      <View style={styles.antennaStemRight} />
+      <View style={styles.antennaLeafRight} />
+
       <View style={styles.body}>
-        <View style={styles.strapLeft} />
-        <View style={styles.strapRight} />
-        <View style={styles.belly} />
-      </View>
-      <View style={styles.head}>
-        <View style={styles.hair} />
-        <View style={styles.cap} />
-        <View style={styles.capBrim} />
-        <View style={styles.face}>
+        <View style={styles.facePlate}>
+          <View style={styles.eye} />
           <View style={styles.eye} />
         </View>
+        <View style={styles.coreRing}>
+          <View style={styles.coreGlow} />
+          <View style={styles.coreTooth} />
+        </View>
       </View>
+
+      <View style={styles.footLeft} />
+      <View style={styles.footRight} />
     </View>
   );
 }
@@ -44,113 +50,119 @@ export default function PlayerView({ player }: { player: Player }) {
 const styles = StyleSheet.create({
   body: {
     position: 'absolute',
-    bottom: 4,
-    left: 2,
-    right: 2,
-    height: '58%',
+    top: 4,
+    left: 1,
+    right: 1,
+    bottom: 6,
     backgroundColor: palette.playerBody,
-    borderRadius: 8,
+    borderRadius: 9,
     borderWidth: 2,
     borderColor: palette.playerBodyDark,
     overflow: 'hidden',
   },
-  belly: {
+  facePlate: {
     position: 'absolute',
-    left: '20%',
-    right: '20%',
-    top: '25%',
-    bottom: 0,
-    backgroundColor: palette.playerBelly,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
-  },
-  strapLeft: {
-    position: 'absolute',
-    left: '22%',
-    top: 0,
-    width: '14%',
-    height: '55%',
-    backgroundColor: palette.playerBodyDark,
-  },
-  strapRight: {
-    position: 'absolute',
-    right: '22%',
-    top: 0,
-    width: '14%',
-    height: '55%',
-    backgroundColor: palette.playerBodyDark,
-  },
-  head: {
-    position: 'absolute',
-    top: 0,
-    left: 1,
-    right: 1,
-    height: '52%',
-  },
-  hair: {
-    position: 'absolute',
-    left: 2,
-    right: 2,
-    bottom: 0,
-    top: '35%',
-    backgroundColor: palette.playerHair,
-    borderRadius: 8,
-  },
-  cap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: '68%',
-    backgroundColor: palette.playerBody,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderWidth: 2,
-    borderColor: palette.playerBodyDark,
-  },
-  capBrim: {
-    position: 'absolute',
-    right: -6,
-    top: '40%',
-    width: 16,
-    height: 7,
-    backgroundColor: palette.playerBodyDark,
-    borderRadius: 3,
-  },
-  face: {
-    position: 'absolute',
-    right: 2,
-    top: '48%',
-    width: '58%',
-    height: '46%',
+    top: 4,
+    left: '19%',
+    right: '19%',
+    height: 10,
     backgroundColor: palette.playerSkin,
-    borderRadius: 7,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: palette.playerBodyDark,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
   },
   eye: {
-    position: 'absolute',
-    top: '25%',
-    right: '18%',
     width: 4,
-    height: 5,
+    height: 6,
     borderRadius: 2,
-    backgroundColor: '#26221c',
+    backgroundColor: palette.playerHair,
   },
-  shoeLeft: {
+  coreRing: {
     position: 'absolute',
-    left: -1,
-    bottom: 0,
-    width: '46%',
-    height: 6,
-    backgroundColor: '#4a2e14',
-    borderRadius: 3,
+    top: 16,
+    left: '50%',
+    marginLeft: -6,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderWidth: 2,
+    borderColor: palette.playerBodyDark,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  shoeRight: {
-    position: 'absolute',
-    right: -1,
-    bottom: 0,
-    width: '46%',
+  coreGlow: {
+    width: 6,
     height: 6,
-    backgroundColor: '#4a2e14',
     borderRadius: 3,
+    backgroundColor: palette.coinGold,
+  },
+  coreTooth: {
+    position: 'absolute',
+    top: -3,
+    width: 2,
+    height: 3,
+    backgroundColor: palette.woodDark,
+    borderRadius: 1,
+  },
+  antennaStemLeft: {
+    position: 'absolute',
+    top: -6,
+    left: '30%',
+    width: 2,
+    height: 8,
+    backgroundColor: palette.woodDark,
+  },
+  antennaLeafLeft: {
+    position: 'absolute',
+    top: -11,
+    left: '30%',
+    marginLeft: -4,
+    width: 9,
+    height: 7,
+    backgroundColor: palette.playerHair,
+    borderRadius: 5,
+    transform: [{ rotate: '-25deg' }],
+  },
+  antennaStemRight: {
+    position: 'absolute',
+    top: -4,
+    right: '30%',
+    width: 2,
+    height: 6,
+    backgroundColor: palette.woodDark,
+  },
+  antennaLeafRight: {
+    position: 'absolute',
+    top: -9,
+    right: '30%',
+    marginRight: -4,
+    width: 8,
+    height: 6,
+    backgroundColor: palette.playerHair,
+    borderRadius: 5,
+    transform: [{ rotate: '20deg' }],
+  },
+  footLeft: {
+    position: 'absolute',
+    left: 3,
+    bottom: 0,
+    width: 11,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.woodDark,
+  },
+  footRight: {
+    position: 'absolute',
+    right: 3,
+    bottom: 0,
+    width: 11,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.woodDark,
   },
 });

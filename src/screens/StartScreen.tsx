@@ -17,8 +17,9 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
       <View style={[styles.hill, styles.hillFar]} />
       <View style={[styles.hill, styles.hillNear]} />
 
-      <Text style={styles.title}>Pixel Hopper</Text>
-      <Text style={styles.subtitle}>점프해서 적을 밟고, 코인을 모아 깃발까지 도착하세요!</Text>
+      <Text style={styles.title}>GEARWOOD</Text>
+      <Text style={styles.tagline}>The Broken Spring · 파괴된 태엽</Text>
+      <Text style={styles.subtitle}>새싹 스프라우트와 함께 점프해서 코그마이트를 밟고, 기어숲의 깃발까지 도착하세요!</Text>
 
       <Pressable onPressIn={pressIn} onPressOut={pressOut} onPress={onStart}>
         <Animated.View style={[styles.startButtonShadow, { transform: [{ scale }] }]}>
@@ -84,6 +85,17 @@ const styles = StyleSheet.create({
     textShadowColor: palette.uiPrimaryDark,
     textShadowOffset: { width: 3, height: 3 },
     textShadowRadius: 0,
+  },
+  tagline: {
+    marginTop: -8,
+    fontSize: 16,
+    fontStyle: 'italic',
+    fontWeight: '600',
+    color: palette.uiPrimary,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowRadius: 2,
+    textShadowOffset: { width: 1, height: 1 },
   },
   subtitle: {
     fontSize: 15,
