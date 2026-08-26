@@ -1,5 +1,6 @@
 import {
   AIR_CONTROL_MULT,
+  BIOCOIL_CORPSE_BOUNCE_MULT,
   BIOCOIL_LANDED_DURATION,
   BIOCOIL_LAUNCH_VY_MECHANICAL,
   BIOCOIL_LAUNCH_VY_WILD,
@@ -14,6 +15,7 @@ import {
   COG_SPRING_JUMP_MULT,
   COG_STEAMBOOST_EXTRA_DURATION,
   COG_WALLJUMP_HORIZ_MULT,
+  CORPSE_PLATFORM_DURATION,
   DASH_COOLDOWN,
   DASH_DURATION,
   DASH_INVULN,
@@ -58,6 +60,7 @@ import {
   STEAM_GUST_CYCLE,
   STEAM_GUST_KNOCKBACK,
   STEAM_GUST_RANGE,
+  STEAMBLOWER_CORPSE_WIDTH_MULT,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
   WALL_SLIDE_FALL_MULT,
@@ -67,6 +70,7 @@ import {
   BioCoil,
   BloomState,
   CogPickup,
+  CorpsePlatform,
   GamePhase,
   GameState,
   InputState,
@@ -122,6 +126,7 @@ export function createInitialState(level: Level): GameState {
       steamBoostTimer: 0,
       mirrorTrail: [],
       touchingWall: 0,
+      standingOnBounceCorpse: false,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -135,6 +140,7 @@ export function createInitialState(level: Level): GameState {
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
     steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
     cogPickups: level.cogPickups.map((c) => ({ ...c })),
+    corpsePlatforms: [],
     checkpointIndex: 0,
   };
 }
@@ -284,7 +290,15 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   } else if (!touchingShiftNode) {
     bloomNodeArmed = true;
   }
-  const platforms = activePlatforms(level, bloomState);
+  // Post-defeat corpse platforms: decayed from prev's list so this frame's
+  // collision reflects how much time was left going into it. Newly-defeated
+  // enemies below add to a fresh list instead, available starting next frame
+  // — consistent with the "you can't stand on something created later this
+  // same frame" pattern already used for other same-frame state changes here.
+  const decayedCorpsePlatforms: CorpsePlatform[] = prev.corpsePlatforms
+    .map((p) => ({ ...p, timeLeft: p.timeLeft - dt }))
+    .filter((p) => p.timeLeft > 0);
+  const platforms: (Platform | CorpsePlatform)[] = [...activePlatforms(level, bloomState), ...decayedCorpsePlatforms];
 
   // Root-Hook: attach on demand to a nearby fixed root point, then a simple
   // pendulum takes over position/velocity entirely (no normal movement,
@@ -387,7 +401,9 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       }
 
       if (input.jumpPressed && player.onGround) {
-        player.vy = jumpVelocity;
+        // Bio-Coil corpse platform: a defeated Bio-Coil's spring gives the
+        // next jump a bonus bounce, per the monster design doc.
+        player.vy = jumpVelocity * (player.standingOnBounceCorpse ? BIOCOIL_CORPSE_BOUNCE_MULT : 1);
         player.onGround = false;
       } else if (input.jumpPressed && player.touchingWall !== 0) {
         // Wall-jump: uses the pre-frame wall-touch side (set by last frame's
@@ -428,21 +444,31 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = MAX_FALL_SPEED * WALL_SLIDE_FALL_MULT;
     }
 
-    // Vertical movement + collision
+    // Vertical movement + collision. Branching purely on player.vy's sign
+    // ("positive = landing on top, negative = bonked a ceiling from below")
+    // ordinarily matches how the player actually approached the platform —
+    // but a stomp bounce can leave vy pointing the "wrong" way relative to a
+    // platform that appears exactly at the bounce's origin (a freshly-spawned
+    // corpse platform always does). Guarding each branch with the pre-move
+    // position confirms the player was actually on that side beforehand.
     player.onGround = false;
+    let landedOnBounceCorpse = false;
+    const preMoveBottom = player.y + player.height;
     player.y += player.vy * dt;
     for (const plat of platforms) {
       if (rectIntersect(player, plat)) {
-        if (player.vy > 0) {
+        if (player.vy > 0 && preMoveBottom <= plat.y) {
           player.y = plat.y - player.height;
           player.vy = 0;
           player.onGround = true;
-        } else if (player.vy < 0) {
+          if ('source' in plat && plat.source === 'bioCoil') landedOnBounceCorpse = true;
+        } else if (player.vy < 0 && preMoveBottom - player.height >= plat.y + plat.height) {
           player.y = plat.y + plat.height;
           player.vy = 0;
         }
       }
     }
+    player.standingOnBounceCorpse = landedOnBounceCorpse;
 
     if (player.onGround || player.touchingWall !== 0) {
       player.airDashAvailable = true;
@@ -481,6 +507,10 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const wasFalling = prev.player.vy > 0;
   const prevBottom = prev.player.y + prev.player.height;
 
+  // Populated by each defeat below; combined with this frame's decayed
+  // corpse platforms in the return value (available starting next frame).
+  const newCorpsePlatforms: CorpsePlatform[] = [];
+
   const resolvedEnemies = enemies.map((e) => {
     if (!e.alive) return e;
     if (!rectIntersect(player, e)) return e;
@@ -491,6 +521,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = STOMP_BOUNCE;
       score += 100;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
+      newCorpsePlatforms.push({ id: `corpse-${e.id}`, x: e.x, y: e.y, width: e.width, height: e.height, source: 'enemy', timeLeft: CORPSE_PLATFORM_DURATION });
       return { ...e, alive: false };
     }
 
@@ -511,6 +542,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = STOMP_BOUNCE;
       score += 100;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
+      newCorpsePlatforms.push({ id: `corpse-${c.id}`, x: c.x, y: c.y, width: c.width, height: c.height, source: 'bioCoil', timeLeft: CORPSE_PLATFORM_DURATION });
       return { ...c, alive: false };
     }
 
@@ -557,6 +589,16 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       const hp = b.hp - 1;
       if (hp <= 0) {
         score += 300;
+        const corpseWidth = b.width * STEAMBLOWER_CORPSE_WIDTH_MULT;
+        newCorpsePlatforms.push({
+          id: `corpse-${b.id}`,
+          x: b.x + b.width / 2 - corpseWidth / 2,
+          y: b.y + b.height - 16,
+          width: corpseWidth,
+          height: 16,
+          source: 'steamBlower',
+          timeLeft: CORPSE_PLATFORM_DURATION,
+        });
         return { ...b, hp: 0, alive: false };
       }
       score += 50;
@@ -689,6 +731,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     bioCoils: resolvedBioCoils,
     steamBlowers: resolvedSteamBlowers,
     cogPickups: resolvedCogPickups,
+    corpsePlatforms: [...decayedCorpsePlatforms, ...newCorpsePlatforms],
     checkpointIndex,
   };
 }

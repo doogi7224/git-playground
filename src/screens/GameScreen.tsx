@@ -7,6 +7,7 @@ import CheckpointView from '../components/CheckpointView';
 import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
+import CorpsePlatformView from '../components/CorpsePlatformView';
 import EnemyView from '../components/EnemyView';
 import FlagView from '../components/FlagView';
 import Hud from '../components/Hud';
@@ -79,6 +80,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             .map((p) => (
               <PlatformView key={p.id} platform={p} />
             ))}
+          {gameState.corpsePlatforms.map((p) => (
+            <CorpsePlatformView key={p.id} platform={p} />
+          ))}
           {level.shiftNodes.map((n) => (
             <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
           ))}

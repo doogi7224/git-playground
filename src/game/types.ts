@@ -86,6 +86,17 @@ export interface SteamBlower extends Rect {
   alive: boolean;
 }
 
+// A defeated monster's remains, per the monster design doc: Cogmite, Bio-Coil,
+// and Steam Blower all leave a temporary solid platform for a few seconds
+// after being defeated. Bio-Coil's is additionally a bonus-bounce spring.
+export type CorpsePlatformSource = 'enemy' | 'bioCoil' | 'steamBlower';
+
+export interface CorpsePlatform extends Rect {
+  id: string;
+  source: CorpsePlatformSource;
+  timeLeft: number;
+}
+
 // A fixed anchor the player can grapple onto with Root-Hook. Unlike a free
 // grapple, it only responds at these designated points, so the level
 // designer controls exactly where a swing can happen.
@@ -165,6 +176,8 @@ export interface Player extends Rect {
   mirrorTrail: { x: number; y: number; age: number }[];
   /** While airborne and pressed against a wall (wall-slide), the direction a wall-jump would push (away from the wall); 0 = not touching one. Consumed by a wall-jump. */
   touchingWall: -1 | 0 | 1;
+  /** True while standing on a defeated Bio-Coil's corpse platform, which gives the next ground-jump a bonus bounce. */
+  standingOnBounceCorpse: boolean;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -184,6 +197,7 @@ export interface GameState {
   bioCoils: BioCoil[];
   steamBlowers: SteamBlower[];
   cogPickups: CogPickup[];
+  corpsePlatforms: CorpsePlatform[];
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
   checkpointIndex: number;
 }
