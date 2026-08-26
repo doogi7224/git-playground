@@ -25,6 +25,8 @@ sheet showing idle, run, jump, and dash animations, white background,
 8k resolution, Unity game asset --ar 16:9 --v 6.0
 ```
 
+![Sprout character concept sheet](./concept-art/sprout-character-sheet.png)
+
 ### ② 맵 — 기계 구역 (Brass & Steam Machinery Zone)
 
 ```
@@ -34,6 +36,8 @@ particles, copper platforming ledges. Painterly pixel art style, 4-layer
 parallax depth, dark atmospheric lighting with glowing metallic highlights,
 side view, game environment art --ar 16:9 --v 6.0
 ```
+
+![Mechanical zone concept art](./concept-art/mechanical-zone.png)
 
 ### ③ 맵 — 자연 구역 (Overgrown Moss & Bioluminescence Zone)
 
@@ -46,6 +50,8 @@ depth, mystical ambient lighting, side view, game environment art
 --ar 16:9 --v 6.0
 ```
 
+![Wild zone concept art](./concept-art/wild-zone.png)
+
 ### ④ 블룸 시프트 대조 화면 (Bloom Shift Dual-State Concept)
 
 ```
@@ -55,6 +61,8 @@ showing the exact same platform seamlessly transformed into a blooming
 sunflower and vine platform with green aura and floating leaves. Painterly
 pixel art style, vivid color contrast, side view --ar 16:9 --v 6.0
 ```
+
+![Bloom Shift dual-state concept art](./concept-art/bloom-shift-split.png)
 
 > **사용 팁**: 캐릭터/맵 프롬프트로 여러 장을 뽑은 뒤, 실제 채택본의 hex 팔레트를 스포이드로 추출해 Part B의 팔레트 표와 맞는지 검수하세요. 어긋나면 `--sref`(Midjourney) 또는 컬러그레이딩 후처리로 보정합니다.
 
