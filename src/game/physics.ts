@@ -1,4 +1,5 @@
 import {
+  AIR_CONTROL_MULT,
   BIOCOIL_LANDED_DURATION,
   BIOCOIL_LAUNCH_VY_MECHANICAL,
   BIOCOIL_LAUNCH_VY_WILD,
@@ -370,11 +371,14 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vx = player.facing * DASH_SPEED;
       player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
     } else {
+      // Air Control: while airborne, horizontal input is scaled down (per the
+      // GDD's control spec) rather than granting full ground speed instantly.
+      const groundedMoveSpeed = player.onGround ? moveSpeed : moveSpeed * AIR_CONTROL_MULT;
       if (input.left && !input.right) {
-        player.vx = -moveSpeed;
+        player.vx = -groundedMoveSpeed;
         player.facing = -1;
       } else if (input.right && !input.left) {
-        player.vx = moveSpeed;
+        player.vx = groundedMoveSpeed;
         player.facing = 1;
       } else if (player.vx > 0) {
         player.vx = Math.max(0, player.vx - FRICTION * dt);

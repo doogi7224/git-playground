@@ -7,6 +7,7 @@ export const STOMP_BOUNCE = -450; // px/s
 export const STOMP_TOLERANCE = 8; // px of slack when checking if the player approached an enemy from above
 export const MAX_FALL_SPEED = 900; // px/s
 export const FRICTION = 900; // px/s^2, deceleration when no input
+export const AIR_CONTROL_MULT = 0.85; // horizontal move speed while airborne, per the GDD's "Air Control" spec
 
 export const PLAYER_WIDTH = 32;
 export const PLAYER_HEIGHT = 40;

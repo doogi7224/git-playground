@@ -14,6 +14,7 @@ import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
 import PressurePistonView from '../components/PressurePistonView';
 import RootPointView from '../components/RootPointView';
+import RopeView from '../components/RopeView';
 import ShiftNodeView from '../components/ShiftNodeView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import SteamBlowerView from '../components/SteamBlowerView';
@@ -109,6 +110,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           {gameState.sporeSprites.map((s) => (
             <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />
           ))}
+          <RopeView player={gameState.player} />
           <PlayerView player={gameState.player} />
         </View>
       </View>
