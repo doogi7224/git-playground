@@ -41,13 +41,33 @@ function pointInRect(x: number, y: number, r: Rect | null): boolean {
   return x >= r.pageX && x <= r.pageX + r.width && y >= r.pageY && y <= r.pageY + r.height;
 }
 
-function ButtonFace({ label, big, scale }: { label: string; big?: boolean; scale: Animated.Value }) {
+// Each button gets a role color so the pad reads as distinct instruments
+// rather than five identical circles (CLAUDE.md 19 — 모바일 컨트롤). The
+// press-glow ring is derived from the same `scale` Animated.Value the touch
+// handler already drives (see handleTouches below) via interpolation, so
+// there's no extra Animated.Value or React state added just for the glow.
+type ButtonRole = 'move' | 'grapple' | 'dash' | 'jump';
+
+const ROLE_COLORS: Record<ButtonRole, [string, string]> = {
+  move: ['#dfe7ea', '#9fb0b8'], // neutral steel — left/right
+  grapple: ['#8fc79c', palette.moss], // Root-Hook green
+  dash: ['#e08a5e', palette.uiDanger], // ember — speed
+  jump: [palette.uiPrimary, palette.uiPrimaryDark], // brass hero button
+};
+
+function ButtonFace({ label, role, big, scale }: { label: string; role: ButtonRole; big?: boolean; scale: Animated.Value }) {
+  const glowOpacity = scale.interpolate({ inputRange: [0.88, 1], outputRange: [1, 0], extrapolate: 'clamp' });
+  const [faceTop, faceBottom] = ROLE_COLORS[role];
   return (
     <Animated.View style={[styles.buttonShadow, big && styles.bigButton, { transform: [{ scale }] }]}>
-      <LinearGradient
-        colors={big ? [palette.uiPrimary, palette.uiPrimaryDark] : ['#ffffff', '#d7e6f0']}
-        style={styles.buttonInner}
-      >
+      <LinearGradient colors={[faceTop, faceBottom]} style={styles.buttonInner}>
+        {/* bolt rivets — the "작은 볼트" motif from the brass/steampunk frame spec */}
+        <View style={[styles.rivet, styles.rivetN]} />
+        <View style={[styles.rivet, styles.rivetE]} />
+        <View style={[styles.rivet, styles.rivetS]} />
+        <View style={[styles.rivet, styles.rivetW]} />
+        <View style={styles.glassHighlight} />
+        <Animated.View pointerEvents="none" style={[styles.pressGlow, { opacity: glowOpacity }]} />
         <Text style={[styles.label, big && styles.bigLabel]}>{label}</Text>
       </LinearGradient>
     </Animated.View>
@@ -186,21 +206,21 @@ export default function Controls({
     >
       <View style={styles.dpad}>
         <View ref={leftRef} onLayout={() => measure(leftRef, 'left')}>
-          <ButtonFace label="◀" scale={leftScale} />
+          <ButtonFace label="◀" role="move" scale={leftScale} />
         </View>
         <View ref={rightRef} onLayout={() => measure(rightRef, 'right')}>
-          <ButtonFace label="▶" scale={rightScale} />
+          <ButtonFace label="▶" role="move" scale={rightScale} />
         </View>
       </View>
       <View style={styles.actionPad}>
         <View ref={grappleRef} onLayout={() => measure(grappleRef, 'grapple')}>
-          <ButtonFace label="◎" scale={grappleScale} />
+          <ButtonFace label="◎" role="grapple" scale={grappleScale} />
         </View>
         <View ref={dashRef} onLayout={() => measure(dashRef, 'dash')}>
-          <ButtonFace label="»" scale={dashScale} />
+          <ButtonFace label="»" role="dash" scale={dashScale} />
         </View>
         <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
-          <ButtonFace label="▲" big scale={jumpScale} />
+          <ButtonFace label="▲" role="jump" big scale={jumpScale} />
         </View>
       </View>
     </View>
@@ -249,14 +269,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.6)',
+    overflow: 'hidden',
   },
   label: {
     fontSize: 24,
     fontWeight: '800',
-    color: palette.uiSecondaryDark,
+    color: 'rgba(0,0,0,0.55)',
   },
   bigLabel: {
     fontSize: 30,
     color: '#5a3d00',
+  },
+  // Small bolt/rivet dots at the compass points of the ring — the "작은 볼트"
+  // detail called for in CLAUDE.md 19 so buttons read as machined parts
+  // rather than flat circles.
+  rivet: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+  },
+  rivetN: { top: 6 },
+  rivetS: { bottom: 6 },
+  rivetE: { right: 6 },
+  rivetW: { left: 6 },
+  // A soft upper highlight to sell a lacquered/glass button face.
+  glassHighlight: {
+    position: 'absolute',
+    top: 3,
+    left: '18%',
+    right: '18%',
+    height: '38%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  // Fades in as the button is pressed (driven by the same scale Animated.Value).
+  pressGlow: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(255,255,255,0.28)',
   },
 });
