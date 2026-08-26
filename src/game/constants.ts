@@ -104,3 +104,13 @@ export const COG_STEAMBOOST_EXTRA_DURATION = 0.2; // foot slot: extra seconds of
 export const COG_ROOTHOOK_RANGE_MULT = 1.3; // body slot: +30% Root-Hook attach range
 export const COG_MIRROR_TRAIL_SECONDS = 4; // head slot: how far back the respawn-rewind trail reaches
 export const COG_CANNON_JUMP_MULT = 1.3; // "Cannon Jump" synergy (Root-Hook Cog + Spring): extra boost on a mid-swing release-jump
+
+// Wall-slide/wall-jump: per the GDD's control spec (fall-speed cap is specified
+// numerically; push-off speed is not, so WALLJUMP_VX is a judgment call rather
+// than a documented figure). Any airborne contact against a platform's side
+// counts as a wall — there's no separate "wall" object type, just existing
+// pit edges and ground/platform sides.
+export const WALL_SLIDE_FALL_MULT = 0.45; // caps fall speed at 45% of MAX_FALL_SPEED while pressed against a wall
+export const WALLJUMP_VX = 260; // px/s horizontal push-off away from the wall
+export const COG_WALLJUMP_HORIZ_MULT = 1.25; // Spring cog: +25% wall-jump horizontal distance (a separate stat from its jump-height boost)
+export const OVERDRIVE_WALLJUMP_GAIN = 10; // GDD lists wall-jump alongside dash/stomp/grind in the Overdrive combo chain

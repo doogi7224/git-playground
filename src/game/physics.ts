@@ -12,6 +12,7 @@ import {
   COG_ROOTHOOK_RANGE_MULT,
   COG_SPRING_JUMP_MULT,
   COG_STEAMBOOST_EXTRA_DURATION,
+  COG_WALLJUMP_HORIZ_MULT,
   DASH_COOLDOWN,
   DASH_DURATION,
   DASH_INVULN,
@@ -34,6 +35,7 @@ import {
   OVERDRIVE_MAX,
   OVERDRIVE_SPEED_MULT,
   OVERDRIVE_STOMP_GAIN,
+  OVERDRIVE_WALLJUMP_GAIN,
   PISTON_BLAST_DURATION,
   PISTON_CHARGE_DURATION,
   PISTON_CYCLE,
@@ -57,6 +59,8 @@ import {
   STEAM_GUST_RANGE,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
+  WALL_SLIDE_FALL_MULT,
+  WALLJUMP_VX,
 } from './constants';
 import {
   BioCoil,
@@ -116,6 +120,7 @@ export function createInitialState(level: Level): GameState {
       equippedFoot: null,
       steamBoostTimer: 0,
       mirrorTrail: [],
+      touchingWall: 0,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -380,21 +385,44 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       if (input.jumpPressed && player.onGround) {
         player.vy = jumpVelocity;
         player.onGround = false;
+      } else if (input.jumpPressed && player.touchingWall !== 0) {
+        // Wall-jump: uses the pre-frame wall-touch side (set by last frame's
+        // horizontal collision below), same "prev state decides this frame"
+        // pattern as the grounded jump check just above.
+        player.vx = player.touchingWall * WALLJUMP_VX * (player.equippedFoot === 'spring' ? COG_WALLJUMP_HORIZ_MULT : 1);
+        player.vy = jumpVelocity;
+        player.facing = player.touchingWall;
+        player.touchingWall = 0;
+        gaugeGain += OVERDRIVE_WALLJUMP_GAIN;
       }
 
       player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
     }
 
-    // Horizontal movement + collision
+    // Horizontal movement + collision. Also detects wall contact: any airborne
+    // collision that stops horizontal movement counts as a wall (pit edges and
+    // platform sides alike — there's no separate "wall" object type). wallDir
+    // is stored as the escape direction (away from the wall), not the wall's
+    // side, so a wall-jump can just do `vx = touchingWall * WALLJUMP_VX`.
+    let wallDir: -1 | 0 | 1 = 0;
     player.x += player.vx * dt;
     for (const plat of platforms) {
       if (rectIntersect(player, plat)) {
-        if (player.vx > 0) player.x = plat.x - player.width;
-        else if (player.vx < 0) player.x = plat.x + plat.width;
+        if (player.vx > 0) {
+          player.x = plat.x - player.width;
+          if (!player.onGround) wallDir = -1;
+        } else if (player.vx < 0) {
+          player.x = plat.x + plat.width;
+          if (!player.onGround) wallDir = 1;
+        }
         player.vx = 0;
       }
     }
     player.x = clamp(player.x, 0, level.worldWidth - player.width);
+    player.touchingWall = wallDir;
+    if (wallDir !== 0 && player.vy > MAX_FALL_SPEED * WALL_SLIDE_FALL_MULT) {
+      player.vy = MAX_FALL_SPEED * WALL_SLIDE_FALL_MULT;
+    }
 
     // Vertical movement + collision
     player.onGround = false;
@@ -412,7 +440,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       }
     }
 
-    if (player.onGround) {
+    if (player.onGround || player.touchingWall !== 0) {
       player.airDashAvailable = true;
     }
   }

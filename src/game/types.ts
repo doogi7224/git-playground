@@ -163,6 +163,8 @@ export interface Player extends Rect {
   steamBoostTimer: number;
   /** Rolling position history (only maintained while Mirror is equipped) used as an alternate respawn point. */
   mirrorTrail: { x: number; y: number; age: number }[];
+  /** While airborne and pressed against a wall (wall-slide), the direction a wall-jump would push (away from the wall); 0 = not touching one. Consumed by a wall-jump. */
+  touchingWall: -1 | 0 | 1;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
