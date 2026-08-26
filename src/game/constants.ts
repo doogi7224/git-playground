@@ -94,3 +94,13 @@ export const ROOTHOOK_SWING_GRAVITY = 900;
 export const ROOTHOOK_DAMPING = 0.999; // slight per-frame angular velocity decay, avoids perpetual motion
 export const ROOTHOOK_PUMP_ACCEL = 8; // rad/s^2 added while holding a direction, to let the player pump the swing
 export const ROOTHOOK_MAX_ANGULAR_VEL = 6; // rad/s, clamp to prevent runaway spin
+
+// Gear Socket cogs, adapted as auto-equip-on-pickup passives for the rest of
+// the current run (see the CogType comment in types.ts for the scoping note).
+export const COG_PICKUP_SIZE = 22;
+export const COG_SPRING_JUMP_MULT = 1.18; // foot slot: +18% jump height (doc also has +25% wall-jump distance; no wall-jump exists)
+export const COG_MAGNET_RADIUS = 70; // body slot: px radius for auto-collecting coins
+export const COG_STEAMBOOST_EXTRA_DURATION = 0.2; // foot slot: extra seconds of dash-speed coast after a dash ends
+export const COG_ROOTHOOK_RANGE_MULT = 1.3; // body slot: +30% Root-Hook attach range
+export const COG_MIRROR_TRAIL_SECONDS = 4; // head slot: how far back the respawn-rewind trail reaches
+export const COG_CANNON_JUMP_MULT = 1.3; // "Cannon Jump" synergy (Root-Hook Cog + Spring): extra boost on a mid-swing release-jump

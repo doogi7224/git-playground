@@ -1,6 +1,7 @@
 import {
   BIOCOIL_HEIGHT,
   BIOCOIL_WIDTH,
+  COG_PICKUP_SIZE,
   COIN_SIZE,
   ENEMY_HEIGHT,
   ENEMY_WIDTH,
@@ -17,7 +18,20 @@ import {
   STEAMBLOWER_WIDTH,
   VIEWPORT_HEIGHT,
 } from './constants';
-import { BioCoil, Coin, Enemy, Level, Platform, PressurePiston, RootPoint, ShiftNode, SporeSprite, SteamBlower } from './types';
+import {
+  BioCoil,
+  CogPickup,
+  CogType,
+  Coin,
+  Enemy,
+  Level,
+  Platform,
+  PressurePiston,
+  RootPoint,
+  ShiftNode,
+  SporeSprite,
+  SteamBlower,
+} from './types';
 
 const GROUND_Y = VIEWPORT_HEIGHT - 40;
 const GROUND_HEIGHT = 200; // extends below the visible viewport so pits look bottomless
@@ -157,6 +171,25 @@ function makeRootPoints(): RootPoint[] {
   return defs.map(([id, x, y]) => ({ id, x, y, width: ROOTHOOK_SIZE, height: ROOTHOOK_SIZE }));
 }
 
+function makeCogPickups(): CogPickup[] {
+  const defs: [string, CogType, number, number][] = [
+    ['cog-spring', 'spring', 350, GROUND_Y - 160],
+    ['cog-roothook', 'rootHookCog', 830, GROUND_Y - 190],
+    ['cog-magnet', 'magnet', 1300, GROUND_Y - 150],
+    ['cog-steamboost', 'steamBoost', 3550, GROUND_Y - 180],
+    ['cog-mirror', 'mirror', 4150, GROUND_Y - 160],
+  ];
+  return defs.map(([id, cogType, x, y]) => ({
+    id,
+    cogType,
+    x,
+    y,
+    width: COG_PICKUP_SIZE,
+    height: COG_PICKUP_SIZE,
+    collected: false,
+  }));
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -254,5 +287,6 @@ export function createLevel(): Level {
     bioCoils: makeBioCoils(),
     steamBlowers: makeSteamBlowers(),
     rootPoints: makeRootPoints(),
+    cogPickups: makeCogPickups(),
   };
 }

@@ -6,6 +6,12 @@ import {
   BIOCOIL_LEAP_VX_WILD,
   BIOCOIL_RANGE,
   BIOCOIL_WINDUP_WILD,
+  COG_CANNON_JUMP_MULT,
+  COG_MAGNET_RADIUS,
+  COG_MIRROR_TRAIL_SECONDS,
+  COG_ROOTHOOK_RANGE_MULT,
+  COG_SPRING_JUMP_MULT,
+  COG_STEAMBOOST_EXTRA_DURATION,
   DASH_COOLDOWN,
   DASH_DURATION,
   DASH_INVULN,
@@ -55,6 +61,7 @@ import {
 import {
   BioCoil,
   BloomState,
+  CogPickup,
   GamePhase,
   GameState,
   InputState,
@@ -104,6 +111,11 @@ export function createInitialState(level: Level): GameState {
       grappleAngle: 0,
       grappleAngularVel: 0,
       grappleRadius: 0,
+      equippedHead: null,
+      equippedBody: null,
+      equippedFoot: null,
+      steamBoostTimer: 0,
+      mirrorTrail: [],
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -116,6 +128,7 @@ export function createInitialState(level: Level): GameState {
     pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
     steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
+    cogPickups: level.cogPickups.map((c) => ({ ...c })),
     checkpointIndex: 0,
   };
 }
@@ -136,6 +149,9 @@ function applyHit(player: Player, lives: number, respawnPoint: { x: number; y: n
     player.y = respawnPoint.y;
     player.vx = 0;
     player.vy = 0;
+    // Fresh trail after any respawn, so a second hit within COG_MIRROR_TRAIL_SECONDS
+    // can't rewind to a stale pre-respawn position.
+    player.mirrorTrail = [];
   }
   return lives;
 }
@@ -223,8 +239,12 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // Decided from the pre-frame checkpoint index, consistent with the rest of
   // this function's "pre-frame state decides this frame's behavior" pattern:
   // every respawn-on-death site below sends the player here, not always the
-  // absolute level start.
-  const respawnPoint = level.checkpoints[prev.checkpointIndex];
+  // absolute level start. Mirror Cog overrides this with the oldest point in
+  // its rolling trail, when one is available.
+  const respawnPoint =
+    prev.player.equippedHead === 'mirror' && prev.player.mirrorTrail.length > 0
+      ? prev.player.mirrorTrail[0]
+      : level.checkpoints[prev.checkpointIndex];
 
   // Overdrive: accumulated across dash/stomp events this frame, applied to the
   // combo gauge at the end of the function (after every hazard resolution
@@ -235,6 +255,15 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // Shift/slow/dash below: this frame's speed and jump power reflect whether
   // Overdrive was already active going into it.
   const overdriveActive = prev.player.overdriveTimer > 0;
+
+  // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
+  // this frame's move speed matches what's shown (no one-frame mismatch).
+  // Spring Cog (foot slot) boosts jump height; hoisted above the Root-Hook
+  // block so a Cannon Jump release (Root-Hook Cog + Spring) can reuse the
+  // same boosted value.
+  const moveSpeed = (prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED) * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
+  const jumpVelocity =
+    JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1) * (prev.player.equippedFoot === 'spring' ? COG_SPRING_JUMP_MULT : 1);
 
   // Bloom Shift: decided from where the player was at the start of this
   // frame (before this frame's own movement), so the toggle and the
@@ -258,9 +287,10 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // next frame — "관성이 그대로 점프에 가산된다" from the GDD's control spec.
   if (!player.grappling && input.grappleHeld) {
     const pc = rectCenter(player);
+    const attachRange = player.equippedBody === 'rootHookCog' ? ROOTHOOK_RANGE * COG_ROOTHOOK_RANGE_MULT : ROOTHOOK_RANGE;
     const anchor = level.rootPoints.find((r) => {
       const rc = rectCenter(r);
-      return Math.hypot(rc.x - pc.x, rc.y - pc.y) <= ROOTHOOK_RANGE;
+      return Math.hypot(rc.x - pc.x, rc.y - pc.y) <= attachRange;
     });
     if (anchor) {
       const rc = rectCenter(anchor);
@@ -277,6 +307,13 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   if (player.grappling) {
     if (!input.grappleHeld) {
       player.grappling = false; // released; vx/vy already hold last frame's tangential velocity
+    } else if (input.jumpPressed && player.equippedBody === 'rootHookCog') {
+      // Cannon Jump synergy (Root-Hook Cog + Spring Cog): a mid-swing jump
+      // detaches early, keeps the swing's tangential vx, and fires a fresh
+      // boosted upward jump instead of just releasing.
+      player.grappling = false;
+      player.vy = jumpVelocity * (player.equippedFoot === 'spring' ? COG_CANNON_JUMP_MULT : 1);
+      player.onGround = false;
     } else {
       const pump = input.right ? ROOTHOOK_PUMP_ACCEL : input.left ? -ROOTHOOK_PUMP_ACCEL : 0;
       const angularAccel = -(ROOTHOOK_SWING_GRAVITY / player.grappleRadius) * Math.sin(player.grappleAngle) + pump;
@@ -297,11 +334,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   }
 
   if (!grappledThisFrame) {
-    // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
-    // this frame's move speed matches what's shown (no one-frame mismatch).
-    const moveSpeed = (prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED) * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
-    const jumpVelocity = JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
-
     // Dash: a fixed-velocity horizontal burst with brief invincibility (per the
     // GDD's control spec). One charge while airborne, refilled on landing;
     // grounded dashes are free but everything shares a short cooldown so
@@ -317,9 +349,21 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       gaugeGain += OVERDRIVE_DASH_GAIN;
     }
 
+    // Steam Boost Cog (foot slot): extra fixed-velocity coast once the dash
+    // itself ends, decided from the pre-frame timer just like the dash timers
+    // above. Detects the dash-just-ended edge from prev's timer.
+    player.steamBoostTimer = Math.max(0, prev.player.steamBoostTimer - dt);
+    if (prev.player.dashTimer > 0 && player.dashTimer <= 0 && player.equippedFoot === 'steamBoost') {
+      player.steamBoostTimer = COG_STEAMBOOST_EXTRA_DURATION;
+    }
+
     if (player.dashTimer > 0) {
       player.vx = player.facing * DASH_SPEED;
       player.vy = 0;
+    } else if (player.steamBoostTimer > 0) {
+      // Unlike the full dash freeze, gravity keeps acting during the coast tail.
+      player.vx = player.facing * DASH_SPEED;
+      player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
     } else {
       if (input.left && !input.right) {
         player.vx = -moveSpeed;
@@ -502,13 +546,32 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
   }
 
+  // Hoisted above resolvedCoins so Magnet Cog can use it for radius-based
+  // pickup; the Spore Sprite proximity check further below reuses it too.
+  const playerCenter = rectCenter(player);
+
   const resolvedCoins = prev.coins.map((c) => {
     if (c.collected) return c;
-    if (rectIntersect(player, c)) {
+    const inMagnetRange =
+      player.equippedBody === 'magnet' && Math.hypot(rectCenter(c).x - playerCenter.x, rectCenter(c).y - playerCenter.y) <= COG_MAGNET_RADIUS;
+    if (rectIntersect(player, c) || inMagnetRange) {
       score += overdriveActive ? 10 * OVERDRIVE_COIN_MULT : 10;
       return { ...c, collected: true };
     }
     return c;
+  });
+
+  const resolvedCogPickups: CogPickup[] = prev.cogPickups.map((c) => {
+    if (c.collected) return c;
+    if (!rectIntersect(player, c)) return c;
+    if (c.cogType === 'spring' || c.cogType === 'steamBoost') {
+      player.equippedFoot = c.cogType;
+    } else if (c.cogType === 'magnet' || c.cogType === 'rootHookCog') {
+      player.equippedBody = c.cogType;
+    } else if (c.cogType === 'mirror') {
+      player.equippedHead = c.cogType;
+    }
+    return { ...c, collected: true };
   });
 
   const resolvedSporeSprites = stepSporeSprites(prev.sporeSprites, dt).map((s) => {
@@ -522,13 +585,25 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return s;
   });
   const sporeRadius = bloomState === 'wild' ? SPORE_RADIUS_WILD : SPORE_RADIUS_MECHANICAL;
-  const playerCenter = rectCenter(player);
   const nearSporeSprite = resolvedSporeSprites.some((s) => {
     if (!s.alive) return false;
     const c = rectCenter(s);
     return Math.hypot(c.x - playerCenter.x, c.y - playerCenter.y) <= sporeRadius;
   });
   player.slowFor = nearSporeSprite ? SPORE_SLOW_DURATION : Math.max(0, prev.player.slowFor - dt);
+
+  // Mirror Cog (head slot): maintains a rolling position trail while equipped,
+  // used above as an alternate respawn point. Aged from pre-frame entries so
+  // this frame's own position always starts at age 0.
+  if (player.equippedHead === 'mirror') {
+    const aged = prev.player.mirrorTrail
+      .map((t) => ({ ...t, age: t.age + dt }))
+      .filter((t) => t.age <= COG_MIRROR_TRAIL_SECONDS);
+    aged.push({ x: player.x, y: player.y, age: 0 });
+    player.mirrorTrail = aged;
+  } else {
+    player.mirrorTrail = [];
+  }
 
   // Overdrive gauge: filled by this frame's dash/stomp gains (accumulated
   // above), reset if the combo chain has gone idle too long, and converted
@@ -581,6 +656,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     pressurePistons,
     bioCoils: resolvedBioCoils,
     steamBlowers: resolvedSteamBlowers,
+    cogPickups: resolvedCogPickups,
     checkpointIndex,
   };
 }

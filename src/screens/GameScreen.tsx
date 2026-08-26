@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import Background from '../components/Background';
 import BioCoilView from '../components/BioCoilView';
 import CheckpointView from '../components/CheckpointView';
+import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
 import EnemyView from '../components/EnemyView';
@@ -83,6 +84,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           {level.rootPoints.map((r) => (
             <RootPointView key={r.id} point={r} />
           ))}
+          {gameState.cogPickups.map((c) => (
+            <CogPickupView key={c.id} cog={c} />
+          ))}
           {level.checkpoints.slice(1).map((c, i) => (
             <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
           ))}
@@ -115,6 +119,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         bloomState={gameState.bloomState}
         overdriveGauge={gameState.player.overdriveGauge}
         overdriveActive={gameState.player.overdriveTimer > 0}
+        equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody, gameState.player.equippedFoot]}
       />
 
       <Controls

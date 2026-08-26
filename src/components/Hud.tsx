@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { COG_COLORS } from './CogPickupView';
 import { OVERDRIVE_MAX } from '../game/constants';
-import { BloomState } from '../game/types';
+import { BloomState, CogType } from '../game/types';
 import { palette } from '../theme';
 
 export default function Hud({
@@ -10,15 +11,18 @@ export default function Hud({
   bloomState,
   overdriveGauge,
   overdriveActive,
+  equippedCogs,
 }: {
   score: number;
   lives: number;
   bloomState: BloomState;
   overdriveGauge: number;
   overdriveActive: boolean;
+  equippedCogs: (CogType | null)[];
 }) {
   const isWild = bloomState === 'wild';
   const gaugeFill = Math.min(1, overdriveGauge / OVERDRIVE_MAX);
+  const equipped = equippedCogs.filter((c): c is CogType => c != null);
   return (
     <View style={styles.container} pointerEvents="none">
       <View style={styles.topRow}>
@@ -45,6 +49,13 @@ export default function Hud({
         </View>
         {overdriveActive && <Text style={styles.overdriveLabel}>오버드라이브!</Text>}
       </View>
+      {equipped.length > 0 && (
+        <View style={styles.cogRow}>
+          {equipped.map((c) => (
+            <View key={c} style={[styles.cogDot, { backgroundColor: COG_COLORS[c] }]} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -125,5 +136,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#ff5f5f',
+  },
+  cogRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignSelf: 'center',
+  },
+  cogDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.6)',
   },
 });

@@ -93,6 +93,21 @@ export interface RootPoint extends Rect {
   id: string;
 }
 
+// Gear Socket, adapted for a single continuous level (no stage-clear/equip
+// screen to reassign cogs between runs): picking one up auto-equips it into
+// its slot for the rest of the current attempt, replacing whatever was
+// already there. Only the head slot has one cog implemented (Mirror) —
+// Photosyn is design-doc only since it depends on Overgrowth Blocks, which
+// don't exist in this prototype.
+export type CogType = 'spring' | 'magnet' | 'steamBoost' | 'rootHookCog' | 'mirror';
+export type CogSlot = 'head' | 'body' | 'foot';
+
+export interface CogPickup extends Rect {
+  id: string;
+  cogType: CogType;
+  collected: boolean;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -109,6 +124,7 @@ export interface Level {
   bioCoils: BioCoil[];
   steamBlowers: SteamBlower[];
   rootPoints: RootPoint[];
+  cogPickups: CogPickup[];
 }
 
 export interface Player extends Rect {
@@ -139,6 +155,14 @@ export interface Player extends Rect {
   grappleAngle: number;
   grappleAngularVel: number;
   grappleRadius: number;
+  /** Currently-equipped cog per slot, or null. Auto-equipped on pickup; lost on a full restart, not on a per-life respawn. */
+  equippedHead: CogType | null;
+  equippedBody: CogType | null;
+  equippedFoot: CogType | null;
+  /** Extra fixed-velocity coast after a dash ends, granted by the Steam Boost cog. */
+  steamBoostTimer: number;
+  /** Rolling position history (only maintained while Mirror is equipped) used as an alternate respawn point. */
+  mirrorTrail: { x: number; y: number; age: number }[];
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -157,6 +181,7 @@ export interface GameState {
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
   steamBlowers: SteamBlower[];
+  cogPickups: CogPickup[];
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
   checkpointIndex: number;
 }
