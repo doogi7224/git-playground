@@ -1,17 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import { Animated, GestureResponderEvent, Platform, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { palette } from '../theme';
 
-// On mobile web, holding a touch on an element without these disables lets the
-// browser interpret it as a text-selection long-press or a pinch/zoom
-// candidate: it steals the touch (firing a haptic tick) and cancels the
-// press, which also blocks a second simultaneous touch on another button
-// from registering as an independent press. Native builds ignore these.
+// On mobile web, a held touch on an element without these is liable to be
+// interpreted by the browser as a text-selection long-press or a pinch/zoom
+// candidate, which can steal the touch (with a haptic tick) mid-press.
+// Native builds ignore these.
 const noBrowserGestures: ViewStyle | undefined =
   Platform.OS === 'web'
     ? ({
-        touchAction: 'manipulation',
+        touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         WebkitTouchCallout: 'none',
@@ -27,50 +26,116 @@ interface Props {
   onJump: () => void;
 }
 
-function GameButton({
-  label,
-  big,
-  onPressIn,
-  onPressOut,
-}: {
-  label: string;
-  big?: boolean;
-  onPressIn: () => void;
-  onPressOut?: () => void;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
+interface Rect {
+  pageX: number;
+  pageY: number;
+  width: number;
+  height: number;
+}
 
-  const pressIn = () => {
-    Animated.spring(scale, { toValue: 0.88, useNativeDriver: true, speed: 30 }).start();
-    onPressIn();
-  };
-  const pressOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
-    onPressOut?.();
-  };
+function pointInRect(x: number, y: number, r: Rect | null): boolean {
+  if (!r) return false;
+  return x >= r.pageX && x <= r.pageX + r.width && y >= r.pageY && y <= r.pageY + r.height;
+}
 
+function ButtonFace({ label, big, scale }: { label: string; big?: boolean; scale: Animated.Value }) {
   return (
-    <Pressable style={noBrowserGestures} onPressIn={pressIn} onPressOut={pressOut}>
-      <Animated.View style={[styles.buttonShadow, big && styles.bigButton, { transform: [{ scale }] }]}>
-        <LinearGradient
-          colors={big ? [palette.uiPrimary, palette.uiPrimaryDark] : ['#ffffff', '#d7e6f0']}
-          style={styles.buttonInner}
-        >
-          <Text style={[styles.label, big && styles.bigLabel]}>{label}</Text>
-        </LinearGradient>
-      </Animated.View>
-    </Pressable>
+    <Animated.View style={[styles.buttonShadow, big && styles.bigButton, { transform: [{ scale }] }]}>
+      <LinearGradient
+        colors={big ? [palette.uiPrimary, palette.uiPrimaryDark] : ['#ffffff', '#d7e6f0']}
+        style={styles.buttonInner}
+      >
+        <Text style={[styles.label, big && styles.bigLabel]}>{label}</Text>
+      </LinearGradient>
+    </Animated.View>
   );
 }
 
+// React Native's built-in gesture responder system only ever has one active
+// "responder" for the whole app: pressing a second Pressable while a first
+// one is held sends the first RESPONDER_TERMINATED and cancels its press.
+// That's exactly what broke "hold move + tap jump" — it isn't a web-only
+// glitch, it's how Pressable's responder negotiation works everywhere.
+// The fix is to never let the buttons claim the responder individually: one
+// top-level view claims it for the whole control pad, and on every touch
+// event we recompute which buttons are under an active touch from
+// `nativeEvent.touches` (the full, current list of fingers down), which is
+// naturally multi-touch since it's just coordinates, not a single gesture.
 export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, onJump }: Props) {
+  const leftRef = useRef<View>(null);
+  const rightRef = useRef<View>(null);
+  const jumpRef = useRef<View>(null);
+
+  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null }>({
+    left: null,
+    right: null,
+    jump: null,
+  });
+  const held = useRef({ left: false, right: false, jump: false });
+
+  const leftScale = useRef(new Animated.Value(1)).current;
+  const rightScale = useRef(new Animated.Value(1)).current;
+  const jumpScale = useRef(new Animated.Value(1)).current;
+
+  const animateTo = (value: Animated.Value, toValue: number) => {
+    Animated.spring(value, { toValue, useNativeDriver: true, speed: toValue < 1 ? 30 : 20 }).start();
+  };
+
+  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump') => {
+    ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
+      rects.current[key] = { pageX, pageY, width, height };
+    });
+  }, []);
+
+  const handleTouches = useCallback(
+    (evt: GestureResponderEvent) => {
+      const touches = evt.nativeEvent.touches.length > 0 ? evt.nativeEvent.touches : [evt.nativeEvent];
+      const hitLeft = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.left));
+      const hitRight = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.right));
+      const hitJump = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.jump));
+
+      if (hitLeft !== held.current.left) {
+        held.current.left = hitLeft;
+        animateTo(leftScale, hitLeft ? 0.88 : 1);
+        if (hitLeft) onLeftIn();
+        else onLeftOut();
+      }
+      if (hitRight !== held.current.right) {
+        held.current.right = hitRight;
+        animateTo(rightScale, hitRight ? 0.88 : 1);
+        if (hitRight) onRightIn();
+        else onRightOut();
+      }
+      if (hitJump !== held.current.jump) {
+        animateTo(jumpScale, hitJump ? 0.88 : 1);
+        if (hitJump) onJump();
+        held.current.jump = hitJump;
+      }
+    },
+    [onLeftIn, onLeftOut, onRightIn, onRightOut, onJump, leftScale, rightScale, jumpScale]
+  );
+
   return (
-    <View style={[styles.container, noBrowserGestures]} pointerEvents="box-none">
+    <View
+      style={[styles.container, noBrowserGestures]}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={handleTouches}
+      onResponderMove={handleTouches}
+      onResponderRelease={handleTouches}
+      onResponderTerminate={handleTouches}
+    >
       <View style={styles.dpad}>
-        <GameButton label="◀" onPressIn={onLeftIn} onPressOut={onLeftOut} />
-        <GameButton label="▶" onPressIn={onRightIn} onPressOut={onRightOut} />
+        <View ref={leftRef} onLayout={() => measure(leftRef, 'left')}>
+          <ButtonFace label="◀" scale={leftScale} />
+        </View>
+        <View ref={rightRef} onLayout={() => measure(rightRef, 'right')}>
+          <ButtonFace label="▶" scale={rightScale} />
+        </View>
       </View>
-      <GameButton label="▲" big onPressIn={onJump} />
+      <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
+        <ButtonFace label="▲" big scale={jumpScale} />
+      </View>
     </View>
   );
 }
