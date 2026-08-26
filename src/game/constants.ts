@@ -4,6 +4,7 @@ export const GRAVITY = 1800; // px/s^2
 export const MOVE_SPEED = 220; // px/s
 export const JUMP_VELOCITY = -650; // px/s
 export const STOMP_BOUNCE = -450; // px/s
+export const STOMP_TOLERANCE = 8; // px of slack when checking if the player approached an enemy from above
 export const MAX_FALL_SPEED = 900; // px/s
 export const FRICTION = 900; // px/s^2, deceleration when no input
 

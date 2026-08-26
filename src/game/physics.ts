@@ -9,6 +9,7 @@ import {
   PLAYER_HEIGHT,
   PLAYER_WIDTH,
   STOMP_BOUNCE,
+  STOMP_TOLERANCE,
 } from './constants';
 import { GamePhase, GameState, InputState, Level, Rect } from './types';
 
@@ -115,12 +116,20 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   let lives = prev.lives;
   let phase: GamePhase = prev.phase;
 
+  // Captured once, before mutating player.vy in the loop below: a stomp on one
+  // enemy must not change whether a *different* enemy overlapping this same
+  // frame also counts as a stomp. Using the pre-frame bottom (rather than the
+  // post-movement one) also makes the check independent of fall speed/frame
+  // size, since it asks "did the player start this frame above the enemy?"
+  // instead of "how deep is the overlap after moving?".
+  const wasFalling = prev.player.vy > 0;
+  const prevBottom = prev.player.y + prev.player.height;
+
   const resolvedEnemies = enemies.map((e) => {
     if (!e.alive) return e;
     if (!rectIntersect(player, e)) return e;
 
-    const playerBottom = player.y + player.height;
-    const isStomp = player.vy > 0 && playerBottom - e.y < 20;
+    const isStomp = wasFalling && prevBottom <= e.y + STOMP_TOLERANCE;
 
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
