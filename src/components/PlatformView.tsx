@@ -24,6 +24,20 @@ export default function PlatformView({ platform }: { platform: Platform }) {
     );
   }
 
+  if (platform.visibleIn === 'wild') {
+    return (
+      <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
+        <LinearGradient colors={[palette.mossTint, palette.moss]} style={[styles.plank, styles.vinePlank]}>
+          <View style={styles.plankHighlight} />
+          {Array.from({ length: Math.max(1, Math.round(platform.width / 20)) }, (_, i) => (
+            <View key={i} style={[styles.leafBump, { left: i * 20 + (i % 2 === 0 ? 2 : 8) }]} />
+          ))}
+        </LinearGradient>
+        <View style={styles.plankShadow} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
       <LinearGradient
@@ -94,6 +108,19 @@ const styles = StyleSheet.create({
     bottom: 6,
     width: 2,
     backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  vinePlank: {
+    borderColor: palette.mossDark,
+  },
+  leafBump: {
+    position: 'absolute',
+    top: -3,
+    width: 8,
+    height: 6,
+    borderRadius: 4,
+    backgroundColor: palette.moss,
+    borderWidth: 1,
+    borderColor: palette.mossDark,
   },
   plankShadow: {
     position: 'absolute',

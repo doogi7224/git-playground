@@ -44,6 +44,11 @@ export const palette = {
   flagCloth: '#3c7a56',
   flagClothDark: '#285940',
 
+  // Bloom Shift wild-state platforms (vine/moss) and the shift node itself.
+  moss: '#3c7a56',
+  mossDark: '#285940',
+  mossTint: '#d9ead9',
+
   uiPrimary: '#e0a94f',
   uiPrimaryDark: '#a9762f',
   uiSecondary: '#7a9188',

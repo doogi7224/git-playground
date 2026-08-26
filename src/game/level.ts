@@ -1,5 +1,5 @@
-import { COIN_SIZE, ENEMY_HEIGHT, ENEMY_WIDTH, FLAG_HEIGHT, FLAG_WIDTH, VIEWPORT_HEIGHT } from './constants';
-import { Coin, Enemy, Level, Platform } from './types';
+import { COIN_SIZE, ENEMY_HEIGHT, ENEMY_WIDTH, FLAG_HEIGHT, FLAG_WIDTH, SHIFT_NODE_SIZE, VIEWPORT_HEIGHT } from './constants';
+import { Coin, Enemy, Level, Platform, ShiftNode } from './types';
 
 const GROUND_Y = VIEWPORT_HEIGHT - 40;
 const GROUND_HEIGHT = 200; // extends below the visible viewport so pits look bottomless
@@ -34,6 +34,16 @@ const floatingPlatforms: Platform[] = [
   { id: 'p9', x: 2500, y: GROUND_Y - 110, width: 120, height: 20 },
   { id: 'p10', x: 2800, y: GROUND_Y - 70, width: 110, height: 20 },
 ];
+
+// Only exists once the world is shifted into the "wild" bloom state — a
+// small bonus reachable from p7 that demonstrates the Bloom Shift mechanic.
+const bloomPlatforms: Platform[] = [
+  { id: 'bloom1', x: 1910, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
+];
+
+function makeShiftNodes(): ShiftNode[] {
+  return [{ id: 'shift1', x: 1700, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE }];
+}
 
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
@@ -72,6 +82,8 @@ function makeCoins(): Coin[] {
     [2570, GROUND_Y - 150],
     [2830, GROUND_Y - 110],
     [3000, GROUND_Y - 60],
+    [1930, GROUND_Y - 180],
+    [1965, GROUND_Y - 180],
   ];
   return coinDefs.map(([x, y], i) => ({
     id: `coin-${i}`,
@@ -88,9 +100,10 @@ export function createLevel(): Level {
     worldWidth: 3300,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
-    platforms: [...makeGroundPlatforms(), ...floatingPlatforms],
+    platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
     flag: { x: 3220, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
+    shiftNodes: makeShiftNodes(),
   };
 }

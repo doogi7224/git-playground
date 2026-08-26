@@ -11,7 +11,7 @@ import {
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
 } from './constants';
-import { GamePhase, GameState, InputState, Level, Rect } from './types';
+import { BloomState, GamePhase, GameState, InputState, Level, Platform, Rect } from './types';
 
 export function rectIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -19,6 +19,10 @@ export function rectIntersect(a: Rect, b: Rect): boolean {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function activePlatforms(level: Level, bloomState: BloomState): Platform[] {
+  return level.platforms.filter((p) => !p.visibleIn || p.visibleIn === bloomState);
 }
 
 export function createInitialState(level: Level): GameState {
@@ -39,6 +43,8 @@ export function createInitialState(level: Level): GameState {
     score: 0,
     lives: 3,
     phase: 'playing',
+    bloomState: 'mechanical',
+    bloomNodeArmed: true,
   };
 }
 
@@ -46,6 +52,21 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   if (prev.phase !== 'playing') return prev;
 
   const player = { ...prev.player };
+
+  // Bloom Shift: decided from where the player was at the start of this
+  // frame (before this frame's own movement), so the toggle and the
+  // platform set used for this frame's collision stay in sync (no
+  // one-frame lag between what's drawn and what's solid).
+  let bloomState = prev.bloomState;
+  let bloomNodeArmed = prev.bloomNodeArmed;
+  const touchingShiftNode = level.shiftNodes.some((n) => rectIntersect(prev.player, n));
+  if (touchingShiftNode && bloomNodeArmed) {
+    bloomState = bloomState === 'mechanical' ? 'wild' : 'mechanical';
+    bloomNodeArmed = false;
+  } else if (!touchingShiftNode) {
+    bloomNodeArmed = true;
+  }
+  const platforms = activePlatforms(level, bloomState);
 
   if (input.left && !input.right) {
     player.vx = -MOVE_SPEED;
@@ -68,7 +89,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   // Horizontal movement + collision
   player.x += player.vx * dt;
-  for (const plat of level.platforms) {
+  for (const plat of platforms) {
     if (rectIntersect(player, plat)) {
       if (player.vx > 0) player.x = plat.x - player.width;
       else if (player.vx < 0) player.x = plat.x + plat.width;
@@ -80,7 +101,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // Vertical movement + collision
   player.onGround = false;
   player.y += player.vy * dt;
-  for (const plat of level.platforms) {
+  for (const plat of platforms) {
     if (rectIntersect(player, plat)) {
       if (player.vy > 0) {
         player.y = plat.y - player.height;
@@ -183,6 +204,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     score,
     lives,
     phase,
+    bloomState,
+    bloomNodeArmed,
   };
 }
 

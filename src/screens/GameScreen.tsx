@@ -9,6 +9,7 @@ import FlagView from '../components/FlagView';
 import Hud from '../components/Hud';
 import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
+import ShiftNodeView from '../components/ShiftNodeView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
@@ -56,8 +57,13 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
       <View style={[styles.stage, { width: windowWidth, height: VIEWPORT_HEIGHT }]}>
         <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportHeight={VIEWPORT_HEIGHT} />
         <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
-          {level.platforms.map((p) => (
-            <PlatformView key={p.id} platform={p} />
+          {level.platforms
+            .filter((p) => !p.visibleIn || p.visibleIn === gameState.bloomState)
+            .map((p) => (
+              <PlatformView key={p.id} platform={p} />
+            ))}
+          {level.shiftNodes.map((n) => (
+            <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
           ))}
           <FlagView flag={level.flag} />
           {gameState.coins.map((c) => (
@@ -70,7 +76,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         </View>
       </View>
 
-      <Hud score={gameState.score} lives={gameState.lives} />
+      <Hud score={gameState.score} lives={gameState.lives} bloomState={gameState.bloomState} />
 
       <Controls
         onLeftIn={() => (inputRef.current.left = true)}

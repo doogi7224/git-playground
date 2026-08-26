@@ -24,3 +24,5 @@ export const DEATH_Y = VIEWPORT_HEIGHT + 200;
 
 export const STARTING_LIVES = 3;
 export const INVULNERABLE_TIME = 1.2; // seconds after taking damage
+
+export const SHIFT_NODE_SIZE = 28;
