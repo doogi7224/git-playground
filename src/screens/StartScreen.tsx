@@ -17,24 +17,32 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
       <View style={[styles.hill, styles.hillFar]} />
       <View style={[styles.hill, styles.hillNear]} />
 
-      <Text style={styles.title}>GEARWOOD</Text>
-      <Text style={styles.tagline}>The Broken Spring · 파괴된 태엽</Text>
-      <Text style={styles.subtitle}>
-        새싹 스프라우트와 함께 기어숲의 깃발까지! 시프트 노드로 기계↔자연 지형을 바꾸고, 대시와 루트훅으로 위험을 돌파하세요.
-      </Text>
+      <View style={styles.brassPanel}>
+        <View style={[styles.rivetCorner, styles.rivetTL]} />
+        <View style={[styles.rivetCorner, styles.rivetTR]} />
+        <View style={[styles.rivetCorner, styles.rivetBL]} />
+        <View style={[styles.rivetCorner, styles.rivetBR]} />
 
-      <Pressable onPressIn={pressIn} onPressOut={pressOut} onPress={onStart}>
-        <Animated.View style={[styles.startButtonShadow, { transform: [{ scale }] }]}>
-          <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.startButton}>
-            <Text style={styles.startLabel}>게임 시작</Text>
-          </LinearGradient>
-        </Animated.View>
-      </Pressable>
+        <Text style={styles.title}>GEARWOOD</Text>
+        <Text style={styles.tagline}>The Broken Spring · 파괴된 태엽</Text>
+        <Text style={styles.subtitle}>
+          새싹 스프라우트와 함께 기어숲의 깃발까지! 시프트 노드로 기계↔자연 지형을 바꾸고, 대시와 루트훅으로 위험을 돌파하세요.
+        </Text>
 
-      <Text style={styles.hint}>
-        ◀▶ 이동 · ▲ 점프 · » 대시(짧은 무적) · ◎ 루트훅(그래플 스윙){'\n'}
-        적은 위에서 밟아 처치 · 체크포인트를 지나면 그 지점부터 부활
-      </Text>
+        <Pressable onPressIn={pressIn} onPressOut={pressOut} onPress={onStart}>
+          <Animated.View style={[styles.startButtonShadow, { transform: [{ scale }] }]}>
+            <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.startButton}>
+              <View style={styles.startGlassHighlight} />
+              <Text style={styles.startLabel}>게임 시작</Text>
+            </LinearGradient>
+          </Animated.View>
+        </Pressable>
+
+        <Text style={styles.hint}>
+          ◀▶ 이동 · ▲ 점프 · » 대시(짧은 무적) · ◎ 루트훅(그래플 스윙){'\n'}
+          적은 위에서 밟아 처치 · 체크포인트를 지나면 그 지점부터 부활
+        </Text>
+      </View>
     </LinearGradient>
   );
 }
@@ -70,6 +78,33 @@ const styles = StyleSheet.create({
     bottom: -60,
     borderRadius: 999,
   },
+  // A brass-framed panel groups the title/button/hint into one steampunk
+  // instrument plate instead of text floating loose on the sky (CLAUDE.md 19
+  // — UI 전면 리디자인). Rivets at each corner echo the same bolt motif used
+  // on the mobile control buttons for a consistent design language.
+  brassPanel: {
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    borderRadius: 28,
+    backgroundColor: 'rgba(30, 26, 18, 0.28)',
+    borderWidth: 2,
+    borderColor: 'rgba(224, 169, 79, 0.55)',
+  },
+  rivetCorner: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(224, 169, 79, 0.75)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.3)',
+  },
+  rivetTL: { top: 10, left: 10 },
+  rivetTR: { top: 10, right: 10 },
+  rivetBL: { bottom: 10, left: 10 },
+  rivetBR: { bottom: 10, right: 10 },
   hillFar: {
     left: -80,
     width: 320,
@@ -126,6 +161,16 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.6)',
+    overflow: 'hidden',
+  },
+  startGlassHighlight: {
+    position: 'absolute',
+    top: 4,
+    left: '12%',
+    right: '12%',
+    height: '35%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   startLabel: {
     fontSize: 20,

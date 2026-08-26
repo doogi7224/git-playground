@@ -173,7 +173,16 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 
       {gameState.phase !== 'playing' && (
         <View style={styles.overlay}>
-          <View style={styles.card}>
+          <View
+            style={[
+              styles.card,
+              { borderColor: gameState.phase === 'win' ? palette.moss : palette.uiDanger },
+            ]}
+          >
+            <View style={[styles.rivetCorner, styles.rivetTL]} />
+            <View style={[styles.rivetCorner, styles.rivetTR]} />
+            <View style={[styles.rivetCorner, styles.rivetBL]} />
+            <View style={[styles.rivetCorner, styles.rivetBR]} />
             <Text style={styles.overlayTitle}>{gameState.phase === 'win' ? '🎉 클리어!' : '💀 게임 오버'}</Text>
             <View style={styles.overlayScoreRow}>
               <View style={styles.coinDot} />
@@ -241,12 +250,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36,
     alignItems: 'center',
     gap: 14,
+    borderWidth: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 10,
   },
+  // Same corner-bolt motif as Controls/StartScreen, tying the result screen
+  // into the same steampunk instrument-panel language.
+  rivetCorner: {
+    position: 'absolute',
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: palette.woodDark,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  rivetTL: { top: 10, left: 10 },
+  rivetTR: { top: 10, right: 10 },
+  rivetBL: { bottom: 10, left: 10 },
+  rivetBR: { bottom: 10, right: 10 },
   overlayTitle: {
     fontSize: 30,
     fontWeight: '800',
