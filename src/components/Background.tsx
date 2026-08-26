@@ -1,12 +1,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
+import { BloomState } from '../game/types';
 import { palette } from '../theme';
 
 interface Props {
   cameraX: number;
   worldWidth: number;
   viewportHeight: number;
+  bloomState: BloomState;
 }
 
 function Cloud({ x, y, scale }: { x: number; y: number; scale: number }) {
@@ -19,21 +21,74 @@ function Cloud({ x, y, scale }: { x: number; y: number; scale: number }) {
   );
 }
 
-function GearSilhouette({ x, size }: { x: number; size: number }) {
+// Mechanical-state decoration: a distant gear silhouette poking over the horizon.
+function GearSilhouette({ x, size, opacity }: { x: number; size: number; opacity: Animated.AnimatedInterpolation<number> }) {
+  const teeth = 8;
   return (
-    <View
-      style={{
-        position: 'absolute',
-        left: x,
-        bottom: -size * 0.3,
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        borderWidth: size * 0.12,
-        borderColor: 'rgba(140, 100, 50, 0.35)',
-        borderStyle: 'dashed',
-      }}
-    />
+    <Animated.View style={{ position: 'absolute', left: x, bottom: -size * 0.3, width: size, height: size, opacity }}>
+      {Array.from({ length: teeth }, (_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.gearTooth,
+            {
+              width: size * 0.16,
+              height: size * 0.16,
+              left: size / 2 - (size * 0.16) / 2,
+              top: size / 2 - (size * 0.16) / 2,
+              transform: [{ rotate: `${(360 / teeth) * i}deg` }, { translateY: -size * 0.42 }],
+            },
+          ]}
+        />
+      ))}
+      <View
+        style={{
+          position: 'absolute',
+          left: size * 0.18,
+          top: size * 0.18,
+          width: size * 0.64,
+          height: size * 0.64,
+          borderRadius: size / 2,
+          borderWidth: size * 0.1,
+          borderColor: 'rgba(140, 100, 50, 0.4)',
+        }}
+      />
+    </Animated.View>
+  );
+}
+
+// Wild-state decoration: a cluster of leaning vine/leaf fronds, cross-faded
+// in against the same silhouette slots the gears use.
+function VineCluster({ x, size, opacity }: { x: number; size: number; opacity: Animated.AnimatedInterpolation<number> }) {
+  return (
+    <Animated.View style={{ position: 'absolute', left: x, bottom: -size * 0.1, width: size, height: size * 1.3, opacity }}>
+      <View
+        style={{
+          position: 'absolute',
+          left: size * 0.42,
+          bottom: 0,
+          width: size * 0.16,
+          height: size * 1.2,
+          borderRadius: size * 0.08,
+          backgroundColor: 'rgba(60, 122, 86, 0.4)',
+        }}
+      />
+      {[0.2, 0.45, 0.7].map((t, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            left: i % 2 === 0 ? size * 0.1 : size * 0.5,
+            bottom: size * 1.2 * t,
+            width: size * 0.42,
+            height: size * 0.22,
+            borderRadius: size * 0.12,
+            backgroundColor: 'rgba(60, 122, 86, 0.35)',
+            transform: [{ rotate: i % 2 === 0 ? '-25deg' : '25deg' }],
+          }}
+        />
+      ))}
+    </Animated.View>
   );
 }
 
@@ -53,9 +108,24 @@ function Hill({ x, size, color }: { x: number; size: number; color: string }) {
   );
 }
 
-export default function Background({ cameraX, worldWidth, viewportHeight }: Props) {
+export default function Background({ cameraX, worldWidth, viewportHeight, bloomState }: Props) {
   const farOffset = -cameraX * 0.25;
   const nearOffset = -cameraX * 0.5;
+
+  // Cross-fades the whole background (sky tint + far-layer decoration set)
+  // between a mechanical and a wild mood whenever the level-wide Bloom Shift
+  // state flips, so the world outside the platforms themselves also reads as
+  // "a different state now" (CLAUDE.md 19 — 기계×자연 시각 대비 / Bloom Shift).
+  const wildAnim = useRef(new Animated.Value(bloomState === 'wild' ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(wildAnim, {
+      toValue: bloomState === 'wild' ? 1 : 0,
+      duration: 650,
+      useNativeDriver: true,
+    }).start();
+  }, [bloomState, wildAnim]);
+  const wildOpacity = wildAnim;
+  const mechOpacity = wildAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
   const clouds = useMemo(
     () =>
@@ -76,7 +146,7 @@ export default function Background({ cameraX, worldWidth, viewportHeight }: Prop
     [worldWidth]
   );
 
-  const gears = useMemo(
+  const decorSlots = useMemo(
     () =>
       Array.from({ length: Math.ceil(worldWidth / 520) }, (_, i) => ({
         x: 150 + i * 520 + ((i * 41) % 90),
@@ -96,10 +166,14 @@ export default function Background({ cameraX, worldWidth, viewportHeight }: Prop
 
   return (
     <View style={[styles.fill, { height: viewportHeight }]} pointerEvents="none">
-      <LinearGradient
-        colors={[palette.skyTop, palette.skyBottom]}
-        style={styles.fill}
-      />
+      <LinearGradient colors={[palette.skyTop, palette.skyBottom]} style={styles.fill} />
+      <Animated.View style={[styles.fill, { opacity: mechOpacity }]}>
+        <LinearGradient colors={['rgba(169, 118, 47, 0.22)', 'transparent']} style={styles.fill} />
+      </Animated.View>
+      <Animated.View style={[styles.fill, { opacity: wildOpacity }]}>
+        <LinearGradient colors={['rgba(60, 122, 86, 0.22)', 'transparent']} style={styles.fill} />
+      </Animated.View>
+
       <View style={[styles.sun, { backgroundColor: palette.sunGlow }]}>
         <View style={styles.sunCore} />
       </View>
@@ -111,8 +185,11 @@ export default function Background({ cameraX, worldWidth, viewportHeight }: Prop
         {farHills.map((h, i) => (
           <Hill key={`far-${i}`} x={h.x} size={h.size} color={palette.hillFar} />
         ))}
-        {gears.map((g, i) => (
-          <GearSilhouette key={`gear-${i}`} x={g.x} size={g.size} />
+        {decorSlots.map((g, i) => (
+          <GearSilhouette key={`gear-${i}`} x={g.x} size={g.size} opacity={mechOpacity} />
+        ))}
+        {decorSlots.map((g, i) => (
+          <VineCluster key={`vine-${i}`} x={g.x} size={g.size} opacity={wildOpacity} />
         ))}
       </View>
 
@@ -131,6 +208,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
+    bottom: 0,
   },
   parallaxLayer: {
     position: 'absolute',
@@ -161,5 +239,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: palette.cloud,
     borderRadius: 999,
+  },
+  gearTooth: {
+    position: 'absolute',
+    backgroundColor: 'rgba(140, 100, 50, 0.4)',
+    borderRadius: 2,
   },
 });

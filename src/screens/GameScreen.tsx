@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Background from '../components/Background';
 import BioCoilView from '../components/BioCoilView';
 import CheckpointView from '../components/CheckpointView';
@@ -95,6 +95,21 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 
   const cameraX = computeCameraX(gameState.player.x, viewportWidth, level.worldWidth);
 
+  // A short full-stage color wash the instant bloomState flips, on top of
+  // Background's own slower cross-fade and Hud's badge pulse — together they
+  // make a Bloom Shift read as "the world just changed" rather than just a
+  // platform re-color (CLAUDE.md 19 — Bloom Shift 연출).
+  const bloomFlash = useRef(new Animated.Value(0)).current;
+  const prevBloomStateRef = useRef(gameState.bloomState);
+  useEffect(() => {
+    if (prevBloomStateRef.current !== gameState.bloomState) {
+      prevBloomStateRef.current = gameState.bloomState;
+      bloomFlash.setValue(1);
+      Animated.timing(bloomFlash, { toValue: 0, duration: 550, useNativeDriver: true }).start();
+    }
+  }, [gameState.bloomState, bloomFlash]);
+  const bloomFlashOpacity = bloomFlash.interpolate({ inputRange: [0, 1], outputRange: [0, 0.45] });
+
   return (
     <View style={styles.outer}>
       <View style={[styles.stageClip, { top: HUD_RESERVED_TOP, height: availableStageHeight }]}>
@@ -104,7 +119,12 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             { width: viewportWidth, height: VIEWPORT_HEIGHT, transform: [{ scale: stageScale }] },
           ]}
         >
-          <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportHeight={VIEWPORT_HEIGHT} />
+          <Background
+            cameraX={cameraX}
+            worldWidth={level.worldWidth}
+            viewportHeight={VIEWPORT_HEIGHT}
+            bloomState={gameState.bloomState}
+          />
           <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
             {level.platforms
               .filter((p) => !p.visibleIn || p.visibleIn === gameState.bloomState)
@@ -149,6 +169,16 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <PlayerView player={gameState.player} />
           </View>
         </View>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.bloomFlash,
+            {
+              backgroundColor: gameState.bloomState === 'wild' ? palette.moss : palette.uiPrimary,
+              opacity: bloomFlashOpacity,
+            },
+          ]}
+        />
       </View>
 
       <Hud
@@ -236,6 +266,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
+  },
+  bloomFlash: {
+    ...StyleSheet.absoluteFill,
   },
   overlay: {
     ...StyleSheet.absoluteFill,
