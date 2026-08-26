@@ -1,7 +1,23 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { palette } from '../theme';
+
+// On mobile web, holding a touch on an element without these disables lets the
+// browser interpret it as a text-selection long-press or a pinch/zoom
+// candidate: it steals the touch (firing a haptic tick) and cancels the
+// press, which also blocks a second simultaneous touch on another button
+// from registering as an independent press. Native builds ignore these.
+const noBrowserGestures: ViewStyle | undefined =
+  Platform.OS === 'web'
+    ? ({
+        touchAction: 'manipulation',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitTapHighlightColor: 'transparent',
+      } as unknown as ViewStyle)
+    : undefined;
 
 interface Props {
   onLeftIn: () => void;
@@ -34,7 +50,7 @@ function GameButton({
   };
 
   return (
-    <Pressable onPressIn={pressIn} onPressOut={pressOut}>
+    <Pressable style={noBrowserGestures} onPressIn={pressIn} onPressOut={pressOut}>
       <Animated.View style={[styles.buttonShadow, big && styles.bigButton, { transform: [{ scale }] }]}>
         <LinearGradient
           colors={big ? [palette.uiPrimary, palette.uiPrimaryDark] : ['#ffffff', '#d7e6f0']}
@@ -49,7 +65,7 @@ function GameButton({
 
 export default function Controls({ onLeftIn, onLeftOut, onRightIn, onRightOut, onJump }: Props) {
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, noBrowserGestures]} pointerEvents="box-none">
       <View style={styles.dpad}>
         <GameButton label="◀" onPressIn={onLeftIn} onPressOut={onLeftOut} />
         <GameButton label="▶" onPressIn={onRightIn} onPressOut={onRightOut} />
