@@ -1,4 +1,11 @@
 import {
+  BIOCOIL_LANDED_DURATION,
+  BIOCOIL_LAUNCH_VY_MECHANICAL,
+  BIOCOIL_LAUNCH_VY_WILD,
+  BIOCOIL_LEAP_VX_MECHANICAL,
+  BIOCOIL_LEAP_VX_WILD,
+  BIOCOIL_RANGE,
+  BIOCOIL_WINDUP_WILD,
   DEATH_Y,
   FRICTION,
   GRAVITY,
@@ -6,6 +13,9 @@ import {
   JUMP_VELOCITY,
   MAX_FALL_SPEED,
   MOVE_SPEED,
+  PISTON_BLAST_DURATION,
+  PISTON_CHARGE_DURATION,
+  PISTON_CYCLE,
   PLAYER_HEIGHT,
   PLAYER_WIDTH,
   SPORE_AMPLITUDE,
@@ -17,7 +27,7 @@ import {
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
 } from './constants';
-import { BloomState, GamePhase, GameState, InputState, Level, Platform, Rect, SporeSprite } from './types';
+import { BioCoil, BloomState, GamePhase, GameState, InputState, Level, Platform, PressurePiston, Rect, SporeSprite } from './types';
 
 export function rectIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -53,6 +63,8 @@ export function createInitialState(level: Level): GameState {
     bloomState: 'mechanical',
     bloomNodeArmed: true,
     sporeSprites: level.sporeSprites.map((s) => ({ ...s })),
+    pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
+    bioCoils: level.bioCoils.map((c) => ({ ...c })),
   };
 }
 
@@ -64,6 +76,55 @@ function stepSporeSprites(prev: SporeSprite[], dt: number): SporeSprite[] {
   return prev.map((s) => {
     const phase = s.phase + (dt * (2 * Math.PI)) / SPORE_PERIOD;
     return { ...s, phase, y: s.baseY + Math.sin(phase) * SPORE_AMPLITUDE };
+  });
+}
+
+function stepPressurePistons(prev: PressurePiston[], dt: number): PressurePiston[] {
+  return prev.map((p) => ({ ...p, phase: (p.phase + dt) % PISTON_CYCLE }));
+}
+
+export function isPistonDangerous(piston: PressurePiston, bloomState: BloomState): boolean {
+  if (bloomState === 'wild') return false; // vines smother it — fully neutralized, not just paused
+  return piston.phase >= PISTON_CHARGE_DURATION && piston.phase < PISTON_CHARGE_DURATION + PISTON_BLAST_DURATION;
+}
+
+function stepBioCoils(prev: BioCoil[], player: Rect, bloomState: BloomState, dt: number): BioCoil[] {
+  return prev.map((c) => {
+    if (!c.alive) return c;
+
+    if (c.phase === 'coiled') {
+      const dx = player.x + player.width / 2 - (c.homeX + c.width / 2);
+      if (Math.abs(dx) > BIOCOIL_RANGE) return c;
+      if (bloomState === 'mechanical') {
+        // No telegraph in the mechanical form: it springs the instant it detects the player.
+        const facing: 1 | -1 = dx < 0 ? -1 : 1;
+        return { ...c, phase: 'launch', facing, vx: facing * BIOCOIL_LEAP_VX_MECHANICAL, vy: BIOCOIL_LAUNCH_VY_MECHANICAL };
+      }
+      return { ...c, phase: 'windup', timer: BIOCOIL_WINDUP_WILD };
+    }
+
+    if (c.phase === 'windup') {
+      const timer = c.timer - dt;
+      if (timer > 0) return { ...c, timer };
+      const dx = player.x + player.width / 2 - (c.homeX + c.width / 2);
+      const facing: 1 | -1 = dx < 0 ? -1 : 1;
+      return { ...c, phase: 'launch', facing, vx: facing * BIOCOIL_LEAP_VX_WILD, vy: BIOCOIL_LAUNCH_VY_WILD, timer: 0 };
+    }
+
+    if (c.phase === 'launch') {
+      const vy = c.vy + GRAVITY * dt;
+      const x = c.x + c.vx * dt;
+      const y = c.y + vy * dt;
+      if (y >= c.groundY) {
+        return { ...c, x: c.homeX, y: c.groundY, vx: 0, vy: 0, phase: 'landed', timer: BIOCOIL_LANDED_DURATION };
+      }
+      return { ...c, x, y, vy };
+    }
+
+    // 'landed'
+    const timer = c.timer - dt;
+    if (timer > 0) return { ...c, timer };
+    return { ...c, phase: 'coiled', timer: 0, x: c.homeX, y: c.groundY };
   });
 }
 
@@ -194,6 +255,52 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return e;
   });
 
+  const bioCoilsStepped = stepBioCoils(prev.bioCoils, prev.player, bloomState, dt);
+  const resolvedBioCoils = bioCoilsStepped.map((c) => {
+    if (!c.alive) return c;
+    if (!rectIntersect(player, c)) return c;
+
+    const isStomp = wasFalling && prevBottom <= c.y + STOMP_TOLERANCE;
+
+    if (c.phase === 'landed' && isStomp) {
+      player.vy = STOMP_BOUNCE;
+      score += 100;
+      return { ...c, alive: false };
+    }
+
+    // Stomping while coiled/winding up/mid-leap doesn't defeat it — the
+    // spring rejects the player's weight instead of yielding to it, dealing
+    // damage same as any other hit (which already sends the player back to
+    // the level start, so there's no separate "bounce" velocity to track).
+    if (player.invulnerableFor <= 0) {
+      lives -= 1;
+      player.invulnerableFor = INVULNERABLE_TIME;
+      if (lives > 0) {
+        player.x = level.spawn.x;
+        player.y = level.spawn.y;
+        player.vx = 0;
+        player.vy = 0;
+      }
+    }
+    return c;
+  });
+
+  const pressurePistons = stepPressurePistons(prev.pressurePistons, dt);
+  for (const piston of pressurePistons) {
+    if (!isPistonDangerous(piston, bloomState)) continue;
+    if (!rectIntersect(player, piston)) continue;
+    if (player.invulnerableFor <= 0) {
+      lives -= 1;
+      player.invulnerableFor = INVULNERABLE_TIME;
+      if (lives > 0) {
+        player.x = level.spawn.x;
+        player.y = level.spawn.y;
+        player.vx = 0;
+        player.vy = 0;
+      }
+    }
+  }
+
   const resolvedCoins = prev.coins.map((c) => {
     if (c.collected) return c;
     if (rectIntersect(player, c)) {
@@ -239,6 +346,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     bloomState,
     bloomNodeArmed,
     sporeSprites,
+    pressurePistons,
+    bioCoils: resolvedBioCoils,
   };
 }
 

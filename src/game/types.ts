@@ -43,6 +43,36 @@ export interface SporeSprite extends Rect {
   phase: number;
 }
 
+// A fixed environmental hazard embedded in the ground. Cycles charge -> blast
+// (contact damages the player) -> rest while in the mechanical bloom state;
+// shifting to wild neutralizes it completely instead of "defeating" it —
+// per the monster design doc, it's the one hazard with no kill condition.
+export interface PressurePiston extends Rect {
+  id: string;
+  /** Position within [0, PISTON_CYCLE), advanced by dt every frame. */
+  phase: number;
+}
+
+export type BioCoilPhase = 'coiled' | 'windup' | 'launch' | 'landed';
+
+// A vine-and-spring enemy that waits coiled at a home spot, then leaps at the
+// player when they're in range. Bloom Shift trades a big/telegraphed wild
+// leap for a short/instant mechanical one. Only stompable while 'landed'
+// (post-leap, defenseless); stomping it coiled/mid-leap bounces the player
+// off and damages them instead of defeating it.
+export interface BioCoil extends Rect {
+  id: string;
+  homeX: number;
+  groundY: number;
+  phase: BioCoilPhase;
+  /** Countdown for 'windup'/'landed'; unused during 'coiled'/'launch'. */
+  timer: number;
+  vx: number;
+  vy: number;
+  facing: 1 | -1;
+  alive: boolean;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -53,6 +83,8 @@ export interface Level {
   flag: Flag;
   shiftNodes: ShiftNode[];
   sporeSprites: SporeSprite[];
+  pressurePistons: PressurePiston[];
+  bioCoils: BioCoil[];
 }
 
 export interface Player extends Rect {
@@ -78,6 +110,8 @@ export interface GameState {
   /** True once the player has left every shift node's rect, so touching one again re-triggers a toggle. */
   bloomNodeArmed: boolean;
   sporeSprites: SporeSprite[];
+  pressurePistons: PressurePiston[];
+  bioCoils: BioCoil[];
 }
 
 export interface InputState {

@@ -1,15 +1,19 @@
 import {
+  BIOCOIL_HEIGHT,
+  BIOCOIL_WIDTH,
   COIN_SIZE,
   ENEMY_HEIGHT,
   ENEMY_WIDTH,
   FLAG_HEIGHT,
   FLAG_WIDTH,
+  PISTON_HEIGHT,
+  PISTON_WIDTH,
   SHIFT_NODE_SIZE,
   SPORE_SPRITE_HEIGHT,
   SPORE_SPRITE_WIDTH,
   VIEWPORT_HEIGHT,
 } from './constants';
-import { Coin, Enemy, Level, Platform, ShiftNode, SporeSprite } from './types';
+import { BioCoil, Coin, Enemy, Level, Platform, PressurePiston, ShiftNode, SporeSprite } from './types';
 
 const GROUND_Y = VIEWPORT_HEIGHT - 40;
 const GROUND_HEIGHT = 200; // extends below the visible viewport so pits look bottomless
@@ -79,6 +83,37 @@ function makeSporeSprites(): SporeSprite[] {
   }));
 }
 
+function makePressurePistons(): PressurePiston[] {
+  const defs: [string, number][] = [['piston1', 650]];
+  return defs.map(([id, x]) => ({
+    id,
+    x,
+    y: GROUND_Y - PISTON_HEIGHT,
+    width: PISTON_WIDTH,
+    height: PISTON_HEIGHT,
+    phase: 0,
+  }));
+}
+
+function makeBioCoils(): BioCoil[] {
+  const defs: [string, number][] = [['coil1', 3060]];
+  return defs.map(([id, x]) => ({
+    id,
+    x,
+    y: GROUND_Y - BIOCOIL_HEIGHT,
+    width: BIOCOIL_WIDTH,
+    height: BIOCOIL_HEIGHT,
+    homeX: x,
+    groundY: GROUND_Y - BIOCOIL_HEIGHT,
+    phase: 'coiled',
+    timer: 0,
+    vx: 0,
+    vy: 0,
+    facing: 1,
+    alive: true,
+  }));
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -144,5 +179,7 @@ export function createLevel(): Level {
     flag: { x: 3220, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
     shiftNodes: makeShiftNodes(),
     sporeSprites: makeSporeSprites(),
+    pressurePistons: makePressurePistons(),
+    bioCoils: makeBioCoils(),
   };
 }

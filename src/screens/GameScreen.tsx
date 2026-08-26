@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Background from '../components/Background';
+import BioCoilView from '../components/BioCoilView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
 import EnemyView from '../components/EnemyView';
@@ -9,6 +10,7 @@ import FlagView from '../components/FlagView';
 import Hud from '../components/Hud';
 import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
+import PressurePistonView from '../components/PressurePistonView';
 import ShiftNodeView from '../components/ShiftNodeView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
@@ -66,12 +68,18 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           {level.shiftNodes.map((n) => (
             <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
           ))}
+          {gameState.pressurePistons.map((p) => (
+            <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />
+          ))}
           <FlagView flag={level.flag} />
           {gameState.coins.map((c) => (
             <CoinView key={c.id} coin={c} />
           ))}
           {gameState.enemies.map((e) => (
             <EnemyView key={e.id} enemy={e} />
+          ))}
+          {gameState.bioCoils.map((c) => (
+            <BioCoilView key={c.id} coil={c} />
           ))}
           {gameState.sporeSprites.map((s) => (
             <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />
