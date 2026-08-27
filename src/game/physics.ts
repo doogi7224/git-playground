@@ -1,6 +1,5 @@
 import {
   AIR_CONTROL_MULT,
-  BIOCOIL_CORPSE_BOUNCE_MULT,
   BIOCOIL_LANDED_DURATION,
   BOSS_ATTACK_DURATION,
   BOSS_ATTACK_KNOCKBACK,
@@ -21,7 +20,6 @@ import {
   COG_SPRING_JUMP_MULT,
   COG_STEAMBOOST_EXTRA_DURATION,
   COG_WALLJUMP_HORIZ_MULT,
-  CORPSE_PLATFORM_DURATION,
   DASH_COOLDOWN,
   DASH_DURATION,
   DASH_INVULN,
@@ -60,7 +58,6 @@ import {
   ROOTHOOK_PUMP_ACCEL,
   ROOTHOOK_RANGE,
   ROOTHOOK_SWING_GRAVITY,
-  ROUTE_GATE_DURATION,
   SPORE_AMPLITUDE,
   SPORE_PERIOD,
   SPORE_RADIUS_MECHANICAL,
@@ -72,7 +69,6 @@ import {
   STEAM_GUST_CYCLE,
   STEAM_GUST_KNOCKBACK,
   STEAM_GUST_RANGE,
-  STEAMBLOWER_CORPSE_WIDTH_MULT,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
   WALL_SLIDE_FALL_MULT,
@@ -83,7 +79,6 @@ import {
   BloomState,
   Boss,
   CogPickup,
-  CorpsePlatform,
   EffectEvent,
   EffectKind,
   GamePhase,
@@ -94,7 +89,6 @@ import {
   Player,
   PressurePiston,
   Rect,
-  RouteGate,
   SporeSprite,
   SteamBlower,
 } from './types';
@@ -107,28 +101,8 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function activePlatforms(level: Level, bloomState: BloomState, activeGateIds: ReadonlySet<string>): Platform[] {
-  return level.platforms.filter(
-    (p) => (!p.visibleIn || p.visibleIn === bloomState) && (!p.activeGate || activeGateIds.has(p.activeGate))
-  );
-}
-
-// Route Gate foundation (GAME_DIRECTION_V2.md): same "pre-frame state decides
-// this frame's behavior" + edge-triggered-arming pattern as the Bloom Shift
-// node above, just per-gate and additive instead of a single global toggle.
-// Walking (or dashing) into an armed gate opens it for ROUTE_GATE_DURATION
-// seconds; leaving its rect re-arms it for next time.
-function stepRouteGates(gates: RouteGate[], player: Rect, dt: number): RouteGate[] {
-  return gates.map((g) => {
-    const touching = rectIntersect(player, g);
-    if (touching && g.armed) {
-      return { ...g, active: true, timer: ROUTE_GATE_DURATION, armed: false };
-    }
-    const armed = touching ? g.armed : true;
-    if (!g.active) return armed === g.armed ? g : { ...g, armed };
-    const timer = g.timer - dt;
-    return timer > 0 ? { ...g, armed, timer } : { ...g, armed, active: false, timer: 0 };
-  });
+function activePlatforms(level: Level, bloomState: BloomState): Platform[] {
+  return level.platforms.filter((p) => !p.visibleIn || p.visibleIn === bloomState);
 }
 
 export function createInitialState(level: Level): GameState {
@@ -162,7 +136,6 @@ export function createInitialState(level: Level): GameState {
       steamBoostTimer: 0,
       mirrorTrail: [],
       touchingWall: 0,
-      standingOnBounceCorpse: false,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -176,10 +149,8 @@ export function createInitialState(level: Level): GameState {
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
     steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
     cogPickups: level.cogPickups.map((c) => ({ ...c })),
-    corpsePlatforms: [],
     boss: { ...level.boss },
     portalActivated: false,
-    routeGates: level.routeGates.map((g) => ({ ...g })),
     checkpointIndex: 0,
     effects: [],
     effectSeq: 0,
@@ -360,31 +331,12 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     bloomNodeArmed = true;
   }
 
-  // Route Gate foundation (GAME_DIRECTION_V2.md): decided from the same
-  // pre-frame player position as Bloom Shift above, for the same reason (no
-  // one-frame lag between what's drawn solid and what's collided against).
-  const routeGates = stepRouteGates(prev.routeGates, prev.player, dt);
-  const activeGateIds = new Set(routeGates.filter((g) => g.active).map((g) => g.id));
-
-  // Post-defeat corpse platforms: decayed from prev's list so this frame's
-  // collision reflects how much time was left going into it. Newly-defeated
-  // enemies below add to a fresh list instead, available starting next frame
-  // — consistent with the "you can't stand on something created later this
-  // same frame" pattern already used for other same-frame state changes here.
-  const decayedCorpsePlatforms: CorpsePlatform[] = prev.corpsePlatforms
-    .map((p) => ({ ...p, timeLeft: p.timeLeft - dt }))
-    .filter((p) => p.timeLeft > 0);
   // The boss (while alive) is solid, unlike every other monster in this file —
   // it physically blocks the path to the arena's far side instead of being a
   // walk-through hazard, so defeating it is the only way past. Decided from
   // prev.boss.alive (this frame's stomp resolution, below, can't remove its
-  // own blocking mid-frame — same "not available until next frame" pattern
-  // used for freshly-created corpse platforms).
-  const platforms: (Platform | CorpsePlatform | Boss)[] = [
-    ...activePlatforms(level, bloomState, activeGateIds),
-    ...decayedCorpsePlatforms,
-    ...(prev.boss.alive ? [prev.boss] : []),
-  ];
+  // own blocking mid-frame).
+  const platforms: (Platform | Boss)[] = [...activePlatforms(level, bloomState), ...(prev.boss.alive ? [prev.boss] : [])];
 
   // Same decay pattern as corpse platforms, for the read-only effect log
   // consumed by particle-burst components — physics never reads this back.
@@ -504,9 +456,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       }
 
       if (input.jumpPressed && player.onGround) {
-        // Bio-Coil corpse platform: a defeated Bio-Coil's spring gives the
-        // next jump a bonus bounce, per the monster design doc.
-        player.vy = jumpVelocity * (player.standingOnBounceCorpse ? BIOCOIL_CORPSE_BOUNCE_MULT : 1);
+        player.vy = jumpVelocity;
         player.onGround = false;
       } else if (input.jumpPressed && player.touchingWall !== 0) {
         // Wall-jump: uses the pre-frame wall-touch side (set by last frame's
@@ -551,11 +501,9 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     // ("positive = landing on top, negative = bonked a ceiling from below")
     // ordinarily matches how the player actually approached the platform —
     // but a stomp bounce can leave vy pointing the "wrong" way relative to a
-    // platform that appears exactly at the bounce's origin (a freshly-spawned
-    // corpse platform always does). Guarding each branch with the pre-move
+    // nearby platform. Guarding each branch with the pre-move
     // position confirms the player was actually on that side beforehand.
     player.onGround = false;
-    let landedOnBounceCorpse = false;
     const preMoveBottom = player.y + player.height;
     player.y += player.vy * dt;
     for (const plat of platforms) {
@@ -564,7 +512,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
           player.y = plat.y - player.height;
           player.vy = 0;
           player.onGround = true;
-          if ('source' in plat && plat.source === 'bioCoil') landedOnBounceCorpse = true;
           if ('hp' in plat) landedOnBoss = true;
         } else if (player.vy < 0 && preMoveBottom - player.height >= plat.y + plat.height) {
           player.y = plat.y + plat.height;
@@ -572,7 +519,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
         }
       }
     }
-    player.standingOnBounceCorpse = landedOnBounceCorpse;
 
     if (player.onGround || player.touchingWall !== 0) {
       player.airDashAvailable = true;
@@ -631,10 +577,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const wasFalling = prev.player.vy > 0;
   const prevBottom = prev.player.y + prev.player.height;
 
-  // Populated by each defeat below; combined with this frame's decayed
-  // corpse platforms in the return value (available starting next frame).
-  const newCorpsePlatforms: CorpsePlatform[] = [];
-
   const resolvedEnemies = enemies.map((e) => {
     if (!e.alive) return e;
     if (!rectIntersect(player, e)) return e;
@@ -646,7 +588,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       score += 100;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', e.x + e.width / 2, e.y);
-      newCorpsePlatforms.push({ id: `corpse-${e.id}`, x: e.x, y: e.y, width: e.width, height: e.height, source: 'enemy', timeLeft: CORPSE_PLATFORM_DURATION });
       return { ...e, alive: false };
     }
 
@@ -669,7 +610,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       score += 100;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', c.x + c.width / 2, c.y);
-      newCorpsePlatforms.push({ id: `corpse-${c.id}`, x: c.x, y: c.y, width: c.width, height: c.height, source: 'bioCoil', timeLeft: CORPSE_PLATFORM_DURATION });
       return { ...c, alive: false };
     }
 
@@ -719,16 +659,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       const hp = b.hp - 1;
       if (hp <= 0) {
         score += 300;
-        const corpseWidth = b.width * STEAMBLOWER_CORPSE_WIDTH_MULT;
-        newCorpsePlatforms.push({
-          id: `corpse-${b.id}`,
-          x: b.x + b.width / 2 - corpseWidth / 2,
-          y: b.y + b.height - 16,
-          width: corpseWidth,
-          height: 16,
-          source: 'steamBlower',
-          timeLeft: CORPSE_PLATFORM_DURATION,
-        });
         return { ...b, hp: 0, alive: false };
       }
       score += 50;
@@ -912,10 +842,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     bioCoils: resolvedBioCoils,
     steamBlowers: resolvedSteamBlowers,
     cogPickups: resolvedCogPickups,
-    corpsePlatforms: [...decayedCorpsePlatforms, ...newCorpsePlatforms],
     boss,
     portalActivated,
-    routeGates,
     checkpointIndex,
     effects: [...decayedEffects, ...newEffects],
     effectSeq,

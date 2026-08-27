@@ -8,7 +8,6 @@ import CheckpointView from '../components/CheckpointView';
 import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
-import CorpsePlatformView from '../components/CorpsePlatformView';
 import EffectsView from '../components/EffectsView';
 import EnemyView from '../components/EnemyView';
 import FlagView from '../components/FlagView';
@@ -131,17 +130,10 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           />
           <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
             {level.platforms
-              .filter(
-                (p) =>
-                  (!p.visibleIn || p.visibleIn === gameState.bloomState) &&
-                  (!p.activeGate || gameState.routeGates.find((g) => g.id === p.activeGate)?.active)
-              )
+              .filter((p) => !p.visibleIn || p.visibleIn === gameState.bloomState)
               .map((p) => (
                 <PlatformView key={p.id} platform={p} />
               ))}
-            {gameState.corpsePlatforms.map((p) => (
-              <CorpsePlatformView key={p.id} platform={p} />
-            ))}
             {level.shiftNodes.map((n) => (
               <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
             ))}

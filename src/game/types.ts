@@ -11,8 +11,6 @@ export interface Platform extends Rect {
   id: string;
   /** Only exists (renders + collides) while bloomState matches. Undefined = always present. */
   visibleIn?: BloomState;
-  /** Only exists (renders + collides) while the named RouteGate is active. Undefined = always present. */
-  activeGate?: string;
 }
 
 export interface Enemy extends Rect {
@@ -34,29 +32,6 @@ export interface Flag extends Rect {}
 
 export interface ShiftNode extends Rect {
   id: string;
-}
-
-export type RouteGateKind = 'vine' | 'gear';
-
-// GAME_DIRECTION_V2.md's "Momentum Route" foundation: a local, temporary
-// choice point, unlike the global always-on Bloom Shift toggle above. Walking
-// (or dashing) into one opens ITS OWN local reward platforms (tagged via
-// Platform.activeGate) for ROUTE_GATE_DURATION seconds, then they revert —
-// safely, since every Route Gate's reward platforms are positioned above
-// solid ground, never a pit, so a closed/missed gate just returns the player
-// to normal footing (per the doc's fairness rule). Same shape/lifecycle
-// pattern as Boss: one type serves both the static level definition
-// (Level.routeGates, freshly copied into GameState.routeGates on
-// createInitialState/restart) and the evolving runtime record.
-export interface RouteGate extends Rect {
-  id: string;
-  kind: RouteGateKind;
-  /** True for ROUTE_GATE_DURATION seconds after being triggered; gates this gate's tagged platforms. */
-  active: boolean;
-  /** Seconds remaining while active; unused otherwise. */
-  timer: number;
-  /** True once the player has left this gate's rect, so re-entering re-triggers it (same arming pattern as bloomNodeArmed). */
-  armed: boolean;
 }
 
 // A floating hazard that hovers on a fixed sine-wave path and slows the
@@ -137,22 +112,10 @@ export interface Boss extends Rect {
   facing: 1 | -1;
 }
 
-// A defeated monster's remains, per the monster design doc: Cogmite, Bio-Coil,
-// and Steam Blower all leave a temporary solid platform for a few seconds
-// after being defeated. Bio-Coil's is additionally a bonus-bounce spring.
-export type CorpsePlatformSource = 'enemy' | 'bioCoil' | 'steamBlower';
-
-export interface CorpsePlatform extends Rect {
-  id: string;
-  source: CorpsePlatformSource;
-  timeLeft: number;
-}
-
 // A short-lived, presentation-only record of "something happened here" —
 // physics.ts appends one per stomp/hit/pickup and never reads the list back,
 // so this can't influence gameplay; it only exists for effect components
-// (particle bursts etc.) to render against. Same timeLeft-countdown pattern
-// as CorpsePlatform.
+// (particle bursts etc.) to render against.
 export type EffectKind = 'impact' | 'hit' | 'pickup' | 'gearPickup';
 
 export interface EffectEvent {
@@ -204,7 +167,6 @@ export interface Level {
   cogPickups: CogPickup[];
   portal: Portal;
   boss: Boss;
-  routeGates: RouteGate[];
 }
 
 export interface Player extends Rect {
@@ -245,8 +207,6 @@ export interface Player extends Rect {
   mirrorTrail: { x: number; y: number; age: number }[];
   /** While airborne and pressed against a wall (wall-slide), the direction a wall-jump would push (away from the wall); 0 = not touching one. Consumed by a wall-jump. */
   touchingWall: -1 | 0 | 1;
-  /** True while standing on a defeated Bio-Coil's corpse platform, which gives the next ground-jump a bonus bounce. */
-  standingOnBounceCorpse: boolean;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -266,11 +226,9 @@ export interface GameState {
   bioCoils: BioCoil[];
   steamBlowers: SteamBlower[];
   cogPickups: CogPickup[];
-  corpsePlatforms: CorpsePlatform[];
   boss: Boss;
   /** True once the player has crossed the portal into the boss arena; only used to fire the one-time crossing effect. */
   portalActivated: boolean;
-  routeGates: RouteGate[];
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
   checkpointIndex: number;
   /** Recent stomp/hit/pickup moments for effect components to render; never read by physics itself. */

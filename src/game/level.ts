@@ -15,8 +15,6 @@ import {
   PORTAL_HEIGHT,
   PORTAL_WIDTH,
   ROOTHOOK_SIZE,
-  ROUTE_GATE_HEIGHT,
-  ROUTE_GATE_WIDTH,
   SHIFT_NODE_SIZE,
   SPORE_SPRITE_HEIGHT,
   SPORE_SPRITE_WIDTH,
@@ -37,7 +35,6 @@ import {
   Portal,
   PressurePiston,
   RootPoint,
-  RouteGate,
   ShiftNode,
   SporeSprite,
   SteamBlower,
@@ -113,32 +110,6 @@ const bloomPlatforms: Platform[] = [
   { id: 'bloom-final', x: 4450, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
   { id: 'bloom-area3', x: 5700, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
 ];
-
-// Momentum Route foundation (GAME_DIRECTION_V2.md): one Vine Route and one
-// Gear Route gate, placed in the genuinely open ground between spawn (x=40)
-// and the first existing tutorial content (shift-early at x=220) -- every
-// other stretch of Area 1's opening ground turned out to already be occupied
-// (e1 patrols 400-620, piston1 sits at 650, the first pit starts at 700), so
-// this is the only spot free of pre-existing hazards. Every platform either
-// route opens sits over this same solid ground, so a closed/missed gate
-// never costs the player anything but the bonus coins.
-const routeGateRewardPlatforms: Platform[] = [
-  // Vine Route: low, gentle, walkable hops -- the "safe" choice.
-  { id: 'vine1-p1', x: 88, y: GROUND_Y - 40, width: 30, height: 14, activeGate: 'vineGate1' },
-  { id: 'vine1-p2', x: 130, y: GROUND_Y - 55, width: 30, height: 14, activeGate: 'vineGate1' },
-  { id: 'vine1-p3', x: 172, y: GROUND_Y - 40, width: 30, height: 14, activeGate: 'vineGate1' },
-  // Gear Route: higher and further apart -- reachable without a dash, but
-  // demands continuous momentum instead of the Vine Route's gentle hops.
-  { id: 'gear1-p1', x: 140, y: GROUND_Y - 85, width: 30, height: 14, activeGate: 'gearGate1' },
-  { id: 'gear1-p2', x: 185, y: GROUND_Y - 120, width: 30, height: 14, activeGate: 'gearGate1' },
-];
-
-function makeRouteGates(): RouteGate[] {
-  return [
-    { id: 'vineGate1', kind: 'vine', x: 90, y: GROUND_Y - ROUTE_GATE_HEIGHT, width: ROUTE_GATE_WIDTH, height: ROUTE_GATE_HEIGHT, active: false, timer: 0, armed: true },
-    { id: 'gearGate1', kind: 'gear', x: 135, y: GROUND_Y - ROUTE_GATE_HEIGHT, width: ROUTE_GATE_WIDTH, height: ROUTE_GATE_HEIGHT, active: false, timer: 0, armed: true },
-  ];
-}
 
 function makeShiftNodes(): ShiftNode[] {
   return [
@@ -380,7 +351,7 @@ export function createLevel(): Level {
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
-    platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms, ...routeGateRewardPlatforms],
+    platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
     // Decorative now — reaching it no longer wins on its own, since the boss
@@ -396,6 +367,5 @@ export function createLevel(): Level {
     cogPickups: makeCogPickups(),
     portal: makePortal(),
     boss: makeBoss(),
-    routeGates: makeRouteGates(),
   };
 }

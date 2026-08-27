@@ -374,3 +374,14 @@ Claude는 요구된 기능만 구현하는 수동적 도구가 아니라 완성�
 - Area 1은 하나의 자연스러운 진행 동선으로 복구한다. 잘 플레이하면 높은 코인 줄을 잇고, 놓치면 아래 안전한 길로 이어지게 한다.
 - Codex가 화면에서 Gate 프레젠테이션을 제거했고, Claude는 `GAME_DIRECTION_V2.md`의 **Route Gate 완전 제거** 작업을 다음 구현 우선순위로 처리한다.
 - 기존 Bloom Shift는 지금 단계에서 추가 확장하지 않는다. 제거 여부는 별도 사용자 승인 후 결정한다.
+
+---
+
+## 22. 처치 후 발판 생성 폐기 (사용자 승인)
+
+> 이 섹션은 사용자 요청에 따른 최신 게임플레이 기준이다.
+
+- Cogmite, Bio-Coil, Steam Blower, 그 밖의 적을 처치해도 **임시 발판/시체 플랫폼을 생성하지 않는다**.
+- `CorpsePlatform`, `corpsePlatforms`, `CorpsePlatformView`, `CORPSE_PLATFORM_DURATION` 및 처치 시 플랫폼을 추가하는 로직을 제거한다.
+- 처치의 보상은 기존 점수·FLOW/Overdrive·바운스와 짧고 명확한 파편 효과만 남긴다. 진행에 필요한 발판은 레벨 지형으로만 설계한다.
+- 제거 후 스톰프, Bio-Coil 처치, Steam Blower 처치, 보스전, 체크포인트 회귀를 검증한다.

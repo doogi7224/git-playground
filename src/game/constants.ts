@@ -129,9 +129,6 @@ export const OVERDRIVE_WALLJUMP_GAIN = 10; // GDD lists wall-jump alongside dash
 // Post-defeat corpse platforms: per the monster design doc, Cogmite, Bio-Coil,
 // and Steam Blower all leave a temporary solid platform for a few seconds
 // after being defeated.
-export const CORPSE_PLATFORM_DURATION = 3; // seconds, per the doc's "3초간 임시 발판" for all three
-export const BIOCOIL_CORPSE_BOUNCE_MULT = 1.3; // doc: jumping off a defeated Bio-Coil's spring gives +30% jump height
-export const STEAMBLOWER_CORPSE_WIDTH_MULT = 2.5; // doc calls its collapse a "wide" platform, vs. the other two using their own body size
 
 // Portal: purely a level-transition marker into the boss arena, no collision
 // logic of its own — just a rect the player crosses once, which plays a
@@ -160,9 +157,6 @@ export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the
 // the level's core "state changes what's available" hook. New content, no
 // prior numbers to preserve — sized as a walk/dash-through doorway roughly
 // matching the existing Shift Node/Portal trigger footprint.
-export const ROUTE_GATE_WIDTH = 30;
-export const ROUTE_GATE_HEIGHT = 70;
-export const ROUTE_GATE_DURATION = 6; // seconds a gate's tagged platforms stay active, per the design doc
 
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations
