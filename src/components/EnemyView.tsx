@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { BloomState, Enemy } from '../game/types';
 import { palette } from '../theme';
 
@@ -7,6 +7,24 @@ import { palette } from '../theme';
 // sprite with legs splayed wide) and anchored so its feet sit on the
 // hitbox's bottom edge, centered on the hitbox's horizontal center.
 const VISUAL_SIZE = 56;
+const WALK_FRAME_DISTANCE = 18;
+const COGMITE_FRAMES = {
+  idle: [
+    require('../../assets/sprites/cogmite_v2/cogmite_idle_0.png'),
+    require('../../assets/sprites/cogmite_v2/cogmite_idle_1.png'),
+  ],
+  walk: [
+    require('../../assets/sprites/cogmite_v2/cogmite_walk_0.png'),
+    require('../../assets/sprites/cogmite_v2/cogmite_walk_1.png'),
+    require('../../assets/sprites/cogmite_v2/cogmite_walk_2.png'),
+    require('../../assets/sprites/cogmite_v2/cogmite_walk_3.png'),
+  ],
+  alert: require('../../assets/sprites/cogmite_v2/cogmite_alert.png'),
+} satisfies {
+  idle: ImageSourcePropType[];
+  walk: ImageSourcePropType[];
+  alert: ImageSourcePropType;
+};
 
 export default function EnemyView({ enemy, bloomState }: { enemy: Enemy; bloomState: BloomState }) {
   const charging = enemy.chargeDir !== 0;
@@ -44,11 +62,14 @@ export default function EnemyView({ enemy, bloomState }: { enemy: Enemy; bloomSt
 
   const left = enemy.x + enemy.width / 2 - VISUAL_SIZE / 2;
   const top = enemy.y + enemy.height - VISUAL_SIZE;
+  const spriteSource: ImageSourcePropType = charging
+    ? COGMITE_FRAMES.alert
+    : COGMITE_FRAMES.walk[Math.floor(Math.abs(enemy.x) / WALK_FRAME_DISTANCE) % COGMITE_FRAMES.walk.length];
 
   return (
     <View style={[styles.wrap, { left, top }]}>
       <Animated.Image
-        source={require('../../assets/sprites/cogmite.png')}
+        source={spriteSource}
         resizeMode="contain"
         style={[
           styles.sprite,
