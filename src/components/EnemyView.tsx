@@ -6,7 +6,7 @@ import { palette } from '../theme';
 // Cogmite is drawn larger than its collision box (a full-body AI-generated
 // sprite with legs splayed wide) and anchored so its feet sit on the
 // hitbox's bottom edge, centered on the hitbox's horizontal center.
-const VISUAL_SIZE = 56;
+const VISUAL_SIZE = 42;
 const WALK_FRAME_DISTANCE = 18;
 const COGMITE_FRAMES = {
   idle: [

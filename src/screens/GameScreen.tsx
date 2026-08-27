@@ -19,7 +19,6 @@ import PortalView from '../components/PortalView';
 import PressurePistonView from '../components/PressurePistonView';
 import RootPointView from '../components/RootPointView';
 import RopeView from '../components/RopeView';
-import RouteGateView from '../components/RouteGateView';
 import ShiftNodeView from '../components/ShiftNodeView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import SteamBlowerView from '../components/SteamBlowerView';
@@ -145,9 +144,6 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             ))}
             {level.shiftNodes.map((n) => (
               <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
-            ))}
-            {gameState.routeGates.map((g) => (
-              <RouteGateView key={g.id} gate={g} />
             ))}
             {level.rootPoints.map((r) => (
               <RootPointView key={r.id} point={r} />

@@ -7,7 +7,7 @@ import { Player } from '../game/types';
 // running-pose sprite with limbs splayed wide, so a good portion of the
 // square is empty space) and anchored so its feet sit on the hitbox's
 // bottom edge, centered on the hitbox's horizontal center.
-const VISUAL_SIZE = 58;
+const VISUAL_SIZE = 44;
 const LANDING_IMPACT_VY = 400; // px/s: falling faster than this on landing triggers a squash pulse
 const DASH_TRAIL_LENGTH = 3; // afterimage copies kept while dashing
 const IDLE_FRAME_MS = 520;

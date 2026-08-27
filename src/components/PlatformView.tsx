@@ -1,151 +1,48 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Platform } from '../game/types';
-import { palette } from '../theme';
 
-// AI-generated illustrations (matches the Sprout/Cogmite art direction).
-// Both source images are a horizontally-repeating band (evenly spaced rivets /
-// woven vines), so instead of stretching one image across a platform's full
-// width — which would squash or smear the rivet/weave pattern differently on
-// every platform — we tile fixed-aspect copies across the width, the same
-// "array of repeated children" convention this file already used for
-// dirtSeam/rivet/leafBump. Drawn slightly taller than the collision box
-// (graphic vs. hitbox stay separate, CLAUDE.md 19) so the detail reads at
-// this platform's small on-screen size; platform.x/y/width/height (the
-// actual collision rect) are untouched.
-const PLANK_MECH_SOURCE = require('../../assets/platforms/plank_mech.png');
-const PLANK_WILD_SOURCE = require('../../assets/platforms/plank_wild.png');
-const PLANK_IMAGE_ASPECT = 700 / 391;
-const PLANK_VISUAL_SCALE = 1.4;
-
-function PlankTiles({ width, height, source }: { width: number; height: number; source: number }) {
-  const visualHeight = height * PLANK_VISUAL_SCALE;
-  const tileWidth = visualHeight * PLANK_IMAGE_ASPECT;
-  const tileCount = Math.max(1, Math.ceil(width / tileWidth));
-  const top = (height - visualHeight) / 2;
-  return (
-    <View style={[styles.plankClip, { width, height }]}>
-      {Array.from({ length: tileCount }, (_, i) => (
-        <Image
-          key={i}
-          source={source}
-          resizeMode="stretch"
-          style={{ position: 'absolute', left: i * tileWidth, top, width: tileWidth, height: visualHeight }}
-        />
-      ))}
-    </View>
-  );
-}
-
+// Collision remains authored by the game. This is intentionally a small,
+// hand-painted-feeling surface treatment: the world reads as open landscape,
+// not a tall block of repeated metal panels.
 export default function PlatformView({ platform }: { platform: Platform }) {
-  const isGround = platform.id.startsWith('ground');
-  const routeKind = platform.activeGate?.startsWith('vine') ? 'vine' : platform.activeGate?.startsWith('gear') ? 'gear' : null;
-
-  if (isGround) {
-    return (
-      <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-        <LinearGradient colors={[palette.grassTop, palette.grassMid]} style={styles.grassCap}>
-          {Array.from({ length: Math.ceil(platform.width / 46) }, (_, i) => (
-            <View key={i} style={[styles.rivet, { left: i * 46 + 20 }]} />
-          ))}
-        </LinearGradient>
-        <View style={styles.dirtBody}>
-          {Array.from({ length: Math.ceil(platform.width / 46) }, (_, i) => (
-            <View key={i} style={[styles.dirtSeam, { left: i * 46 + 10 }]} />
-          ))}
-        </View>
-      </View>
-    );
-  }
-
-  if (platform.visibleIn === 'wild') {
-    return (
-      <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-        <PlankTiles width={platform.width} height={platform.height} source={PLANK_WILD_SOURCE} />
-        <View style={styles.plankShadow} />
-      </View>
-    );
-  }
-
-  if (routeKind) {
-    const isVineRoute = routeKind === 'vine';
-    return (
-      <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-        <PlankTiles width={platform.width} height={platform.height} source={isVineRoute ? PLANK_WILD_SOURCE : PLANK_MECH_SOURCE} />
-        <View style={[styles.routeGlow, { backgroundColor: isVineRoute ? 'rgba(150, 235, 118, 0.48)' : 'rgba(255, 204, 90, 0.52)' }]} />
-        <View style={styles.routeArrow} />
-        <View style={styles.plankShadow} />
-      </View>
-    );
-  }
+  const ground = platform.id.startsWith('ground');
+  const vine = platform.visibleIn === 'wild';
+  const accentCount = Math.max(1, Math.floor(platform.width / (ground ? 62 : 28)));
 
   return (
     <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-      <PlankTiles width={platform.width} height={platform.height} source={PLANK_MECH_SOURCE} />
-      <View style={styles.plankShadow} />
+      <LinearGradient colors={ground ? ['#a8dd70', '#4e9a4f'] : vine ? ['#c4ec86', '#5b9d4f'] : ['#b8df72', '#57954a']} style={styles.mossCap}>
+        {Array.from({ length: accentCount }, (_, index) => (
+          <View key={index} style={[styles.grassTuft, { left: 8 + index * (ground ? 62 : 28) }]} />
+        ))}
+      </LinearGradient>
+      {ground ? (
+        <LinearGradient colors={['#745238', '#3c2a24']} style={styles.earth}>
+          {Array.from({ length: accentCount }, (_, index) => (
+            <View key={index} style={[styles.earthStone, { left: 18 + index * 62, top: 12 + (index % 2) * 12 }]} />
+          ))}
+        </LinearGradient>
+      ) : (
+        <View style={styles.floatingBody}>
+          <View style={styles.rootLine} />
+          <View style={[styles.rootLine, styles.rootLineShort]} />
+        </View>
+      )}
+      {!ground && <View style={styles.shadow} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    position: 'absolute',
-  },
-  grassCap: {
-    height: 10,
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
-  rivet: {
-    position: 'absolute',
-    top: 3,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-  },
-  dirtBody: {
-    flex: 1,
-    backgroundColor: palette.dirt,
-    overflow: 'hidden',
-  },
-  dirtSeam: {
-    position: 'absolute',
-    top: 4,
-    bottom: 0,
-    width: 3,
-    backgroundColor: palette.dirtLine,
-  },
-  plankClip: {
-    overflow: 'hidden',
-  },
-  plankShadow: {
-    position: 'absolute',
-    left: 6,
-    right: 6,
-    bottom: -6,
-    height: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-  },
-  routeGlow: {
-    position: 'absolute',
-    top: -3,
-    left: 2,
-    right: 2,
-    height: 5,
-    borderRadius: 4,
-  },
-  routeArrow: {
-    position: 'absolute',
-    right: 5,
-    top: 3,
-    width: 5,
-    height: 5,
-    borderTopWidth: 1.5,
-    borderRightWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.85)',
-    transform: [{ rotate: '45deg' }],
-  },
+  base: { position: 'absolute' },
+  mossCap: { height: 8, borderTopLeftRadius: 5, borderTopRightRadius: 5, overflow: 'visible' },
+  grassTuft: { position: 'absolute', top: -3, width: 9, height: 6, borderTopLeftRadius: 8, borderTopRightRadius: 8, borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(222,255,174,0.75)' },
+  earth: { flex: 1, overflow: 'hidden', borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
+  earthStone: { position: 'absolute', width: 9, height: 6, borderRadius: 4, backgroundColor: 'rgba(184,137,91,0.34)', transform: [{ rotate: '-12deg' }] },
+  floatingBody: { minHeight: 7, flex: 1, overflow: 'hidden', backgroundColor: '#5e4432', borderBottomLeftRadius: 5, borderBottomRightRadius: 5 },
+  rootLine: { position: 'absolute', top: 4, left: '18%', width: '66%', height: 2, borderRadius: 2, backgroundColor: 'rgba(220,175,106,0.4)' },
+  rootLineShort: { top: 8, left: '32%', width: '32%', backgroundColor: 'rgba(44,31,24,0.35)' },
+  shadow: { position: 'absolute', top: '100%', left: 3, right: 3, height: 4, borderRadius: 5, backgroundColor: 'rgba(21,42,35,0.28)' },
 });
