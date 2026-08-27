@@ -19,9 +19,9 @@ const SCOUT_FRAMES = {
   ],
   run: [
     require('../../assets/sprites/scout_v3/scout_run_0.png'),
+    require('../../assets/sprites/scout_v3/scout_run_1.png'),
     require('../../assets/sprites/scout_v3/scout_run_0.png'),
-    require('../../assets/sprites/scout_v3/scout_run_0.png'),
-    require('../../assets/sprites/scout_v3/scout_run_0.png'),
+    require('../../assets/sprites/scout_v3/scout_run_1.png'),
   ],
   jump: require('../../assets/sprites/scout_v3/scout_run_0.png'),
   fall: require('../../assets/sprites/scout_v3/scout_run_0.png'),

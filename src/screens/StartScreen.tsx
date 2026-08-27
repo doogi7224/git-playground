@@ -14,8 +14,8 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
         colors={['rgba(16,35,32,0.04)', 'rgba(22,40,34,0.18)', 'rgba(18,28,24,0.62)']}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.ambientGearA} />
-      <View style={styles.ambientGearB} />
+      <View style={styles.ambientLeafA} />
+      <View style={styles.ambientLeafB} />
 
       <View style={styles.brassPanel}>
         <View style={[styles.rivetCorner, styles.rivetTL]} />
@@ -23,14 +23,14 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
         <View style={[styles.rivetCorner, styles.rivetBL]} />
         <View style={[styles.rivetCorner, styles.rivetBR]} />
 
-        <Text style={styles.eyebrow}>A WHIMSICAL STEAMPUNK ADVENTURE</Text>
-        <Text style={styles.title}>GEARWOOD</Text>
+        <Text style={styles.eyebrow}>A BRIGHT FOREST EXPEDITION</Text>
+        <Text style={styles.title}>WILDROOT</Text>
         <View style={styles.titleRule}>
           <View style={styles.ruleLine} />
-          <View style={styles.ruleCog}><View style={styles.ruleCogCore} /></View>
+          <View style={styles.ruleLeaf}><View style={styles.ruleLeafCore} /></View>
           <View style={styles.ruleLine} />
         </View>
-        <Text style={styles.tagline}>THE BROKEN SPRING · 파괴된 태엽</Text>
+        <Text style={styles.tagline}>THE SUNSEED TRAIL · 태양씨앗의 길</Text>
 
         <View style={styles.heroRow}>
           <Image
@@ -39,11 +39,11 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
             style={styles.hero}
           />
           <View style={styles.storyBlock}>
-            <Text style={styles.storyTitle}>멈춘 숲을 질주하라</Text>
+            <Text style={styles.storyTitle}>숲의 흐름을 이어가라</Text>
             <Text style={styles.subtitle}>
-              대시와 루트훅, 정확한 스톰프로 기어숲의 멈춘 심장을 다시 깨우세요.
+              달리고, 뛰고, 대시하고, 루트훅을 이어 태양씨앗의 길을 완주하세요.
             </Text>
-            <Text style={styles.featureLine}>DASH  ·  ROOT-HOOK  ·  OVERDRIVE</Text>
+            <Text style={styles.featureLine}>DASH  ·  ROOT-HOOK  ·  RELIC BOW</Text>
           </View>
         </View>
 
@@ -51,15 +51,15 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
           <Animated.View style={[styles.startButtonShadow, { transform: [{ scale }] }]}>
             <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.startButton}>
               <View style={styles.startGlassHighlight} />
-              <Text style={styles.startKicker}>BEGIN THE EXPEDITION</Text>
-              <Text style={styles.startLabel}>게임 시작</Text>
+              <Text style={styles.startKicker}>BEGIN THE TRAIL</Text>
+              <Text style={styles.startLabel}>여정 시작</Text>
             </LinearGradient>
           </Animated.View>
         </Pressable>
 
         <View style={styles.controlStrip}>
-          <Text style={styles.hint}>◀▶ 이동　▲ 점프　» 대시　◎ 루트훅</Text>
-          <Text style={styles.hintSub}>적은 위에서 밟고 · 체크포인트에서 다시 시작</Text>
+          <Text style={styles.hint}>◀▶ 이동　▲ 점프　» 대시　◎ 루트훅　➤ 활</Text>
+          <Text style={styles.hintSub}>활은 초반 유물 획득 후 사용 · 적은 밟거나 화살로 대응</Text>
         </View>
       </View>
     </ImageBackground>
@@ -68,13 +68,13 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 18, overflow: 'hidden' },
-  ambientGearA: {
+  ambientLeafA: {
     position: 'absolute', width: 180, height: 180, borderRadius: 90, borderWidth: 18,
-    borderColor: 'rgba(224,169,79,0.09)', left: -72, bottom: -42,
+    borderColor: 'rgba(150, 217, 141, 0.12)', left: -72, bottom: -42,
   },
-  ambientGearB: {
+  ambientLeafB: {
     position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 13,
-    borderColor: 'rgba(60,122,86,0.12)', right: -40, top: 52,
+    borderColor: 'rgba(240, 198, 93, 0.12)', right: -40, top: 52,
   },
   brassPanel: {
     width: '100%', maxWidth: 560, alignItems: 'center', paddingVertical: 22, paddingHorizontal: 22,
@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
   },
   titleRule: { width: '72%', flexDirection: 'row', alignItems: 'center', gap: 8 },
   ruleLine: { flex: 1, height: 1, backgroundColor: palette.uiPlateEdge },
-  ruleCog: {
-    width: 14, height: 14, borderRadius: 7, backgroundColor: palette.uiPrimary,
+  ruleLeaf: {
+    width: 14, height: 10, borderRadius: 8, backgroundColor: palette.mossTint,
     alignItems: 'center', justifyContent: 'center',
   },
-  ruleCogCore: { width: 5, height: 5, borderRadius: 3, backgroundColor: palette.uiPlateDeep },
+  ruleLeafCore: { width: 5, height: 5, borderRadius: 3, backgroundColor: palette.uiPlateDeep },
   tagline: { marginTop: 4, fontSize: 12, fontWeight: '800', color: palette.uiPrimary, letterSpacing: 0.8 },
   heroRow: {
     width: '100%', marginTop: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,

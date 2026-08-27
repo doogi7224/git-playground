@@ -202,7 +202,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <View style={[styles.rivetCorner, styles.rivetBL]} />
             <View style={[styles.rivetCorner, styles.rivetBR]} />
             <Text style={styles.overlayEyebrow}>
-              {gameState.phase === 'win' ? 'EXPEDITION COMPLETE' : 'EXPEDITION INTERRUPTED'}
+              {gameState.phase === 'win' ? 'TRAIL COMPLETE' : 'TRAIL INTERRUPTED'}
             </Text>
             <View
               style={[
@@ -218,13 +218,13 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
               />
             </View>
             <Text style={styles.overlayTitle}>
-              {gameState.phase === 'win' ? '기어숲의 심장이 다시 뜁니다' : '태엽이 멈췄습니다'}
+              {gameState.phase === 'win' ? '태양씨앗의 길을 완주했습니다' : '길 위에서 잠시 멈췄습니다'}
             </Text>
             <Text style={styles.overlaySubtitle}>
-              {gameState.phase === 'win' ? '보호자를 깨우고 숲의 균형을 되찾았습니다.' : '장비를 정비하고 마지막 체크포인트에서 다시 도전하세요.'}
+              {gameState.phase === 'win' ? '숲의 표식을 되찾고, 다음 원정의 길을 열었습니다.' : '마지막 표식에서 다시 시작해 흐름을 이어가세요.'}
             </Text>
             <View style={styles.overlayScorePanel}>
-              <Text style={styles.overlayScoreLabel}>COLLECTED GEAR</Text>
+              <Text style={styles.overlayScoreLabel}>SUNSEEDS COLLECTED</Text>
               <View style={styles.overlayScoreRow}>
                 <View style={styles.coinDot}><View style={styles.coinDotCore} /></View>
                 <Text style={styles.overlayScore}>{gameState.score}</Text>
@@ -233,7 +233,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <View style={styles.overlayButtons}>
               <Pressable onPress={restart}>
                 <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.overlayButton}>
-                  <Text style={styles.overlayButtonKicker}>RETRY EXPEDITION</Text>
+                  <Text style={styles.overlayButtonKicker}>RETURN TO THE TRAIL</Text>
                   <Text style={styles.overlayButtonText}>다시 도전</Text>
                 </LinearGradient>
               </Pressable>
@@ -242,8 +242,8 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
                   colors={[palette.uiSecondary, palette.uiSecondaryDark]}
                   style={styles.overlayButton}
                 >
-                  <Text style={styles.overlayButtonKickerLight}>RETURN TO WORKSHOP</Text>
-                  <Text style={styles.overlayButtonTextLight}>메인 메뉴</Text>
+                  <Text style={styles.overlayButtonKickerLight}>RETURN TO CAMP</Text>
+                  <Text style={styles.overlayButtonTextLight}>원정 준비</Text>
                 </LinearGradient>
               </Pressable>
             </View>
