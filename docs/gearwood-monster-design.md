@@ -1,3 +1,7 @@
+# 아카이브 — 초기 몬스터 디자인 문서
+
+> 현재 구현 기준이 아닙니다. Bloom Shift를 포함한 내용은 폐기됐습니다. 현재 적 구성과 규칙은 프로젝트 루트의 `CLAUDE.md`와 `AI_COLLAB.md`를 따릅니다.
+
 # GEARWOOD — 몬스터 디자인 문서
 
 **Monster Design Doc · v0.1** (참고: [게임 기획서 v0.2](./gearwood-design-doc.md))

@@ -1,3 +1,7 @@
+# 아카이브 — 초기 게임 기획서
+
+> 현재 구현 기준이 아닙니다. Route Gate, Bloom Shift, 환경 전환, 처치 후 임시 발판 관련 내용은 폐기됐습니다. 현재 방향은 프로젝트 루트의 `CLAUDE.md`와 `GAME_DIRECTION_V2.md`를 따릅니다.
+
 # GEARWOOD (기어우드)
 
 **Game Design Document · Refinement v0.2**

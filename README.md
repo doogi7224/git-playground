@@ -1,6 +1,6 @@
 # Gearwood: The Broken Spring (기어우드: 파괴된 태엽)
 
-React Native(Expo)로 만든 사이드스크롤 플랫포머 게임입니다. 반기계 정령 스프라우트가 되어 기계와 자연이 뒤섞인 기어숲을 가로질러, 시프트 노드로 지형을 기계↔자연으로 바꾸고 대시·루트훅 그래플로 위험을 돌파하며 깃발까지 도달하면 클리어됩니다. (기획 배경은 [GEARWOOD 기획서](./docs/gearwood-design-doc.md), 몬스터 상세는 [몬스터 디자인 문서](./docs/gearwood-monster-design.md) 참고)
+React Native(Expo)로 만든 사이드스크롤 액션 플랫포머입니다. 숲 탐험가가 점프·대시·루트훅 그래플·스톰프를 연결하며 밝은 고대 숲을 질주합니다. 현재 게임 규칙과 협업 상태는 [CLAUDE.md](./CLAUDE.md), [AI_COLLAB.md](./AI_COLLAB.md)를 참고하세요. `docs/gearwood-*.md`는 초기 기획 아카이브입니다.
 
 ## 실행 방법
 
