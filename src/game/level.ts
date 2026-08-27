@@ -4,12 +4,15 @@ import {
   BOSS_HEIGHT,
   BOSS_HP,
   BOSS_WIDTH,
+  BOW_PICKUP_SIZE,
   COG_PICKUP_SIZE,
   COIN_SIZE,
   ENEMY_HEIGHT,
   ENEMY_WIDTH,
   FLAG_HEIGHT,
   FLAG_WIDTH,
+  JUMPER_HEIGHT,
+  JUMPER_WIDTH,
   PISTON_HEIGHT,
   PISTON_WIDTH,
   PORTAL_HEIGHT,
@@ -20,15 +23,19 @@ import {
   STEAMBLOWER_HEIGHT,
   STEAMBLOWER_HP,
   STEAMBLOWER_WIDTH,
+  TURRET_HEIGHT,
+  TURRET_WIDTH,
   VIEWPORT_HEIGHT,
 } from './constants';
 import {
   BioCoil,
+  BowPickup,
   Boss,
   CogPickup,
   CogType,
   Coin,
   Enemy,
+  Jumper,
   Level,
   Platform,
   Portal,
@@ -36,6 +43,7 @@ import {
   RootPoint,
   SporeSprite,
   SteamBlower,
+  Turret,
 } from './types';
 
 const GROUND_Y = VIEWPORT_HEIGHT - 40;
@@ -204,6 +212,58 @@ function makeCogPickups(): CogPickup[] {
   }));
 }
 
+// Relic Bow: one permanent pickup early in Area 1, clear of every existing
+// hazard/platform in this stretch (p1 starts at x=300, cog-spring/e1 start
+// at x=350/400) so grabbing it is never contested by anything else. Placed
+// on the ground so it's easy to walk into.
+function makeBowPickup(): BowPickup {
+  return { id: 'bow1', x: 250, y: GROUND_Y - BOW_PICKUP_SIZE, width: BOW_PICKUP_SIZE, height: BOW_PICKUP_SIZE, collected: false };
+}
+
+// Jumpers sit on existing wide floating platforms rather than the ground —
+// every current ground-level Cogmite patrols at GROUND_Y, so any floating
+// platform is guaranteed free of hazard overlap without needing to re-check
+// the (already densely packed) ground lanes. Centered on the platform with
+// its own groundY set to that platform's top, so its straight-up hop can
+// never carry it off the edge.
+function makeJumpers(): Jumper[] {
+  const defs: [string, number, number][] = [
+    ['jumper1', 1650 + 41, 60], // centered on p6 (x=1650, width110)
+    ['jumper2', 4100 + 41, 80], // centered on p15 (x=4100, width110)
+  ];
+  return defs.map(([id, x, groundY]) => ({
+    id,
+    x,
+    y: groundY - JUMPER_HEIGHT,
+    width: JUMPER_WIDTH,
+    height: JUMPER_HEIGHT,
+    homeX: x,
+    groundY: groundY - JUMPER_HEIGHT,
+    phase: 'grounded',
+    timer: 0,
+    vy: 0,
+    alive: true,
+  }));
+}
+
+// Turrets, same reasoning as Jumpers -- placed on existing wide floating
+// platforms, clear of ground-level patrol/hazard lanes.
+function makeTurrets(): Turret[] {
+  const defs: [string, number, number][] = [
+    ['turret1', 2500 + 45, 70], // centered on p9 (x=2500, width120)
+    ['turret2', 5850 + 35, 90], // on p22 (x=5850, width100), offset from center to keep clear of piston3 at x=5950
+  ];
+  return defs.map(([id, x, groundY]) => ({
+    id,
+    x,
+    y: groundY - TURRET_HEIGHT,
+    width: TURRET_WIDTH,
+    height: TURRET_HEIGHT,
+    timer: 0,
+    alive: true,
+  }));
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -352,5 +412,8 @@ export function createLevel(): Level {
     cogPickups: makeCogPickups(),
     portal: makePortal(),
     boss: makeBoss(),
+    bowPickup: makeBowPickup(),
+    jumpers: makeJumpers(),
+    turrets: makeTurrets(),
   };
 }

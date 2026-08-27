@@ -1,5 +1,10 @@
 import {
   AIR_CONTROL_MULT,
+  ARROW_COOLDOWN,
+  ARROW_HEIGHT,
+  ARROW_LIFETIME,
+  ARROW_SPEED,
+  ARROW_WIDTH,
   BIOCOIL_LANDED_DURATION,
   BOSS_ATTACK_DURATION,
   BOSS_ATTACK_KNOCKBACK,
@@ -35,6 +40,9 @@ import {
   GRAVITY,
   INVULNERABLE_TIME,
   JUMP_VELOCITY,
+  JUMPER_INTERVAL,
+  JUMPER_LAUNCH_VY,
+  JUMPER_WINDUP_DURATION,
   MAX_FALL_SPEED,
   MOVE_SPEED,
   OVERDRIVE_COIN_MULT,
@@ -55,6 +63,10 @@ import {
   ROOTHOOK_PUMP_ACCEL,
   ROOTHOOK_RANGE,
   ROOTHOOK_SWING_GRAVITY,
+  SEED_HEIGHT,
+  SEED_LIFETIME,
+  SEED_SPEED,
+  SEED_WIDTH,
   SPORE_AMPLITUDE,
   SPORE_PERIOD,
   SPORE_RADIUS_WILD,
@@ -67,10 +79,14 @@ import {
   STEAM_GUST_RANGE,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
+  TURRET_CHARGE_DURATION,
+  TURRET_FIRE_INTERVAL,
+  TURRET_MAX_SEEDS,
   WALL_SLIDE_FALL_MULT,
   WALLJUMP_VX,
 } from './constants';
 import {
+  Arrow,
   BioCoil,
   Boss,
   CogPickup,
@@ -79,13 +95,16 @@ import {
   GamePhase,
   GameState,
   InputState,
+  Jumper,
   Level,
   Platform,
   Player,
   PressurePiston,
   Rect,
+  SeedProjectile,
   SporeSprite,
   SteamBlower,
+  Turret,
 } from './types';
 
 export function rectIntersect(a: Rect, b: Rect): boolean {
@@ -127,6 +146,8 @@ export function createInitialState(level: Level): GameState {
       steamBoostTimer: 0,
       mirrorTrail: [],
       touchingWall: 0,
+      hasBow: false,
+      arrowCooldown: 0,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -139,6 +160,12 @@ export function createInitialState(level: Level): GameState {
     steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
     cogPickups: level.cogPickups.map((c) => ({ ...c })),
     boss: { ...level.boss },
+    bowPickup: { ...level.bowPickup },
+    arrows: [],
+    jumpers: level.jumpers.map((j) => ({ ...j })),
+    turrets: level.turrets.map((t) => ({ ...t })),
+    seeds: [],
+    arrowSeq: 0,
     portalActivated: false,
     checkpointIndex: 0,
     effects: [],
@@ -266,6 +293,67 @@ export function isBossAttackActive(boss: Boss): boolean {
 
 export function isBossVulnerable(boss: Boss): boolean {
   return boss.alive && boss.phase === 'vulnerable';
+}
+
+// Jumper: grounded -> windup (telegraph) -> airborne (straight up from
+// homeX, so it can never leave the platform it's placed on) -> grounded.
+// No player-detection at all, per the design brief -- purely timer-driven.
+function stepJumpers(prev: Jumper[], dt: number): Jumper[] {
+  return prev.map((j) => {
+    if (!j.alive) return j;
+    if (j.phase === 'grounded') {
+      const timer = j.timer + dt;
+      if (timer < JUMPER_INTERVAL) return { ...j, timer };
+      return { ...j, phase: 'windup', timer: 0 };
+    }
+    if (j.phase === 'windup') {
+      const timer = j.timer + dt;
+      if (timer < JUMPER_WINDUP_DURATION) return { ...j, timer };
+      return { ...j, phase: 'airborne', vy: JUMPER_LAUNCH_VY, timer: 0 };
+    }
+    // 'airborne'
+    const vy = j.vy + GRAVITY * dt;
+    const y = j.y + vy * dt;
+    if (y >= j.groundY) {
+      return { ...j, x: j.homeX, y: j.groundY, vy: 0, phase: 'grounded', timer: 0 };
+    }
+    return { ...j, y, vy };
+  });
+}
+
+export function isTurretCharging(turret: Turret): boolean {
+  return turret.alive && turret.timer >= TURRET_FIRE_INTERVAL - TURRET_CHARGE_DURATION;
+}
+
+// Turrets never move or take a player-position input each frame beyond
+// deciding which way a shot fires -- same "lock a direction once" pattern
+// as Cogmite's chargeDir and Bio-Coil's facing, not continuous homing.
+// Skips spawning (but still resets its own timer, so it doesn't instantly
+// retry) when the global seed cap is already full.
+function stepTurrets(prev: Turret[], player: Rect, dt: number, existingSeedCount: number): { turrets: Turret[]; newSeeds: SeedProjectile[] } {
+  let seedCount = existingSeedCount;
+  const newSeeds: SeedProjectile[] = [];
+  const turrets = prev.map((t) => {
+    if (!t.alive) return t;
+    const timer = t.timer + dt;
+    if (timer < TURRET_FIRE_INTERVAL) return { ...t, timer };
+    if (seedCount < TURRET_MAX_SEEDS) {
+      const center = t.x + t.width / 2;
+      const dir: 1 | -1 = player.x + player.width / 2 < center ? -1 : 1;
+      newSeeds.push({
+        id: `seed-${t.id}-${Math.round(timer * 1000)}`,
+        x: dir > 0 ? t.x + t.width : t.x - SEED_WIDTH,
+        y: t.y + t.height / 2 - SEED_HEIGHT / 2,
+        width: SEED_WIDTH,
+        height: SEED_HEIGHT,
+        vx: dir * SEED_SPEED,
+        age: 0,
+      });
+      seedCount++;
+    }
+    return { ...t, timer: 0 };
+  });
+  return { turrets, newSeeds };
 }
 
 export function stepGame(prev: GameState, input: InputState, level: Level, dt: number): GameState {
@@ -496,6 +584,55 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
   }
 
+  // Relic Bow + Arrow: uses this frame's already-finalized player position/
+  // facing (the movement block above has already run), same timing as the
+  // enemy-detection block just below it. Arrows move first and drop any that
+  // hit a wall/left the world/expired *before* the pickup/firing checks, so
+  // a wall directly behind the muzzle can't immediately eat a freshly-fired
+  // arrow on the same frame it spawns.
+  let arrows = prev.arrows
+    .map((a) => ({ ...a, x: a.x + a.vx * dt, age: a.age + dt }))
+    .filter(
+      (a) => a.age < ARROW_LIFETIME && a.x + a.width > 0 && a.x < level.worldWidth && !level.platforms.some((p) => rectIntersect(a, p))
+    );
+
+  // A single permanent pickup (see level.ts) -- contact grants it immediately,
+  // matching CogPickup's "auto-equip on touch" pattern. No re-collection
+  // possible once `collected`.
+  let bowPickup = prev.bowPickup;
+  if (!bowPickup.collected && rectIntersect(player, bowPickup)) {
+    bowPickup = { ...bowPickup, collected: true };
+    player.hasBow = true;
+    pushEffect('gearPickup', bowPickup.x + bowPickup.width / 2, bowPickup.y + bowPickup.height / 2);
+  }
+
+  // Firing: edge-triggered like jumpPressed/dashPressed (GameScreen resets it
+  // after consuming), gated by hasBow and a short cooldown so mashing the
+  // attack button can't produce a solid stream of arrows.
+  player.arrowCooldown = Math.max(0, prev.player.arrowCooldown - dt);
+  let arrowSeq = prev.arrowSeq;
+  if (input.attackPressed && player.hasBow && player.arrowCooldown <= 0) {
+    player.arrowCooldown = ARROW_COOLDOWN;
+    arrows = [
+      ...arrows,
+      {
+        id: `arrow-${arrowSeq}`,
+        x: player.facing > 0 ? player.x + player.width : player.x - ARROW_WIDTH,
+        y: player.y + player.height / 2 - ARROW_HEIGHT / 2,
+        width: ARROW_WIDTH,
+        height: ARROW_HEIGHT,
+        vx: player.facing * ARROW_SPEED,
+        age: 0,
+      },
+    ];
+    arrowSeq++;
+  }
+  // Tracks which arrows already connected with something this frame so (a) a
+  // single arrow can't hit two overlapping hazards at once and (b) it gets
+  // spliced out of the final `arrows` list below instead of continuing on.
+  const consumedArrowIds = new Set<string>();
+  const findArrowHit = (target: Rect) => arrows.find((a) => !consumedArrowIds.has(a.id) && rectIntersect(a, target));
+
   if (player.invulnerableFor > 0) {
     player.invulnerableFor = Math.max(0, player.invulnerableFor - dt);
   }
@@ -550,6 +687,16 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   const resolvedEnemies = enemies.map((e) => {
     if (!e.alive) return e;
+
+    const hitArrow = findArrowHit(e);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', e.x + e.width / 2, e.y);
+      return { ...e, alive: false };
+    }
+
     if (!rectIntersect(player, e)) return e;
 
     const isStomp = wasFalling && prevBottom <= e.y + STOMP_TOLERANCE;
@@ -572,6 +719,19 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const bioCoilsStepped = stepBioCoils(prev.bioCoils, prev.player, dt);
   const resolvedBioCoils = bioCoilsStepped.map((c) => {
     if (!c.alive) return c;
+
+    // Unlike a stomp (only lands a kill while 'landed'), an arrow defeats it
+    // in any phase -- the ranged option trades the stomp's positional-timing
+    // requirement for a more committed, always-works hit.
+    const hitArrow = findArrowHit(c);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', c.x + c.width / 2, c.y);
+      return { ...c, alive: false };
+    }
+
     if (!rectIntersect(player, c)) return c;
 
     const isStomp = wasFalling && prevBottom <= c.y + STOMP_TOLERANCE;
@@ -597,6 +757,20 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   const resolvedSteamBlowers = stepSteamBlowers(prev.steamBlowers, dt).map((b) => {
     if (!b.alive) return b;
+
+    const hitArrow = findArrowHit(b);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      pushEffect('impact', b.x + b.width / 2, b.y);
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      const hp = b.hp - 1;
+      if (hp <= 0) {
+        score += 300;
+        return { ...b, hp: 0, alive: false };
+      }
+      score += 50;
+      return { ...b, hp };
+    }
 
     // Steam gust: a wide knockback-only zone, active in a short window each 3s cycle.
     if (isSteamGustActive(b)) {
@@ -641,6 +815,99 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return b;
   });
 
+  // Seeds: move existing ones, drop any that hit a wall/left the world/expired
+  // -- same treatment as arrows above, just aimed the other way.
+  let seeds = prev.seeds
+    .map((s) => ({ ...s, x: s.x + s.vx * dt, age: s.age + dt }))
+    .filter(
+      (s) => s.age < SEED_LIFETIME && s.x + s.width > 0 && s.x < level.worldWidth && !level.platforms.some((p) => rectIntersect(s, p))
+    );
+
+  const jumpersStepped = stepJumpers(prev.jumpers, dt);
+  const resolvedJumpers = jumpersStepped.map((j) => {
+    if (!j.alive) return j;
+
+    const hitArrow = findArrowHit(j);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', j.x + j.width / 2, j.y);
+      return { ...j, alive: false };
+    }
+
+    if (!rectIntersect(player, j)) return j;
+    const isStomp = wasFalling && prevBottom <= j.y + STOMP_TOLERANCE;
+    if (isStomp) {
+      player.vy = STOMP_BOUNCE;
+      score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', j.x + j.width / 2, j.y);
+      return { ...j, alive: false };
+    }
+    if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+      lives = applyHit(player, lives, respawnPoint);
+    }
+    return j;
+  });
+
+  // Turrets decide their fire direction from this frame's player position
+  // (stepTurrets), using the current seed count (post-movement/filtering,
+  // pre-new-shots) against TURRET_MAX_SEEDS as the concurrency backstop.
+  const turretStep = stepTurrets(prev.turrets, player, dt, seeds.length);
+  seeds = [...seeds, ...turretStep.newSeeds];
+  const resolvedTurrets = turretStep.turrets.map((t) => {
+    if (!t.alive) return t;
+
+    const hitArrow = findArrowHit(t);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', t.x + t.width / 2, t.y);
+      return { ...t, alive: false };
+    }
+
+    if (!rectIntersect(player, t)) return t;
+    const isStomp = wasFalling && prevBottom <= t.y + STOMP_TOLERANCE;
+    if (isStomp) {
+      player.vy = STOMP_BOUNCE;
+      score += 100;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', t.x + t.width / 2, t.y);
+      return { ...t, alive: false };
+    }
+    if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+      lives = applyHit(player, lives, respawnPoint);
+    }
+    return t;
+  });
+
+  // A seed is destroyed by the same player actions that would destroy any
+  // other hazard (stomp or arrow) -- per the design brief, "투사체와 적 모두
+  // 스톰프 또는 화살로 대응 가능". Otherwise it deals contact damage like any
+  // other hazard, respecting invulnerability.
+  const resolvedSeeds = seeds.filter((seed) => {
+    const hitArrow = findArrowHit(seed);
+    const isStomp = wasFalling && prevBottom <= seed.y + STOMP_TOLERANCE && rectIntersect(player, seed);
+    if (hitArrow || isStomp) {
+      if (hitArrow) consumedArrowIds.add(hitArrow.id);
+      if (isStomp) player.vy = STOMP_BOUNCE;
+      score += 50;
+      gaugeGain += OVERDRIVE_STOMP_GAIN;
+      pushEffect('impact', seed.x + seed.width / 2, seed.y + seed.height / 2);
+      return false;
+    }
+    if (rectIntersect(player, seed) && player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+      lives = applyHit(player, lives, respawnPoint);
+      return false;
+    }
+    return true;
+  });
+
   // Boss: solid while alive (handled above, in the platform collision list),
   // so touching its sides just stops the player like a wall. The two ways it
   // actually interacts are the wide attack-phase damage zone and stomping it
@@ -649,6 +916,26 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // flush contact rather than overlap).
   let boss = stepBoss(prev.boss, dt);
   if (boss.alive) {
+    // Solid, so an arrow can't pass through it either way -- it's always
+    // consumed on contact, but only actually damages during the same
+    // vulnerable window a stomp requires (an alternative input, not a way to
+    // bypass the fight's established timing).
+    const hitArrow = findArrowHit(boss);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      if (isBossVulnerable(boss)) {
+        pushEffect('impact', boss.x + boss.width / 2, boss.y);
+        gaugeGain += OVERDRIVE_STOMP_GAIN;
+        const hp = boss.hp - 1;
+        if (hp <= 0) {
+          score += 1000;
+          boss = { ...boss, hp: 0, alive: false };
+        } else {
+          score += 100;
+          boss = { ...boss, hp };
+        }
+      }
+    }
     if (isBossAttackActive(boss)) {
       const zone: Rect = { x: boss.x - BOSS_ATTACK_RANGE, y: boss.y, width: boss.width + BOSS_ATTACK_RANGE * 2, height: boss.height };
       if (rectIntersect(player, zone) && player.invulnerableFor <= 0) {
@@ -810,6 +1097,12 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     steamBlowers: resolvedSteamBlowers,
     cogPickups: resolvedCogPickups,
     boss,
+    bowPickup,
+    arrows: arrows.filter((a) => !consumedArrowIds.has(a.id)),
+    jumpers: resolvedJumpers,
+    turrets: resolvedTurrets,
+    seeds: resolvedSeeds,
+    arrowSeq,
     portalActivated,
     checkpointIndex,
     effects: [...decayedEffects, ...newEffects],

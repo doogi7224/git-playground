@@ -62,6 +62,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
     jumpPressed: false,
     dashPressed: false,
     grappleHeld: false,
+    attackPressed: false,
   });
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
@@ -76,9 +77,11 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           jumpPressed: inputRef.current.jumpPressed,
           dashPressed: inputRef.current.dashPressed,
           grappleHeld: inputRef.current.grappleHeld,
+          attackPressed: inputRef.current.attackPressed,
         };
         inputRef.current.jumpPressed = false;
         inputRef.current.dashPressed = false;
+        inputRef.current.attackPressed = false;
         setGameState((prev) => stepGame(prev, input, level, dt));
       }
       lastTimeRef.current = now;

@@ -149,3 +149,35 @@ export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the
 // gameplay balance number. Sized to comfortably outlast the burst animations
 // that render against these events before physics prunes them.
 export const EFFECT_DURATION = 0.5;
+
+// Relic Bow + Arrow: new content, one permanent pickup early in the level
+// (see level.ts). No prior numbers to preserve.
+export const BOW_PICKUP_SIZE = 24;
+export const ARROW_WIDTH = 14;
+export const ARROW_HEIGHT = 4;
+export const ARROW_SPEED = 500; // px/s, faster than DASH_SPEED for a punchy ranged feel
+export const ARROW_COOLDOWN = 0.35; // seconds between shots -- the "짧은 연사 간격" the brief asks for
+export const ARROW_LIFETIME = 1.2; // seconds; safety despawn over open ground with nothing to hit
+
+// Jumper: purely timer-driven, no player detection. Hops straight up in
+// place, so it can be placed on any platform without risking hopping off
+// the edge. A brief windup (mirroring Bio-Coil's telegraph) keeps every hop
+// readable before it happens.
+export const JUMPER_WIDTH = 28;
+export const JUMPER_HEIGHT = 26;
+export const JUMPER_INTERVAL = 1.8; // seconds grounded before the next windup starts
+export const JUMPER_WINDUP_DURATION = 0.4; // telegraph before launch
+export const JUMPER_LAUNCH_VY = -480;
+
+// Turret: fixed in place, fires one SeedProjectile toward the player's
+// current side at the moment the cycle fires (locked in then, not homing).
+export const TURRET_WIDTH = 30;
+export const TURRET_HEIGHT = 30;
+export const TURRET_FIRE_INTERVAL = 2.5; // seconds between shots (also acts as its own per-turret cooldown)
+export const TURRET_CHARGE_DURATION = 0.5; // telegraph window right before firing, exposed via isTurretCharging()
+export const TURRET_MAX_SEEDS = 6; // global concurrent cap, a backstop alongside the per-turret interval
+
+export const SEED_WIDTH = 12;
+export const SEED_HEIGHT = 12;
+export const SEED_SPEED = 200; // px/s -- slower than an arrow, meant to be dodgeable
+export const SEED_LIFETIME = 3; // seconds; safety despawn

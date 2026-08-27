@@ -138,6 +138,65 @@ export interface CogPickup extends Rect {
   collected: boolean;
 }
 
+// Relic Bow: a single permanent pickup early in the level. Before it's
+// collected the player plays the existing jump/dash/stomp kit only; after,
+// an attack input fires a straight-line arrow. Modeled after CogPickup
+// (single flag flip on contact) rather than a separate GameState boolean,
+// since there's exactly one and its own `collected` field is the source of
+// truth for whether `Player.hasBow` should already be true.
+export interface BowPickup extends Rect {
+  id: string;
+  collected: boolean;
+}
+
+// Player-fired projectile. Deliberately has no `alive` flag: unlike
+// Enemy/BioCoil (which persist as inert corpses so their level-authored ids
+// stay stable), an arrow that hits something or leaves bounds is just
+// spliced out of GameState.arrows entirely — there's no reason to keep a
+// dead arrow around.
+export interface Arrow extends Rect {
+  id: string;
+  vx: number;
+  /** Seconds since fired; a safety despawn even over open ground with no wall to hit. */
+  age: number;
+}
+
+export type JumperPhase = 'grounded' | 'windup' | 'airborne';
+
+// A timer-driven hopping enemy with no player-detection at all (per the
+// design brief: no chase AI). Hops straight up in place from a fixed homeX,
+// so it can never hop off the edge of the platform it's placed on. The brief
+// 'windup' before launch mirrors Bio-Coil's telegraph pattern so the hop is
+// always readable, never a surprise.
+export interface Jumper extends Rect {
+  id: string;
+  homeX: number;
+  groundY: number;
+  phase: JumperPhase;
+  timer: number;
+  vy: number;
+  alive: boolean;
+}
+
+// A fixed turret that periodically fires one SeedProjectile toward whichever
+// side the player is on *at the moment it fires* (locked in then, like
+// Cogmite's chargeDir and Bio-Coil's facing) — never continuously homing.
+export interface Turret extends Rect {
+  id: string;
+  timer: number;
+  alive: boolean;
+}
+
+// A Turret's projectile. Same "no alive flag, just spliced out" reasoning as
+// Arrow. Can hit the player (damage) or be destroyed by the player (stomp or
+// arrow), matching the design brief's "투사체와 적 모두 스톰프 또는 화살로
+// 대응 가능".
+export interface SeedProjectile extends Rect {
+  id: string;
+  vx: number;
+  age: number;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -156,6 +215,9 @@ export interface Level {
   cogPickups: CogPickup[];
   portal: Portal;
   boss: Boss;
+  bowPickup: BowPickup;
+  jumpers: Jumper[];
+  turrets: Turret[];
 }
 
 export interface Player extends Rect {
@@ -196,6 +258,10 @@ export interface Player extends Rect {
   mirrorTrail: { x: number; y: number; age: number }[];
   /** While airborne and pressed against a wall (wall-slide), the direction a wall-jump would push (away from the wall); 0 = not touching one. Consumed by a wall-jump. */
   touchingWall: -1 | 0 | 1;
+  /** True once the Relic Bow pickup has been collected; gates whether an attack input fires an arrow. */
+  hasBow: boolean;
+  /** Seconds until another arrow may be fired, so mashing attack can't produce a solid stream of arrows. */
+  arrowCooldown: number;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';
@@ -213,6 +279,13 @@ export interface GameState {
   steamBlowers: SteamBlower[];
   cogPickups: CogPickup[];
   boss: Boss;
+  bowPickup: BowPickup;
+  arrows: Arrow[];
+  jumpers: Jumper[];
+  turrets: Turret[];
+  seeds: SeedProjectile[];
+  /** Monotonic counter used only to mint unique Arrow ids, same pattern as effectSeq. */
+  arrowSeq: number;
   /** True once the player has crossed the portal into the boss arena; only used to fire the one-time crossing effect. */
   portalActivated: boolean;
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
@@ -230,4 +303,6 @@ export interface InputState {
   dashPressed: boolean;
   /** Held (not edge-triggered) — stays attached to a Root-Hook point for as long as this is true. */
   grappleHeld: boolean;
+  /** Edge-triggered, like jumpPressed/dashPressed. No-op until the Relic Bow is collected. */
+  attackPressed: boolean;
 }

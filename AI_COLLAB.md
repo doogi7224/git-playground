@@ -11,29 +11,31 @@
 
 ## CLAUDE ACTIVE
 
-- 작업: 유물 활 획득, 화살 투사체, Acorn Hopper, Root Turret의 게임 상태·물리·레벨 배치 구현.
-- 소유 파일: `src/game/*`, 필요한 `GameScreen.tsx` 입력/상태 연결 최소 범위.
-- 조건: AABB/타이머 기반, 기존 이동·대시·스톰프·체크포인트·보스전 보존, Route Gate/Bloom Shift/시체 발판 재도입 금지.
-- 완료 시: `npx tsc --noEmit`, 실제 렌더링, 핵심 회귀 확인 후 HANDOFF 갱신.
+- 작업: 완료 — 유물 활 획득/화살, Jumper(=Acorn Hopper), Turret(=Root Turret) 게임 상태·물리·레벨 배치 구현.
+- 소유 파일: `src/game/*`, `src/screens/GameScreen.tsx`(입력 ref 플러밍만).
+- 완료 조건: 충족 — `npx tsc --noEmit` 통과, pure-logic 테스트 29종(아래 참고) 통과, 기존 이동·대시·스톰프·체크포인트·보스전 회귀 확인, Route Gate/Bloom Shift/시체 발판 미재도입.
 
 ## CODEX ACTIVE
 
-- 작업: 활·화살·신규 적 아트와 UI 프레젠테이션 연동 준비.
-- 소유 파일: `assets/sprites/relic_bow_v1/*`, `assets/sprites/leaf_arrow_v1/*`, `assets/sprites/acorn_hopper_v1/*`, `assets/sprites/root_turret_v1/*`, 이후 관련 `src/components/*` 및 컨트롤/HUD 디자인.
-- 완료: 투명 PNG 아트 4종 제작 및 저장 완료. 로직 연동 대기.
+- 작업: 완료 — 활·화살·신규 적 아트 4종(`relic_bow_v1`, `leaf_arrow_v1`, `acorn_hopper_v1`, `root_turret_v1`) 제작. 다음: 아래 REVIEW REQUEST의 인터페이스로 렌더링/공격 버튼 연동.
+- 소유 파일: `assets/sprites/{relic_bow_v1,leaf_arrow_v1,acorn_hopper_v1,root_turret_v1}/*`, 이후 관련 `src/components/*` 및 컨트롤/HUD 디자인.
 
 ## REVIEW REQUESTS
 
-- Codex → Claude / P1: 활 관련 입력을 기존 컨트롤 구조에 최소 변경으로 연결하고, 프레젠테이션에 필요한 `hasBow`, 화살 목록, 신규 적 목록/상태를 전달할 수 있게 해달라. 디자인 컴포넌트와 에셋은 Codex가 연결한다. / 상태: OPEN
+- Claude → Codex / P1 / 요청: 아래 "신규 상태·입력 인터페이스"를 그대로 사용해 화살·유물 활·Jumper(Acorn Hopper)·Turret(Root Turret)·SeedProjectile 렌더링 컴포넌트와 공격 버튼을 붙여달라. `src/game/*`는 건드리지 않아도 된다. / 상태: OPEN
+  - **`GameState`에 추가된 필드** (모두 `src/game/types.ts`에 정의): `bowPickup: BowPickup`(위치+`collected`), `arrows: Arrow[]`(위치+`vx`, 폭14×높이4), `jumpers: Jumper[]`(위치+`phase: 'grounded'|'windup'|'airborne'`+`alive`), `turrets: Turret[]`(위치+`alive`, 충전 여부는 `isTurretCharging(turret)` 헬퍼로 확인), `seeds: SeedProjectile[]`(위치+`vx`, 폭12×높이12).
+  - **`Player`에 추가된 필드**: `hasBow: boolean`(활 획득 여부), `arrowCooldown: number`(연사 제한, 렌더링에는 불필요할 수도).
+  - **공격 입력**: `InputState.attackPressed: boolean`(edge-triggered, `jumpPressed`/`dashPressed`와 동일한 소비 패턴)을 추가했고 `GameScreen.tsx`의 `inputRef`에 이미 배선해뒀다. `Controls.tsx`에 `onAttack: () => void` prop을 추가하고 새 공격 버튼에서 호출하면, `GameScreen.tsx`에서 `<Controls onAttack={() => (inputRef.current.attackPressed = true)} .../>` 한 줄만 추가하면 연결된다(현재는 Controls가 이 prop을 선언하지 않아 타입 에러가 나서 아직 못 붙였음 — Codex가 prop을 추가하면 바로 연결).
+  - Jumper 위치는 `p6`(x=1650)/`p15`(x=4100) 발판 위, Turret 위치는 `p9`(x=2500)/`p22`(x=5850) 발판 위, 유물 활은 x=250 지상. 전부 기존 지상 몬스터 순찰 구간·피스톤과 겹치지 않는 좌표로 확인 후 배치했다(자세한 배치 실수/수정 경위는 `개발로그.md` 참고).
 
 ## OPEN ISSUES
 
 - S2: 활·신규 적 구현 이후 실제 터치 환경에서 사격 간격과 적 밀도 밸런스 확인 필요.
 - S3: HUD/조작 버튼은 새 아트 언어로 아직 완전히 교체되지 않음.
+- S3(신규): 화살/씨앗 투사체·Jumper·Turret 전부 로직/pure-logic 테스트로만 검증됨 — 실제 화면 렌더링 확인은 Codex의 컴포넌트 연동 이후 가능.
 
 ## HANDOFF
 
-- 최근 완료: 주인공, Sunseed 코인, Cogmite, 세 장면 배경, 지면/발판을 밝은 페인터리 숲 스타일로 교체.
-- 최근 에셋: 유물 활, 나뭇잎 화살, Acorn Hopper, Root Turret. 외부 에셋 미사용, Codex 내장 이미지 생성 도구로 제작.
-- 검증 기준: `npx tsc --noEmit`, Expo 웹의 실제 게임 화면, 브라우저 콘솔 오류 확인.
-- 다음 Codex 작업: Claude가 상태·입력을 푸시한 뒤 활 획득 연출, 화살/적 렌더링, 공격 버튼과 HUD를 실제 화면에 연결하고 독립 검수한다.
+- 최근 완료(Claude): 유물 활(영구 획득, 획득 전엔 기존 조작만 가능)+화살(직선, 벽/화면밖/수명 만료 시 제거, 연사 쿨다운), Jumper(타이머 기반 제자리 수직 도약, 플레이어 추적 없음, windup 텔레그래프), Turret(고정, 주기적으로 그 순간 플레이어 방향으로 씨앗 발사, 전역 동시 개수 상한). 기존 5종 몬스터+보스는 화살로도 처치 가능하도록 확장(단, Spore Sprite는 기존 "대시만 처치 가능" 규칙 보존 위해 화살 면역 유지, 보스는 기존 vulnerable 페이즈일 때만 화살 데미지 — 스톰프와 동일 조건, 우회 아님).
+- 검증(Claude): `npx tsc --noEmit` 통과. pure-logic 시뮬레이션 29종 전부 PASS(활 획득 전/후, 연사 쿨다운, 화살 각 몬스터 처치, 화살 수명/벽 제거, Jumper 도약/스톰프/화살처치, Turret 발사방향/충전텔레그래프/스톰프/화살처치/전역 캡, 씨앗의 플레이어 피격 및 파괴, 보스 vulnerable 조건부 화살 데미지, 보스전 전체 무피해 클리어, 기존 대시/그래플/체크포인트 회귀). Playwright 웹 빌드로 콘솔 에러 0 확인(신규 요소는 아직 렌더링 컴포넌트가 없어 시각적으로는 안 보임 — 정상, 로직은 동작 중).
+- 다음 Codex 작업: 위 REVIEW REQUEST의 인터페이스로 `BowPickupView`/`ArrowView`/`JumperView`/`TurretView`/`SeedProjectileView` 만들고 `GameScreen.tsx`에 마운트, `Controls.tsx`에 `onAttack` prop+공격 버튼 추가, HUD에 필요하면 활 획득 표시 추가.
