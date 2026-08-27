@@ -1,7 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Image, StyleSheet, View } from 'react-native';
-import { BloomState } from '../game/types';
+import React from 'react';
+import { Image, StyleSheet, View } from 'react-native';
 import { palette } from '../theme';
 
 interface Props {
@@ -9,7 +8,6 @@ interface Props {
   worldWidth: number;
   viewportWidth: number;
   viewportHeight: number;
-  bloomState: BloomState;
 }
 
 // How much slower the far scene layer scrolls than the camera. Deliberately
@@ -18,11 +16,8 @@ interface Props {
 // of the level's width (see FAR_FACTOR usage below).
 const FAR_FACTOR = 0.15;
 
-// Two full-bleed painterly scene illustrations (mountains + midground already
-// baked into one composition, matching the reference's single rich backdrop
-// rather than many small composited sprites) — cross-faded exactly like the
-// previous per-element approach, just with far fewer moving parts.
-const SCENE_MECH_SOURCE = require('../../assets/backgrounds/scene_mechanical_v2.png');
+// One painterly forest scene keeps the world readable and lets parallax
+// support the run instead of introducing a second ruleset.
 const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild_v2.png');
 
 // Memoized so this (large, tiled full-screen images) subtree is skipped on
@@ -31,19 +26,17 @@ const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild_v2.png');
 // (CLAUDE.md 18.7: avoid unnecessary per-frame work).
 const SceneTiles = React.memo(function SceneTiles({
   source,
-  opacity,
   tileWidth,
   tileCount,
   height,
 }: {
   source: number;
-  opacity: Animated.AnimatedInterpolation<number>;
   tileWidth: number;
   tileCount: number;
   height: number;
 }) {
   return (
-    <Animated.View style={[styles.fill, { opacity }]}>
+    <View style={styles.fill}>
       {Array.from({ length: tileCount }, (_, i) => (
         <Image
           key={i}
@@ -52,31 +45,12 @@ const SceneTiles = React.memo(function SceneTiles({
           style={{ position: 'absolute', left: i * tileWidth, top: 0, width: tileWidth, height }}
         />
       ))}
-    </Animated.View>
+    </View>
   );
 });
 
-export default function Background({ cameraX, worldWidth, viewportWidth, viewportHeight, bloomState }: Props) {
+export default function Background({ cameraX, worldWidth, viewportWidth, viewportHeight }: Props) {
   const farOffset = -cameraX * FAR_FACTOR;
-
-  // Cross-fades the whole background between a mechanical and a wild scene
-  // whenever the level-wide Bloom Shift state flips, so the world outside the
-  // platforms themselves also reads as "a different state now" (CLAUDE.md 19
-  // — 기계×자연 시각 대비 / Bloom Shift).
-  const wildAnim = useRef(new Animated.Value(bloomState === 'wild' ? 1 : 0)).current;
-  useEffect(() => {
-    Animated.timing(wildAnim, {
-      toValue: bloomState === 'wild' ? 1 : 0,
-      duration: 650,
-      useNativeDriver: true,
-    }).start();
-  }, [bloomState, wildAnim]);
-  const wildOpacity = wildAnim;
-  // Memoized: `.interpolate()` returns a new object each call, and this
-  // component re-renders every physics frame (driven by `cameraX`) — without
-  // memoizing, SceneTiles would see a "changed" opacity prop every frame and
-  // never benefit from the React.memo above.
-  const mechOpacity = useMemo(() => wildAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }), [wildAnim]);
 
   // Each tile is a full viewport-width crop of the scene painting (via
   // resizeMode="cover"), not the image's own natural aspect width — sizing
@@ -96,8 +70,7 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
       <LinearGradient colors={[palette.skyTop, palette.skyBottom]} style={styles.fill} />
 
       <View style={[styles.parallaxLayer, { width: farLayerWidth, transform: [{ translateX: farOffset }] }]}>
-        <SceneTiles source={SCENE_MECH_SOURCE} opacity={mechOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
-        <SceneTiles source={SCENE_WILD_SOURCE} opacity={wildOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
+        <SceneTiles source={SCENE_WILD_SOURCE} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
       </View>
     </View>
   );

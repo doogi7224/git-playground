@@ -4,7 +4,7 @@ import { Portal } from '../game/types';
 import { palette } from '../theme';
 
 // Placeholder presentation for the gateway into the boss arena — a procedural
-// pulsing ring, same convention ShiftNodeView already uses. Swap in real art
+// pulsing ring that signals the boss arena without adding another interaction.
 // later without touching the trigger logic in physics.ts (Portal has no
 // collision of its own; it's purely a marker `stepGame` crosses once).
 export default function PortalView({ portal }: { portal: Portal }) {

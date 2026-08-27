@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, ImageSourcePropType, StyleSheet, View } from 'react-native';
-import { BloomState, Enemy } from '../game/types';
+import { Enemy } from '../game/types';
 import { palette } from '../theme';
 
 // Cogmite is drawn larger than its collision box (a full-body AI-generated
@@ -26,11 +26,9 @@ const COGMITE_FRAMES = {
   alert: ImageSourcePropType;
 };
 
-export default function EnemyView({ enemy, bloomState }: { enemy: Enemy; bloomState: BloomState }) {
+export default function EnemyView({ enemy }: { enemy: Enemy }) {
   const charging = enemy.chargeDir !== 0;
-  const docile = bloomState === 'wild';
-  // Wild tames it (slower, stiffer waddle); charging is urgent (faster).
-  const walkDuration = charging ? 220 : docile ? 700 : 440;
+  const walkDuration = charging ? 220 : 440;
 
   const walk = useRef(new Animated.Value(0)).current;
   const turn = useRef(new Animated.Value(1)).current;
@@ -77,7 +75,6 @@ export default function EnemyView({ enemy, bloomState }: { enemy: Enemy; bloomSt
         ]}
       />
       {charging && <View style={styles.alertDot} />}
-      {docile && <View style={styles.mossPatch} />}
     </View>
   );
 }
@@ -102,16 +99,5 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: palette.uiDanger,
-  },
-  mossPatch: {
-    position: 'absolute',
-    top: 6,
-    left: '50%',
-    marginLeft: -7,
-    width: 14,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: palette.moss,
-    opacity: 0.85,
   },
 });

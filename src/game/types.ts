@@ -5,12 +5,8 @@ export interface Rect {
   height: number;
 }
 
-export type BloomState = 'mechanical' | 'wild';
-
 export interface Platform extends Rect {
   id: string;
-  /** Only exists (renders + collides) while bloomState matches. Undefined = always present. */
-  visibleIn?: BloomState;
 }
 
 export interface Enemy extends Rect {
@@ -19,7 +15,7 @@ export interface Enemy extends Rect {
   minX: number;
   maxX: number;
   alive: boolean;
-  /** Locked-in charge direction once the player is detected (mechanical bloom only); 0 = patrolling normally. */
+  /** Locked-in charge direction once the player is detected; 0 = patrolling normally. */
   chargeDir: -1 | 0 | 1;
 }
 
@@ -29,10 +25,6 @@ export interface Coin extends Rect {
 }
 
 export interface Flag extends Rect {}
-
-export interface ShiftNode extends Rect {
-  id: string;
-}
 
 // A floating hazard that hovers on a fixed sine-wave path and slows the
 // player on approach instead of dealing direct damage. Per the monster
@@ -46,9 +38,8 @@ export interface SporeSprite extends Rect {
 }
 
 // A fixed environmental hazard embedded in the ground. Cycles charge -> blast
-// (contact damages the player) -> rest while in the mechanical bloom state;
-// shifting to wild neutralizes it completely instead of "defeating" it —
-// per the monster design doc, it's the one hazard with no kill condition.
+// (contact damages the player) -> rest in a clear, fixed cycle. It is a
+// permanent environmental hazard rather than a mode-dependent exception.
 export interface PressurePiston extends Rect {
   id: string;
   /** Position within [0, PISTON_CYCLE), advanced by dt every frame. */
@@ -158,7 +149,6 @@ export interface Level {
   enemies: Enemy[];
   coins: Coin[];
   flag: Flag;
-  shiftNodes: ShiftNode[];
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
@@ -218,9 +208,6 @@ export interface GameState {
   score: number;
   lives: number;
   phase: GamePhase;
-  bloomState: BloomState;
-  /** True once the player has left every shift node's rect, so touching one again re-triggers a toggle. */
-  bloomNodeArmed: boolean;
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];

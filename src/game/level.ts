@@ -15,7 +15,6 @@ import {
   PORTAL_HEIGHT,
   PORTAL_WIDTH,
   ROOTHOOK_SIZE,
-  SHIFT_NODE_SIZE,
   SPORE_SPRITE_HEIGHT,
   SPORE_SPRITE_WIDTH,
   STEAMBLOWER_HEIGHT,
@@ -35,7 +34,6 @@ import {
   Portal,
   PressurePiston,
   RootPoint,
-  ShiftNode,
   SporeSprite,
   SteamBlower,
 } from './types';
@@ -99,27 +97,15 @@ const floatingPlatforms: Platform[] = [
   { id: 'p24', x: 6740, y: GROUND_Y - 60, width: 60, height: 20 },
 ];
 
-// Only exist once the world is shifted into the "wild" bloom state — bonus
-// platforms that demonstrate the Bloom Shift mechanic. Four zones are spread
-// across the level: an early tutorial zone, the original mid-level zone, a
-// late zone before the original flag, and one more in area 2.
-const bloomPlatforms: Platform[] = [
-  { id: 'bloom-early', x: 470, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
-  { id: 'bloom1', x: 1910, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
-  { id: 'bloom-late', x: 2650, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
-  { id: 'bloom-final', x: 4450, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
-  { id: 'bloom-area3', x: 5700, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
+// A few high routes remain as permanent optional shortcuts. They reward a
+// clean jump without asking the player to learn a second world-state rule.
+const bonusPlatforms: Platform[] = [
+  { id: 'bonus-early', x: 470, y: GROUND_Y - 150, width: 80, height: 16 },
+  { id: 'bonus-mid', x: 1910, y: GROUND_Y - 150, width: 80, height: 16 },
+  { id: 'bonus-late', x: 2650, y: GROUND_Y - 140, width: 80, height: 16 },
+  { id: 'bonus-final', x: 4450, y: GROUND_Y - 140, width: 80, height: 16 },
+  { id: 'bonus-deep', x: 5700, y: GROUND_Y - 150, width: 80, height: 16 },
 ];
-
-function makeShiftNodes(): ShiftNode[] {
-  return [
-    { id: 'shift-early', x: 220, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
-    { id: 'shift1', x: 1700, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
-    { id: 'shift-late', x: 2450, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
-    { id: 'shift-final', x: 4250, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
-    { id: 'shift-area3', x: 5000, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
-  ];
-}
 
 function makeSporeSprites(): SporeSprite[] {
   const defs: [string, number, number, number][] = [
@@ -351,14 +337,13 @@ export function createLevel(): Level {
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
-    platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
+    platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bonusPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
     // Decorative now — reaching it no longer wins on its own, since the boss
     // physically blocks the path there while alive (see stepGame). Defeating
     // the boss is what actually triggers the win.
     flag: { x: 7650, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
-    shiftNodes: makeShiftNodes(),
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),

@@ -24,7 +24,6 @@ export const ENEMY_SPEED = 60; // px/s
 // normal patrol to 60%.
 export const ENEMY_CHARGE_SPEED = 120;
 export const ENEMY_DETECT_RANGE = 160; // px; not given a number in the doc, a judgment call
-export const ENEMY_WILD_PATROL_MULT = 0.6;
 
 export const COIN_SIZE = 22;
 export const FLAG_WIDTH = 24;
@@ -51,14 +50,12 @@ export const OVERDRIVE_DURATION = 8; // seconds the boost lasts once the gauge f
 export const OVERDRIVE_SPEED_MULT = 1.15; // applied to MOVE_SPEED and JUMP_VELOCITY while active
 export const OVERDRIVE_COIN_MULT = 2; // coin value multiplier while active
 
-export const SHIFT_NODE_SIZE = 28;
 
 export const SPORE_SPRITE_WIDTH = 28;
 export const SPORE_SPRITE_HEIGHT = 32;
 export const SPORE_AMPLITUDE = 20; // px, vertical sine-wave travel
 export const SPORE_PERIOD = 2.4; // seconds per full float cycle
 export const SPORE_RADIUS_WILD = 80; // px, proximity radius in the sprite's natural (wild) state
-export const SPORE_RADIUS_MECHANICAL = 110; // wider net once shifted to its brass-drone form
 export const SPORE_SLOW_DURATION = 2; // seconds the speed debuff lingers after leaving range
 export const SPORE_SLOW_FACTOR = 0.85; // multiplier on MOVE_SPEED while slowed
 
@@ -77,8 +74,6 @@ export const BIOCOIL_WINDUP_WILD = 0.4; // seconds; mechanical state skips windu
 export const BIOCOIL_LANDED_DURATION = 0.6; // defenseless window after landing
 export const BIOCOIL_LEAP_VX_WILD = 180;
 export const BIOCOIL_LAUNCH_VY_WILD = -520; // big, telegraphed arc
-export const BIOCOIL_LEAP_VX_MECHANICAL = 90;
-export const BIOCOIL_LAUNCH_VY_MECHANICAL = -300; // low, short, untelegraphed ambush hop
 
 export const STEAMBLOWER_WIDTH = 48;
 export const STEAMBLOWER_HEIGHT = 54;

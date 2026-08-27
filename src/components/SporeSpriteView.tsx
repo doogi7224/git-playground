@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
-import { BloomState, SporeSprite } from '../game/types';
+import { SporeSprite } from '../game/types';
 import { palette } from '../theme';
 
 // AI-generated illustration (matches the Sprout/Cogmite art direction) drawn
@@ -9,7 +9,7 @@ import { palette } from '../theme';
 // dot-motes this view used before the illustration existed are gone.
 const VISUAL_SCALE = 1.8;
 
-export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeSprite; bloomState: BloomState }) {
+export default function SporeSpriteView({ sprite }: { sprite: SporeSprite }) {
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -25,8 +25,6 @@ export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeS
 
   const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.08] });
   const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.4] });
-  const isMechanical = bloomState === 'mechanical';
-  const glowColor = isMechanical ? palette.uiPrimary : palette.moss;
   const visualSize = sprite.width * VISUAL_SCALE;
 
   return (
@@ -42,11 +40,8 @@ export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeS
         },
       ]}
     >
-      <Animated.View pointerEvents="none" style={[styles.glow, { backgroundColor: glowColor, opacity: glowOpacity }]} />
+      <Animated.View pointerEvents="none" style={[styles.glow, { backgroundColor: palette.moss, opacity: glowOpacity }]} />
       <Image source={require('../../assets/sprites/spore_sprite.png')} resizeMode="contain" style={styles.sprite} />
-      {/* Mechanical state recolors the mood without hiding the illustration's
-          own shading, matching the tint-overlay pattern used elsewhere. */}
-      {isMechanical && <View pointerEvents="none" style={styles.mechTint} />}
     </Animated.View>
   );
 }
@@ -66,14 +61,5 @@ const styles = StyleSheet.create({
   sprite: {
     width: '100%',
     height: '100%',
-  },
-  mechTint: {
-    position: 'absolute',
-    left: '18%',
-    top: '18%',
-    width: '64%',
-    height: '64%',
-    borderRadius: 999,
-    backgroundColor: 'rgba(169,118,47,0.32)',
   },
 });

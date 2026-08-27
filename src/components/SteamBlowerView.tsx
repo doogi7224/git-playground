@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { isFlameLobActive, isSteamGustActive } from '../game/physics';
-import { BloomState, SteamBlower } from '../game/types';
+import { SteamBlower } from '../game/types';
 import { STEAMBLOWER_HP, STEAM_GUST_RANGE, FLAME_LOB_RANGE } from '../game/constants';
 import { palette } from '../theme';
 
@@ -13,10 +13,9 @@ import { palette } from '../theme';
 // second illustration.
 const VISUAL_SCALE = 1.6;
 
-export default function SteamBlowerView({ blower, bloomState }: { blower: SteamBlower; bloomState: BloomState }) {
+export default function SteamBlowerView({ blower }: { blower: SteamBlower }) {
   if (!blower.alive) return null;
 
-  const isWild = bloomState === 'wild';
   const gusting = isSteamGustActive(blower);
   const lobbing = isFlameLobActive(blower);
 
@@ -48,11 +47,6 @@ export default function SteamBlowerView({ blower, bloomState }: { blower: SteamB
 
       <Image source={require('../../assets/sprites/steam_blower.png')} resizeMode="contain" style={styles.sprite} />
 
-      {!isWild && (
-        <View pointerEvents="none" style={styles.capSeal}>
-          <View style={styles.capSealRivet} />
-        </View>
-      )}
     </View>
   );
 }
@@ -77,27 +71,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 6,
     borderRadius: 2,
-  },
-  capSeal: {
-    position: 'absolute',
-    top: '2%',
-    left: '12%',
-    right: '12%',
-    height: '46%',
-    borderRadius: 999,
-    backgroundColor: palette.uiPrimaryDark,
-    borderWidth: 2,
-    borderColor: palette.uiDanger,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  capSealRivet: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: palette.uiPrimary,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.25)',
   },
   gust: {
     position: 'absolute',

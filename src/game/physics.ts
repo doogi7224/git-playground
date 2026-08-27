@@ -7,9 +7,7 @@ import {
   BOSS_IDLE_DURATION,
   BOSS_TELEGRAPH_DURATION,
   BOSS_VULNERABLE_DURATION,
-  BIOCOIL_LAUNCH_VY_MECHANICAL,
   BIOCOIL_LAUNCH_VY_WILD,
-  BIOCOIL_LEAP_VX_MECHANICAL,
   BIOCOIL_LEAP_VX_WILD,
   BIOCOIL_RANGE,
   BIOCOIL_WINDUP_WILD,
@@ -29,7 +27,6 @@ import {
   ENEMY_CHARGE_SPEED,
   ENEMY_DETECT_RANGE,
   ENEMY_SPEED,
-  ENEMY_WILD_PATROL_MULT,
   FLAME_LOB_ACTIVE,
   FLAME_LOB_CHARGE,
   FLAME_LOB_CYCLE,
@@ -60,7 +57,6 @@ import {
   ROOTHOOK_SWING_GRAVITY,
   SPORE_AMPLITUDE,
   SPORE_PERIOD,
-  SPORE_RADIUS_MECHANICAL,
   SPORE_RADIUS_WILD,
   SPORE_SLOW_DURATION,
   SPORE_SLOW_FACTOR,
@@ -76,7 +72,6 @@ import {
 } from './constants';
 import {
   BioCoil,
-  BloomState,
   Boss,
   CogPickup,
   EffectEvent,
@@ -99,10 +94,6 @@ export function rectIntersect(a: Rect, b: Rect): boolean {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function activePlatforms(level: Level, bloomState: BloomState): Platform[] {
-  return level.platforms.filter((p) => !p.visibleIn || p.visibleIn === bloomState);
 }
 
 export function createInitialState(level: Level): GameState {
@@ -142,8 +133,6 @@ export function createInitialState(level: Level): GameState {
     score: 0,
     lives: 3,
     phase: 'playing',
-    bloomState: 'mechanical',
-    bloomNodeArmed: true,
     sporeSprites: level.sporeSprites.map((s) => ({ ...s })),
     pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
@@ -191,23 +180,19 @@ function stepPressurePistons(prev: PressurePiston[], dt: number): PressurePiston
   return prev.map((p) => ({ ...p, phase: (p.phase + dt) % PISTON_CYCLE }));
 }
 
-export function isPistonDangerous(piston: PressurePiston, bloomState: BloomState): boolean {
-  if (bloomState === 'wild') return false; // vines smother it — fully neutralized, not just paused
+export function isPistonDangerous(piston: PressurePiston): boolean {
   return piston.phase >= PISTON_CHARGE_DURATION && piston.phase < PISTON_CHARGE_DURATION + PISTON_BLAST_DURATION;
 }
 
-function stepBioCoils(prev: BioCoil[], player: Rect, bloomState: BloomState, dt: number): BioCoil[] {
+function stepBioCoils(prev: BioCoil[], player: Rect, dt: number): BioCoil[] {
   return prev.map((c) => {
     if (!c.alive) return c;
 
     if (c.phase === 'coiled') {
       const dx = player.x + player.width / 2 - (c.homeX + c.width / 2);
       if (Math.abs(dx) > BIOCOIL_RANGE) return c;
-      if (bloomState === 'mechanical') {
-        // No telegraph in the mechanical form: it springs the instant it detects the player.
-        const facing: 1 | -1 = dx < 0 ? -1 : 1;
-        return { ...c, phase: 'launch', facing, vx: facing * BIOCOIL_LEAP_VX_MECHANICAL, vy: BIOCOIL_LAUNCH_VY_MECHANICAL };
-      }
+      // Every leap has a short, readable windup. The player should lose only
+      // after missing a cue, never because an invisible mode changed.
       return { ...c, phase: 'windup', timer: BIOCOIL_WINDUP_WILD };
     }
 
@@ -317,26 +302,12 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const jumpVelocity =
     JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1) * (prev.player.equippedFoot === 'spring' ? COG_SPRING_JUMP_MULT : 1);
 
-  // Bloom Shift: decided from where the player was at the start of this
-  // frame (before this frame's own movement), so the toggle and the
-  // platform set used for this frame's collision stay in sync (no
-  // one-frame lag between what's drawn and what's solid).
-  let bloomState = prev.bloomState;
-  let bloomNodeArmed = prev.bloomNodeArmed;
-  const touchingShiftNode = level.shiftNodes.some((n) => rectIntersect(prev.player, n));
-  if (touchingShiftNode && bloomNodeArmed) {
-    bloomState = bloomState === 'mechanical' ? 'wild' : 'mechanical';
-    bloomNodeArmed = false;
-  } else if (!touchingShiftNode) {
-    bloomNodeArmed = true;
-  }
-
   // The boss (while alive) is solid, unlike every other monster in this file —
   // it physically blocks the path to the arena's far side instead of being a
   // walk-through hazard, so defeating it is the only way past. Decided from
   // prev.boss.alive (this frame's stomp resolution, below, can't remove its
   // own blocking mid-frame).
-  const platforms: (Platform | Boss)[] = [...activePlatforms(level, bloomState), ...(prev.boss.alive ? [prev.boss] : [])];
+  const platforms: (Platform | Boss)[] = [...level.platforms, ...(prev.boss.alive ? [prev.boss] : [])];
 
   // Same decay pattern as corpse platforms, for the read-only effect log
   // consumed by particle-burst components — physics never reads this back.
@@ -529,8 +500,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     player.invulnerableFor = Math.max(0, player.invulnerableFor - dt);
   }
 
-  // Enemy patrol / charge. Detection and the charge trigger only work in the
-  // mechanical bloom state; wild neutralizes both and slows normal patrol.
+  // Enemy patrol / charge. Detection is always active, so the red alert cue
+  // always means the same thing: the beetle is about to rush the player.
   // Uses this frame's already-updated player position (the movement block
   // above has already run), same as the stomp/hit checks just below it.
   const playerCenterX = player.x + player.width / 2;
@@ -538,7 +509,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (!e.alive) return e;
 
     const eCenterX = e.x + e.width / 2;
-    const detects = bloomState === 'mechanical' && Math.abs(playerCenterX - eCenterX) <= ENEMY_DETECT_RANGE;
+    const detects = Math.abs(playerCenterX - eCenterX) <= ENEMY_DETECT_RANGE;
     let chargeDir = e.chargeDir;
     if (detects && chargeDir === 0) {
       chargeDir = playerCenterX < eCenterX ? -1 : 1;
@@ -546,7 +517,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       chargeDir = 0;
     }
 
-    const patrolSpeed = ENEMY_SPEED * (bloomState === 'wild' ? ENEMY_WILD_PATROL_MULT : 1);
+    const patrolSpeed = ENEMY_SPEED;
     const dir: 1 | -1 = chargeDir !== 0 ? chargeDir : e.vx >= 0 ? 1 : -1;
     const speed = chargeDir !== 0 ? ENEMY_CHARGE_SPEED : patrolSpeed;
 
@@ -598,7 +569,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return e;
   });
 
-  const bioCoilsStepped = stepBioCoils(prev.bioCoils, prev.player, bloomState, dt);
+  const bioCoilsStepped = stepBioCoils(prev.bioCoils, prev.player, dt);
   const resolvedBioCoils = bioCoilsStepped.map((c) => {
     if (!c.alive) return c;
     if (!rectIntersect(player, c)) return c;
@@ -653,8 +624,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
       pushEffect('impact', b.x + b.width / 2, b.y);
-      // Cap closed (mechanical): stomp just bounces off, no effect on the boss.
-      if (bloomState !== 'wild') return b;
       gaugeGain += OVERDRIVE_STOMP_GAIN;
       const hp = b.hp - 1;
       if (hp <= 0) {
@@ -708,7 +677,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   const pressurePistons = stepPressurePistons(prev.pressurePistons, dt);
   for (const piston of pressurePistons) {
-    if (!isPistonDangerous(piston, bloomState)) continue;
+    if (!isPistonDangerous(piston)) continue;
     if (!rectIntersect(player, piston)) continue;
     if (player.invulnerableFor <= 0) {
       pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
@@ -757,7 +726,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
     return s;
   });
-  const sporeRadius = bloomState === 'wild' ? SPORE_RADIUS_WILD : SPORE_RADIUS_MECHANICAL;
+  const sporeRadius = SPORE_RADIUS_WILD;
   const nearSporeSprite = resolvedSporeSprites.some((s) => {
     if (!s.alive) return false;
     const c = rectCenter(s);
@@ -835,8 +804,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     score,
     lives,
     phase,
-    bloomState,
-    bloomNodeArmed,
     sporeSprites: resolvedSporeSprites,
     pressurePistons,
     bioCoils: resolvedBioCoils,

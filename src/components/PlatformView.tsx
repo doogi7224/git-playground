@@ -8,12 +8,11 @@ import { Platform } from '../game/types';
 // not a tall block of repeated metal panels.
 export default function PlatformView({ platform }: { platform: Platform }) {
   const ground = platform.id.startsWith('ground');
-  const vine = platform.visibleIn === 'wild';
   const accentCount = Math.max(1, Math.floor(platform.width / (ground ? 62 : 28)));
 
   return (
     <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-      <LinearGradient colors={ground ? ['#a8dd70', '#4e9a4f'] : vine ? ['#c4ec86', '#5b9d4f'] : ['#b8df72', '#57954a']} style={styles.mossCap}>
+      <LinearGradient colors={ground ? ['#a8dd70', '#4e9a4f'] : ['#b8df72', '#57954a']} style={styles.mossCap}>
         {Array.from({ length: accentCount }, (_, index) => (
           <View key={index} style={[styles.grassTuft, { left: 8 + index * (ground ? 62 : 28) }]} />
         ))}

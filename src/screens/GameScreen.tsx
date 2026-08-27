@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Background from '../components/Background';
 import BioCoilView from '../components/BioCoilView';
 import BossView from '../components/BossView';
@@ -18,7 +18,6 @@ import PortalView from '../components/PortalView';
 import PressurePistonView from '../components/PressurePistonView';
 import RootPointView from '../components/RootPointView';
 import RopeView from '../components/RopeView';
-import ShiftNodeView from '../components/ShiftNodeView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import SteamBlowerView from '../components/SteamBlowerView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
@@ -97,21 +96,6 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 
   const cameraX = computeCameraX(gameState.player.x, viewportWidth, level.worldWidth);
 
-  // A short full-stage color wash the instant bloomState flips, on top of
-  // Background's own slower cross-fade and Hud's badge pulse — together they
-  // make a Bloom Shift read as "the world just changed" rather than just a
-  // platform re-color (CLAUDE.md 19 — Bloom Shift 연출).
-  const bloomFlash = useRef(new Animated.Value(0)).current;
-  const prevBloomStateRef = useRef(gameState.bloomState);
-  useEffect(() => {
-    if (prevBloomStateRef.current !== gameState.bloomState) {
-      prevBloomStateRef.current = gameState.bloomState;
-      bloomFlash.setValue(1);
-      Animated.timing(bloomFlash, { toValue: 0, duration: 550, useNativeDriver: true }).start();
-    }
-  }, [gameState.bloomState, bloomFlash]);
-  const bloomFlashOpacity = bloomFlash.interpolate({ inputRange: [0, 1], outputRange: [0, 0.45] });
-
   return (
     <View style={styles.outer}>
       <View style={[styles.stageClip, { top: HUD_RESERVED_TOP, height: availableStageHeight }]}>
@@ -121,21 +105,10 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             { width: viewportWidth, height: VIEWPORT_HEIGHT, transform: [{ scale: stageScale }] },
           ]}
         >
-          <Background
-            cameraX={cameraX}
-            worldWidth={level.worldWidth}
-            viewportWidth={viewportWidth}
-            viewportHeight={VIEWPORT_HEIGHT}
-            bloomState={gameState.bloomState}
-          />
+          <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportWidth={viewportWidth} viewportHeight={VIEWPORT_HEIGHT} />
           <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
-            {level.platforms
-              .filter((p) => !p.visibleIn || p.visibleIn === gameState.bloomState)
-              .map((p) => (
-                <PlatformView key={p.id} platform={p} />
-              ))}
-            {level.shiftNodes.map((n) => (
-              <ShiftNodeView key={n.id} node={n} bloomState={gameState.bloomState} />
+            {level.platforms.map((p) => (
+              <PlatformView key={p.id} platform={p} />
             ))}
             {level.rootPoints.map((r) => (
               <RootPointView key={r.id} point={r} />
@@ -147,7 +120,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
               <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
             ))}
             {gameState.pressurePistons.map((p) => (
-              <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />
+              <PressurePistonView key={p.id} piston={p} />
             ))}
             <FlagView flag={level.flag} />
             <PortalView portal={level.portal} />
@@ -156,38 +129,27 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
               <CoinView key={c.id} coin={c} />
             ))}
             {gameState.enemies.map((e) => (
-              <EnemyView key={e.id} enemy={e} bloomState={gameState.bloomState} />
+              <EnemyView key={e.id} enemy={e} />
             ))}
             {gameState.bioCoils.map((c) => (
               <BioCoilView key={c.id} coil={c} />
             ))}
             {gameState.steamBlowers.map((b) => (
-              <SteamBlowerView key={b.id} blower={b} bloomState={gameState.bloomState} />
+              <SteamBlowerView key={b.id} blower={b} />
             ))}
             {gameState.sporeSprites.map((s) => (
-              <SporeSpriteView key={s.id} sprite={s} bloomState={gameState.bloomState} />
+              <SporeSpriteView key={s.id} sprite={s} />
             ))}
             <RopeView player={gameState.player} />
             <PlayerView player={gameState.player} />
             <EffectsView effects={gameState.effects} />
           </View>
         </View>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.bloomFlash,
-            {
-              backgroundColor: gameState.bloomState === 'wild' ? palette.moss : palette.uiPrimary,
-              opacity: bloomFlashOpacity,
-            },
-          ]}
-        />
       </View>
 
       <Hud
         score={gameState.score}
         lives={gameState.lives}
-        bloomState={gameState.bloomState}
         overdriveGauge={gameState.player.overdriveGauge}
         overdriveActive={gameState.player.overdriveTimer > 0}
         equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody, gameState.player.equippedFoot]}
@@ -295,9 +257,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-  },
-  bloomFlash: {
-    ...StyleSheet.absoluteFill,
   },
   overlay: {
     ...StyleSheet.absoluteFill,

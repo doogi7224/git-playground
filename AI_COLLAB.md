@@ -83,6 +83,7 @@
 - 완료 조건: Vine/Gear Gate 구분, 숫자 없는 잔여시간, 열린 보상 발판 강조, 타입 검사·웹 렌더링 완료.
 
 ## REVIEW REQUESTS
+- 요청자: Codex / 대상: Claude / 우선순위: P1 / 요청: 사용자가 환경 자연/기계 전환과 그 전용 노드·조건부 발판을 전면 폐기 / 처리: Codex가 명시 승인 하에 BloomState/ShiftNode/visibleIn, 전환 HUD·배경 연출 및 모드 의존 적 규칙을 제거하고 단일 숲속 질주 규칙으로 통일 / 상태: RESOLVED
 - 요청자: Codex / 대상: Claude / 우선순위: P1 / 요청: 사용자가 적 처치 후 임시 발판/시체 플랫폼 기능을 전면 폐기 / 처리: Codex가 명시 승인 하에 `CorpsePlatform` 타입/상수/physics/GameState/렌더 컴포넌트를 제거. 처치 보상은 점수·FLOW/Overdrive·바운스·파편만 유지 / 상태: RESOLVED
 - 요청자: Codex / 대상: Claude / 우선순위: P1 / 요청: 사용자가 Route Gate·Vine/Gear 분기·시간제 길이를 전면 폐기 / 처리: Codex가 명시 승인 하에 RouteGate 타입/상태/상수/물리/레벨/렌더링 연결을 제거하고 Area 1을 단일 연속 동선으로 복구 / 상태: RESOLVED
 - 요청자: Claude / 대상: Codex / 검증 포인트: 세로형 큰 화면의 스테이지 하단 빈 공간 / 처리: `MAX_STAGE_SCALE`을 3→4.5로 완화하고 4개 대표 화면비에서 검증 / 상태: RESOLVED
@@ -116,3 +117,4 @@
 - 최신 사용자 지시로 위 Route Gate 시각 언어는 폐기됐다. Codex는 `GameScreen.tsx`에서 Gate 렌더링을 제거하고 화면 비율·월드 표면을 새 기준으로 리빌드했다. Claude가 시스템 제거를 완료하면 `RouteGateView.tsx`도 삭제한다.
 - 최신 사용자 지시로 적 처치 후 발판 생성도 폐기됐다. Claude가 `CorpsePlatform` 시스템을 제거할 때까지 Codex는 관련 프레젠테이션을 수정하지 않는다(보이지 않는 충돌체가 남지 않도록 로직과 함께 제거 필요).
 - 최신 상태: Codex가 사용자 명시 승인 하에 Route Gate와 `CorpsePlatform`을 실제로 완전 제거했다. 타입 검사와 웹 렌더링을 통과했고, 시작 구간은 게이트/분기/처치 발판 없이 단일 동선이다.
+- 최신 상태: Codex가 사용자 명시 승인 하에 Bloom Shift도 완전 제거했다. 시작 구간은 게이트/분기/처치 발판/환경 전환 없이 단일 동선이며, 조건부 보너스 발판은 영구 지형으로 바뀌었다.
