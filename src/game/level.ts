@@ -44,6 +44,10 @@ const groundSegments: [number, number][] = [
   [2340, 3200],
   [3350, 3900],
   [4030, 4600],
+  // Area 3, extending the level further past the original area-2 flag.
+  [4750, 5300],
+  [5450, 6150],
+  [6220, 6800],
 ];
 
 function makeGroundPlatforms(): Platform[] {
@@ -74,6 +78,15 @@ const floatingPlatforms: Platform[] = [
   { id: 'p14', x: 3920, y: GROUND_Y - 60, width: 90, height: 20 }, // bridges the pit before ground-5
   { id: 'p15', x: 4100, y: GROUND_Y - 100, width: 110, height: 20 },
   { id: 'p16', x: 4540, y: GROUND_Y - 60, width: 60, height: 20 },
+  // Area 3.
+  { id: 'p17', x: 4680, y: GROUND_Y - 70, width: 90, height: 20 }, // bridges the pit into area 3
+  { id: 'p18', x: 4900, y: GROUND_Y - 60, width: 100, height: 20 },
+  { id: 'p19', x: 5150, y: GROUND_Y - 110, width: 90, height: 20 },
+  { id: 'p20', x: 5380, y: GROUND_Y - 70, width: 90, height: 20 }, // bridges the next pit
+  { id: 'p21', x: 5600, y: GROUND_Y - 60, width: 110, height: 20 },
+  { id: 'p22', x: 5850, y: GROUND_Y - 90, width: 100, height: 20 },
+  { id: 'p23', x: 6140, y: GROUND_Y - 70, width: 90, height: 20 }, // bridges the final pit, alongside root3
+  { id: 'p24', x: 6740, y: GROUND_Y - 60, width: 60, height: 20 },
 ];
 
 // Only exist once the world is shifted into the "wild" bloom state — bonus
@@ -85,6 +98,7 @@ const bloomPlatforms: Platform[] = [
   { id: 'bloom1', x: 1910, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
   { id: 'bloom-late', x: 2650, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
   { id: 'bloom-final', x: 4450, y: GROUND_Y - 140, width: 80, height: 16, visibleIn: 'wild' },
+  { id: 'bloom-area3', x: 5700, y: GROUND_Y - 150, width: 80, height: 16, visibleIn: 'wild' },
 ];
 
 function makeShiftNodes(): ShiftNode[] {
@@ -93,6 +107,7 @@ function makeShiftNodes(): ShiftNode[] {
     { id: 'shift1', x: 1700, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
     { id: 'shift-late', x: 2450, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
     { id: 'shift-final', x: 4250, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
+    { id: 'shift-area3', x: 5000, y: GROUND_Y - SHIFT_NODE_SIZE, width: SHIFT_NODE_SIZE, height: SHIFT_NODE_SIZE },
   ];
 }
 
@@ -101,6 +116,7 @@ function makeSporeSprites(): SporeSprite[] {
     ['spore1', 1150, GROUND_Y - 160, 0],
     ['spore2', 2050, GROUND_Y - 150, Math.PI],
     ['spore3', 3960, GROUND_Y - 140, Math.PI / 2],
+    ['spore4', 5500, GROUND_Y - 150, Math.PI / 3],
   ];
   return defs.map(([id, x, baseY, phase]) => ({
     id,
@@ -118,6 +134,7 @@ function makePressurePistons(): PressurePiston[] {
   const defs: [string, number][] = [
     ['piston1', 650],
     ['piston2', 4300],
+    ['piston3', 5950],
   ];
   return defs.map(([id, x]) => ({
     id,
@@ -167,6 +184,7 @@ function makeRootPoints(): RootPoint[] {
   const defs: [string, number, number][] = [
     ['root1', 780, GROUND_Y - 150], // over the first pit, an alternate to the p1/p2 jump route
     ['root2', 3275, GROUND_Y - 160], // over the pit into area 2, alongside the p11 bridge
+    ['root3', 6110, GROUND_Y - 160], // over the final pit in area 3, alongside the p23 bridge
   ];
   return defs.map(([id, x, y]) => ({ id, x, y, width: ROOTHOOK_SIZE, height: ROOTHOOK_SIZE }));
 }
@@ -199,6 +217,8 @@ function makeEnemies(): Enemy[] {
     ['e5', 2900, 3150, GROUND_Y],
     ['e6', 3400, 3850, GROUND_Y],
     ['e7', 4060, 4550, GROUND_Y],
+    ['e8', 4800, 5250, GROUND_Y],
+    ['e9', 5500, 6050, GROUND_Y],
   ];
   return defs.map(([id, minX, maxX, groundY]) => ({
     id,
@@ -245,6 +265,18 @@ function makeCoins(): Coin[] {
     [4470, GROUND_Y - 170],
     [4500, GROUND_Y - 170],
     [4550, GROUND_Y - 90],
+    // Area 3.
+    [4700, GROUND_Y - 100],
+    [4730, GROUND_Y - 100],
+    [4920, GROUND_Y - 90],
+    [4950, GROUND_Y - 90],
+    [5170, GROUND_Y - 140],
+    [5400, GROUND_Y - 100],
+    [5620, GROUND_Y - 90],
+    [5650, GROUND_Y - 90],
+    [5870, GROUND_Y - 150],
+    [6200, GROUND_Y - 100],
+    [6760, GROUND_Y - 90],
   ];
   return coinDefs.map(([x, y], i) => ({
     id: `coin-${i}`,
@@ -259,7 +291,7 @@ function makeCoins(): Coin[] {
 // Respawn points, one near the start of each later ground segment (well clear
 // of pit edges). [0] matches spawn — death respawns at the highest one the
 // player has already crossed, not always the level start; with the level now
-// spanning 4700px, sending every death back to x=40 would make the back half
+// spanning 6900px, sending every death back to x=40 would make the back half
 // of the level feel disproportionately punishing.
 function makeCheckpoints(): { x: number; y: number }[] {
   return [
@@ -269,19 +301,21 @@ function makeCheckpoints(): { x: number; y: number }[] {
     { x: 2380, y: GROUND_Y - 100 },
     { x: 3390, y: GROUND_Y - 100 },
     { x: 4060, y: GROUND_Y - 100 },
+    { x: 4750, y: GROUND_Y - 100 },
+    { x: 5600, y: GROUND_Y - 100 },
   ];
 }
 
 export function createLevel(): Level {
   return {
-    worldWidth: 4700,
+    worldWidth: 6900,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
     platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
-    flag: { x: 4620, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
+    flag: { x: 6820, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
     shiftNodes: makeShiftNodes(),
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
