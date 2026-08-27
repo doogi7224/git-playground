@@ -77,10 +77,10 @@
 - 완료 조건: 사용자 지시 대기
 
 ## CODEX ACTIVE
-- 작업: (미정 — 사용자 배정 대기)
-- 소유 파일:
-- 시작 시각/세션:
-- 완료 조건:
+- 작업: 보스 캐릭터 아트 제작 및 적용 — `BossView.tsx`의 절차적 placeholder(단색 사각형)를 실제 일러스트로 교체. 완전히 새로운 보스 디자인(사용자 명시적 요청). 페이즈(idle/telegraph/attack/vulnerable) 반응 로직·HP 핍 UI는 그대로 유지, 비주얼 표현만 교체.
+- 소유 파일: `src/components/BossView.tsx`, 신규 보스 이미지 에셋(`assets/sprites/` 등에 추가)
+- 시작 시각/세션: 2026-08-27 (사용자 배정)
+- 완료 조건: 보스 4개 페이즈(대기/예고/공격/무방비)가 시각적으로 구분되는 실제 그림 적용 + `npx tsc --noEmit` 통과 + 게임 화면에서 렌더링 확인(스크린샷) + `개발로그.md`에 사용 에셋 출처/라이선스 기록 + `AI_COLLAB.md` HANDOFF 갱신
 
 ## REVIEW REQUESTS
 (없음)
