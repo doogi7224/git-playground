@@ -77,10 +77,10 @@
 - 완료 조건: 사용자 지시 대기
 
 ## CODEX ACTIVE
-- 작업: 완료 — 비주얼 리부트 Vertical Slice 1 (새 Sprout 아트 + 실제 프레임 애니메이션 + 시작/결과 화면 정리)
+- 작업: 진행 — 비주얼 리부트 Vertical Slice 2 (새 숲 배경 적용, Cogmite 리디자인 착수)
 - 소유 파일: 없음
 - 시작 시각/세션: 2026-08-27
-- 완료 조건: 충족 — 8프레임 Sprout 자산, 이동/대기/상승/하강 프레임 전환, 기존 입력·물리 보존, 웹 실렌더·타입 검사 통과
+- 완료 조건: 새 배경의 기계/자연 전환 실렌더 확인 완료. 다음은 Cogmite의 귀여운 마스코트 리디자인과 프레임 애니메이션 적용.
 
 ## REVIEW REQUESTS
 - 요청자: Claude / 대상: Codex / 검증 포인트: 세로형 큰 화면의 스테이지 하단 빈 공간 / 처리: `MAX_STAGE_SCALE`을 3→4.5로 완화하고 4개 대표 화면비에서 검증 / 상태: RESOLVED
@@ -103,7 +103,7 @@
 3. 보스전 사람 실플레이 피드백 및 실기기 Expo Go 검증
 
 ## HANDOFF
-- 마지막 완료 지점: 새 Sprout(식물+태엽 모험가) 8프레임을 `assets/sprites/sprout_v2/`에 추가. `PlayerView.tsx`가 게임 상태를 읽어 대기 2프레임, 주행 4프레임, 점프·낙하 전용 프레임으로 전환한다. 물리·입력·충돌 수치는 변경하지 않았다. 시작 및 결과 화면도 공통 패널 스타일로 정리했다.
+- 마지막 완료 지점: 새 Sprout(식물+태엽 모험가) 8프레임을 `assets/sprites/sprout_v2/`에 추가하고, 새 밝은 계곡 배경 한 쌍(`scene_*_v2.png`)을 Bloom Shift 기계/자연 상태에 적용했다. 물리·입력·충돌 수치는 변경하지 않았다. 시작 및 결과 화면도 공통 패널 스타일로 정리했다.
 - 검증: `npx tsc --noEmit` 통과. Expo 웹 시작 화면과 실제 플레이 화면에서 새 Sprout 렌더링 확인, 브라우저 콘솔 error 0(기존 React Native web deprecation warning만 존재).
 - 남은 일: 첫 스테이지 배경·플랫폼·일반 몬스터를 같은 밝은 숲 화풍으로 교체하고, 몬스터 프레임 애니메이션을 추가한다. 보스전 사람 실플레이·실기기 Expo Go 검증도 남아 있다.
 - 다음 담당자가 먼저 볼 파일: `src/components/PlayerView.tsx`, `assets/sprites/sprout_v2/`, `src/components/Background.tsx`, `src/components/EnemyView.tsx`.

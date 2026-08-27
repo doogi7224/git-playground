@@ -22,8 +22,8 @@ const FAR_FACTOR = 0.15;
 // baked into one composition, matching the reference's single rich backdrop
 // rather than many small composited sprites) — cross-faded exactly like the
 // previous per-element approach, just with far fewer moving parts.
-const SCENE_MECH_SOURCE = require('../../assets/backgrounds/scene_mechanical.png');
-const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild.png');
+const SCENE_MECH_SOURCE = require('../../assets/backgrounds/scene_mechanical_v2.png');
+const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild_v2.png');
 
 // Memoized so this (large, tiled full-screen images) subtree is skipped on
 // the 60fps re-renders `cameraX` drives in the parent — its own props only
