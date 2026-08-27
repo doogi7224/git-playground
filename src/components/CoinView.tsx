@@ -1,10 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet } from 'react-native';
 import { Coin } from '../game/types';
 
-// Keep the existing collection hitbox but make the collectible itself a small
-// luminous seed-crystal. Its scale leaves breathing room around coin arcs.
-const VISUAL_SIZE = 12;
+// The collection hitbox remains untouched; this is only the painted Sunseed.
+const VISUAL_SIZE = 18;
 
 export default function CoinView({ coin }: { coin: Coin }) {
   const float = useRef(new Animated.Value(0)).current;
@@ -26,14 +25,16 @@ export default function CoinView({ coin }: { coin: Coin }) {
   const opacity = gleam.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.9] });
   return <Animated.View style={[styles.wrap, { left: coin.x + (coin.width - VISUAL_SIZE) / 2, top: coin.y + (coin.height - VISUAL_SIZE) / 2, transform: [{ translateY }] }]}>
     <Animated.View style={[styles.glow, { opacity }]} />
-    <View style={styles.crystal}><View style={styles.crystalCore} /><View style={styles.spark} /></View>
+    <Animated.Image
+      source={require('../../assets/sprites/collectible_sunseed_v3.png')}
+      resizeMode="contain"
+      style={[styles.sunseed, { opacity }]}
+    />
   </Animated.View>;
 }
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', width: VISUAL_SIZE, height: VISUAL_SIZE, alignItems: 'center', justifyContent: 'center' },
-  glow: { position: 'absolute', width: 17, height: 17, borderRadius: 9, backgroundColor: 'rgba(255,218,95,0.32)' },
-  crystal: { width: 10, height: 10, borderRadius: 3, transform: [{ rotate: '45deg' }], backgroundColor: '#edb943', borderWidth: 1.5, borderColor: '#8c5c22', alignItems: 'center', justifyContent: 'center', shadowColor: '#fff2a5', shadowOpacity: 0.85, shadowRadius: 3, elevation: 5 },
-  crystalCore: { width: 4, height: 4, borderRadius: 1.5, backgroundColor: '#fff6c8' },
-  spark: { position: 'absolute', top: 0.8, left: 0.8, width: 2, height: 2, borderRadius: 1, backgroundColor: '#fff' },
+  glow: { position: 'absolute', width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,205,71,0.22)' },
+  sunseed: { width: VISUAL_SIZE, height: VISUAL_SIZE },
 });

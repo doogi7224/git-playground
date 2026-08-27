@@ -3,23 +3,22 @@ import { Animated, Easing, ImageSourcePropType, StyleSheet, View } from 'react-n
 import { Enemy } from '../game/types';
 import { palette } from '../theme';
 
-// Cogmite is drawn larger than its collision box (a full-body AI-generated
-// sprite with legs splayed wide) and anchored so its feet sit on the
-// hitbox's bottom edge, centered on the hitbox's horizontal center.
-const VISUAL_SIZE = 42;
+// Cogmite is a painted, full-body forest automaton. Its visual size never
+// affects the collision box or patrol behaviour.
+const VISUAL_SIZE = 46;
 const WALK_FRAME_DISTANCE = 18;
 const COGMITE_FRAMES = {
   idle: [
-    require('../../assets/sprites/cogmite_v2/cogmite_idle_0.png'),
-    require('../../assets/sprites/cogmite_v2/cogmite_idle_1.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
   ],
   walk: [
-    require('../../assets/sprites/cogmite_v2/cogmite_walk_0.png'),
-    require('../../assets/sprites/cogmite_v2/cogmite_walk_1.png'),
-    require('../../assets/sprites/cogmite_v2/cogmite_walk_2.png'),
-    require('../../assets/sprites/cogmite_v2/cogmite_walk_3.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
   ],
-  alert: require('../../assets/sprites/cogmite_v2/cogmite_alert.png'),
+  alert: require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
 } satisfies {
   idle: ImageSourcePropType[];
   walk: ImageSourcePropType[];

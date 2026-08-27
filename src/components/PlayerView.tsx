@@ -3,29 +3,27 @@ import { Animated, Image, ImageSourcePropType, StyleSheet, View } from 'react-na
 import { MOVE_SPEED } from '../game/constants';
 import { Player } from '../game/types';
 
-// Sprout is drawn larger than its collision box (a full-body AI-generated
-// running-pose sprite with limbs splayed wide, so a good portion of the
-// square is empty space) and anchored so its feet sit on the hitbox's
-// bottom edge, centered on the hitbox's horizontal center.
-const VISUAL_SIZE = 44;
+// The painted scout is intentionally a little larger than the collision box.
+// The feet remain anchored to the hitbox: presentation never changes physics.
+const VISUAL_SIZE = 48;
 const LANDING_IMPACT_VY = 400; // px/s: falling faster than this on landing triggers a squash pulse
 const DASH_TRAIL_LENGTH = 3; // afterimage copies kept while dashing
 const IDLE_FRAME_MS = 520;
 const RUN_FRAME_MS = 90;
 
-const SPROUT_FRAMES = {
+const SCOUT_FRAMES = {
   idle: [
-    require('../../assets/sprites/sprout_v2/sprout_idle_0.png'),
-    require('../../assets/sprites/sprout_v2/sprout_idle_1.png'),
+    require('../../assets/sprites/scout_v3/scout_idle_0.png'),
+    require('../../assets/sprites/scout_v3/scout_idle_0.png'),
   ],
   run: [
-    require('../../assets/sprites/sprout_v2/sprout_run_0.png'),
-    require('../../assets/sprites/sprout_v2/sprout_run_1.png'),
-    require('../../assets/sprites/sprout_v2/sprout_run_2.png'),
-    require('../../assets/sprites/sprout_v2/sprout_run_3.png'),
+    require('../../assets/sprites/scout_v3/scout_run_0.png'),
+    require('../../assets/sprites/scout_v3/scout_run_0.png'),
+    require('../../assets/sprites/scout_v3/scout_run_0.png'),
+    require('../../assets/sprites/scout_v3/scout_run_0.png'),
   ],
-  jump: require('../../assets/sprites/sprout_v2/sprout_jump.png'),
-  fall: require('../../assets/sprites/sprout_v2/sprout_fall.png'),
+  jump: require('../../assets/sprites/scout_v3/scout_run_0.png'),
+  fall: require('../../assets/sprites/scout_v3/scout_run_0.png'),
 } satisfies {
   idle: ImageSourcePropType[];
   run: ImageSourcePropType[];
@@ -101,12 +99,12 @@ export default function PlayerView({ player }: { player: Player }) {
   // velocity and never alter physics.
   let spriteSource: ImageSourcePropType;
   if (!player.onGround) {
-    spriteSource = player.vy < 30 ? SPROUT_FRAMES.jump : SPROUT_FRAMES.fall;
+    spriteSource = player.vy < 30 ? SCOUT_FRAMES.jump : SCOUT_FRAMES.fall;
   } else if (isRunning || isDashing) {
-    const runIndex = Math.floor(Math.abs(player.x) / (MOVE_SPEED * (RUN_FRAME_MS / 1000))) % SPROUT_FRAMES.run.length;
-    spriteSource = SPROUT_FRAMES.run[runIndex];
+    const runIndex = Math.floor(Math.abs(player.x) / (MOVE_SPEED * (RUN_FRAME_MS / 1000))) % SCOUT_FRAMES.run.length;
+    spriteSource = SCOUT_FRAMES.run[runIndex];
   } else {
-    spriteSource = SPROUT_FRAMES.idle[Math.floor(Date.now() / IDLE_FRAME_MS) % SPROUT_FRAMES.idle.length];
+    spriteSource = SCOUT_FRAMES.idle[Math.floor(Date.now() / IDLE_FRAME_MS) % SCOUT_FRAMES.idle.length];
   }
 
   // Lean into the run direction; magnitude scales with speed, sign comes

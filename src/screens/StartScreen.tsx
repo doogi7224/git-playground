@@ -34,7 +34,7 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
 
         <View style={styles.heroRow}>
           <Image
-            source={require('../../assets/sprites/sprout_v2/sprout_idle_0.png')}
+            source={require('../../assets/sprites/scout_v3/scout_idle_0.png')}
             resizeMode="contain"
             style={styles.hero}
           />
