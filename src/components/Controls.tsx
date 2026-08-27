@@ -69,6 +69,9 @@ function ButtonFace({ label, role, big, scale }: { label: string; role: ButtonRo
         <View style={styles.glassHighlight} />
         <Animated.View pointerEvents="none" style={[styles.pressGlow, { opacity: glowOpacity }]} />
         <Text style={[styles.label, big && styles.bigLabel]}>{label}</Text>
+        <Text style={[styles.roleLabel, big && styles.bigRoleLabel]}>
+          {role === 'move' ? 'MOVE' : role === 'grapple' ? 'HOOK' : role === 'dash' ? 'DASH' : 'JUMP'}
+        </Text>
       </LinearGradient>
     </Animated.View>
   );
@@ -204,12 +207,18 @@ export default function Controls({
       onResponderRelease={handleTouches}
       onResponderTerminate={handleTouches}
     >
-      <View style={styles.dpad}>
+      <View style={styles.dpadModule}>
+        <View style={styles.moduleLabelPlate}>
+          <Text style={styles.moduleLabel}>MOVEMENT</Text>
+        </View>
+        <View style={styles.dpad}>
         <View ref={leftRef} onLayout={() => measure(leftRef, 'left')}>
           <ButtonFace label="◀" role="move" scale={leftScale} />
         </View>
+        <View style={styles.dpadBridge} />
         <View ref={rightRef} onLayout={() => measure(rightRef, 'right')}>
           <ButtonFace label="▶" role="move" scale={rightScale} />
+        </View>
         </View>
       </View>
       <View style={styles.actionPad}>
@@ -240,7 +249,44 @@ const styles = StyleSheet.create({
   },
   dpad: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 4,
+    alignItems: 'center',
+  },
+  dpadModule: {
+    padding: 5,
+    paddingTop: 12,
+    borderRadius: 38,
+    backgroundColor: palette.uiPlateDeep,
+    borderWidth: 1.5,
+    borderColor: palette.uiPlateEdge,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  moduleLabelPlate: {
+    position: 'absolute',
+    top: 2,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  moduleLabel: {
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+    color: palette.uiTextMuted,
+  },
+  dpadBridge: {
+    width: 9,
+    height: 20,
+    marginHorizontal: -7,
+    backgroundColor: palette.uiSecondaryDark,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: palette.uiPlateHighlight,
+    zIndex: -1,
   },
   actionPad: {
     flexDirection: 'row',
@@ -272,12 +318,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   label: {
-    fontSize: 24,
+    marginTop: 5,
+    fontSize: 22,
     fontWeight: '800',
     color: 'rgba(0,0,0,0.55)',
   },
   bigLabel: {
-    fontSize: 30,
+    marginTop: 4,
+    fontSize: 28,
+    color: '#5a3d00',
+  },
+  roleLabel: {
+    marginTop: -2,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.7,
+    color: 'rgba(0,0,0,0.48)',
+  },
+  bigRoleLabel: {
+    marginTop: -1,
+    fontSize: 8,
     color: '#5a3d00',
   },
   // Small bolt/rivet dots at the compass points of the ring — the "작은 볼트"

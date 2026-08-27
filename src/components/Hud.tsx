@@ -42,6 +42,7 @@ function LifePips({ lives }: { lives: number }) {
   const slots = Array.from({ length: STARTING_LIVES }, (_, i) => i < lives);
   return (
     <View style={styles.badge}>
+      <Text style={styles.badgeCaption}>LIFE</Text>
       {slots.map((alive, i) => (
         <View key={i} style={[styles.lifePip, alive ? styles.lifePipAlive : styles.lifePipLost]}>
           <View style={[styles.lifePipCore, alive && styles.lifePipCoreAlive]} />
@@ -81,6 +82,7 @@ function OverdriveGauge({ gaugeFill, overdriveActive }: { gaugeFill: number; ove
 
   return (
     <Animated.View style={[styles.gaugeRow, { transform: [{ scale: flashScale }] }]}>
+      <Text style={styles.gaugeLabel}>OVERDRIVE</Text>
       <View style={styles.gaugeCap} />
       <View style={[styles.gaugeTrack, overdriveActive && styles.gaugeTrackActive]}>
         <LinearGradient
@@ -124,6 +126,7 @@ export default function Hud({
     <View style={styles.container} pointerEvents="none">
       <View style={styles.topRow}>
         <View style={styles.badge}>
+          <Text style={styles.badgeCaption}>GEAR</Text>
           <View style={styles.coinIcon}>
             <View style={styles.coinShine} />
           </View>
@@ -160,8 +163,14 @@ const styles = StyleSheet.create({
   gaugeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     alignSelf: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9,
+    backgroundColor: palette.uiPlateDeep,
+    borderWidth: 1,
+    borderColor: palette.uiPlateEdge,
   },
   gaugeCap: {
     width: 8,
@@ -170,6 +179,13 @@ const styles = StyleSheet.create({
     backgroundColor: palette.uiPrimaryDark,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.35)',
+  },
+  gaugeLabel: {
+    marginRight: 2,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: palette.uiTextMuted,
   },
   gaugeTrack: {
     width: 140,
@@ -209,12 +225,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(20,30,45,0.45)',
-    paddingHorizontal: 12,
+    backgroundColor: palette.uiPlate,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: palette.uiPlateEdge,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  badgeCaption: {
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: palette.uiTextMuted,
   },
   bloomBadge: {
     borderWidth: 1.5,

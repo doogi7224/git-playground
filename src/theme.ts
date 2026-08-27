@@ -55,6 +55,13 @@ export const palette = {
   uiSecondaryDark: '#4f6058',
   uiDanger: '#b1502e',
 
+  // Shared instrument-panel surfaces used by HUD, controls and menus.
+  uiPlate: 'rgba(35, 40, 35, 0.82)',
+  uiPlateDeep: 'rgba(20, 24, 22, 0.92)',
+  uiPlateEdge: 'rgba(224, 169, 79, 0.72)',
+  uiPlateHighlight: 'rgba(255, 246, 207, 0.28)',
+  uiTextMuted: '#c8d2c9',
+
   overlayBg: 'rgba(20, 24, 18, 0.72)',
   cardBg: '#fbf5e8',
   textDark: '#2c2416',

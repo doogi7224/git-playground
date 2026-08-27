@@ -77,10 +77,10 @@
 - 완료 조건: 사용자 지시 대기
 
 ## CODEX ACTIVE
-- 작업: 완료 — 보스 스프라이트 4종 다운스케일·PNG 최적화 및 렌더링 회귀검증
+- 작업: 완료 — Phase 2 HUD·모바일 컨트롤 디자인 시스템 리빌드
 - 소유 파일: 없음
-- 시작 시각/세션: 2026-08-27 (Claude REVIEW REQUEST 수락)
-- 완료 조건: 충족 — 긴 변 640px, 알파 유지, 총용량 약 9.1→2.4MB, 시각 오차 5.34~7.58/255, 타입 검사·웹 로드 통과
+- 시작 시각/세션: 2026-08-27
+- 완료 조건: 충족 — HUD 계기판화, 이동 모듈 통합, 액션 역할 표기, 입력 코드 보존, 세로·가로 렌더링 및 타입 검사 통과
 
 ## REVIEW REQUESTS
 - 요청자: Claude / 대상: Codex / 검증 포인트: 세로형 큰 화면의 스테이지 하단 빈 공간 / 처리: `MAX_STAGE_SCALE`을 3→4.5로 완화하고 4개 대표 화면비에서 검증 / 상태: RESOLVED
@@ -97,13 +97,13 @@
 - 2026-08-27: 보스전 수치(HP5/페이즈 지속시간) 변경 불필요로 결론 / 근거: 반응형 봇 시뮬레이션에서 무피해 클리어 확인(개발로그.md (19)) / 승인자: Claude 자체 검증, 사용자 확인 대기 없음(수치 변경이 아니므로)
 
 ## NEXT
-1. CLAUDE.md 19장 Phase 2 — HUD·모바일 컨트롤·메뉴 디자인 시스템 리빌드(Codex)
+1. CLAUDE.md 19장 Phase 2 — 시작 화면·게임오버·승리 오버레이 디자인 리빌드(Codex)
 2. 보스전 사람 실플레이 피드백 및 실기기 Expo Go 검증
 3. 캐릭터·몬스터 프레임 애니메이션 계획
 
 ## HANDOFF
-- 마지막 완료 지점: 보스 Rootwarden 4페이즈 PNG를 긴 변 640px로 최적화. 코드·디자인·페이즈 구성은 변경하지 않음.
-- 검증: RGBA 알파 범위 0~255 유지, 장당 약 578~650KB, 원본 대비 가시 픽셀 평균 차이 5.34~7.58/255, `npx tsc --noEmit` 통과, Expo 웹 로드·콘솔 오류 0.
-- 남은 일: Phase 2 HUD·컨트롤·메뉴 UI 고급화, 보스전 사람 실플레이, 실기기 Expo Go 검증.
-- 다음 담당자가 먼저 볼 파일: `src/components/Hud.tsx`, `src/components/Controls.tsx`, `src/screens/StartScreen.tsx`, `src/theme.ts`.
+- 마지막 완료 지점: HUD와 모바일 컨트롤을 공통 어두운 금속 계기판 디자인으로 리빌드. HUD에 GEAR/LIFE/OVERDRIVE 위계를 추가하고 좌우 이동을 단일 MOVEMENT 모듈로 통합, HOOK/DASH/JUMP 역할 레이블 추가. 멀티터치·입력 콜백은 변경하지 않음.
+- 검증: `npx tsc --noEmit` 통과. Expo 웹 390×844 세로·844×390 가로 렌더링에서 잘림·겹침 없음, 콘솔 오류 0.
+- 남은 일: Phase 2 시작 화면·게임오버·승리 오버레이, 보스전 사람 실플레이, 실기기 Expo Go 검증.
+- 다음 담당자가 먼저 볼 파일: `src/screens/StartScreen.tsx`, `src/screens/GameScreen.tsx`의 overlay Presentation Layer.
 - 실행 및 검증 명령: `npm run web`, `npx tsc --noEmit`.
