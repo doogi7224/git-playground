@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
 import { BloomState } from '../game/types';
 import { palette } from '../theme';
@@ -12,12 +12,11 @@ interface Props {
   bloomState: BloomState;
 }
 
-// How much slower each layer scrolls than the camera. Far is deliberately
+// How much slower the far scene layer scrolls than the camera. Deliberately
 // slow (real distant mountains barely move) — this also keeps the tiled
 // scene painting's repeat seam rare, since the layer only travels a fraction
 // of the level's width (see FAR_FACTOR usage below).
 const FAR_FACTOR = 0.15;
-const NEAR_FACTOR = 0.5;
 
 // Two full-bleed painterly scene illustrations (mountains + midground already
 // baked into one composition, matching the reference's single rich backdrop
@@ -53,25 +52,8 @@ function SceneTiles({
   );
 }
 
-function Hill({ x, size, color }: { x: number; size: number; color: string }) {
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        left: x,
-        bottom: -size * 0.55,
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: color,
-      }}
-    />
-  );
-}
-
 export default function Background({ cameraX, worldWidth, viewportWidth, viewportHeight, bloomState }: Props) {
   const farOffset = -cameraX * FAR_FACTOR;
-  const nearOffset = -cameraX * NEAR_FACTOR;
 
   // Cross-fades the whole background between a mechanical and a wild scene
   // whenever the level-wide Bloom Shift state flips, so the world outside the
@@ -101,15 +83,6 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
   const farLayerWidth = viewportWidth + worldWidth * FAR_FACTOR;
   const tileCount = Math.max(1, Math.ceil(farLayerWidth / tileWidth) + 1);
 
-  const nearHills = useMemo(
-    () =>
-      Array.from({ length: Math.ceil(worldWidth / 320) }, (_, i) => ({
-        x: i * 320 + 60,
-        size: 150 + ((i * 61) % 90),
-      })),
-    [worldWidth]
-  );
-
   return (
     <View style={[styles.fill, { height: viewportHeight }]} pointerEvents="none">
       <LinearGradient colors={[palette.skyTop, palette.skyBottom]} style={styles.fill} />
@@ -117,12 +90,6 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
       <View style={[styles.parallaxLayer, { width: farLayerWidth, transform: [{ translateX: farOffset }] }]}>
         <SceneTiles source={SCENE_MECH_SOURCE} opacity={mechOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
         <SceneTiles source={SCENE_WILD_SOURCE} opacity={wildOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
-      </View>
-
-      <View style={[styles.parallaxLayer, { width: worldWidth, transform: [{ translateX: nearOffset }] }]}>
-        {nearHills.map((h, i) => (
-          <Hill key={`near-${i}`} x={h.x} size={h.size} color={palette.hillNear} />
-        ))}
       </View>
     </View>
   );
