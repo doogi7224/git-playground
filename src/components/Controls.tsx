@@ -27,6 +27,8 @@ interface Props {
   onDash: () => void;
   onGrappleIn: () => void;
   onGrappleOut: () => void;
+  onAttack: () => void;
+  hasBow: boolean;
 }
 
 interface Rect {
@@ -46,20 +48,21 @@ function pointInRect(x: number, y: number, r: Rect | null): boolean {
 // press-glow ring is derived from the same `scale` Animated.Value the touch
 // handler already drives (see handleTouches below) via interpolation, so
 // there's no extra Animated.Value or React state added just for the glow.
-type ButtonRole = 'move' | 'grapple' | 'dash' | 'jump';
+type ButtonRole = 'move' | 'grapple' | 'dash' | 'jump' | 'attack';
 
 const ROLE_COLORS: Record<ButtonRole, [string, string]> = {
   move: ['#dfe7ea', '#9fb0b8'], // neutral steel — left/right
   grapple: ['#8fc79c', palette.moss], // Root-Hook green
   dash: ['#e08a5e', palette.uiDanger], // ember — speed
   jump: [palette.uiPrimary, palette.uiPrimaryDark], // brass hero button
+  attack: ['#84c9bc', '#287667'], // relic-bow teal
 };
 
-function ButtonFace({ label, role, big, scale }: { label: string; role: ButtonRole; big?: boolean; scale: Animated.Value }) {
+function ButtonFace({ label, role, big, scale, disabled }: { label: string; role: ButtonRole; big?: boolean; scale: Animated.Value; disabled?: boolean }) {
   const glowOpacity = scale.interpolate({ inputRange: [0.88, 1], outputRange: [1, 0], extrapolate: 'clamp' });
   const [faceTop, faceBottom] = ROLE_COLORS[role];
   return (
-    <Animated.View style={[styles.buttonShadow, big && styles.bigButton, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.buttonShadow, big && styles.bigButton, disabled && styles.disabledButton, { transform: [{ scale }] }]}>
       <LinearGradient colors={[faceTop, faceBottom]} style={styles.buttonInner}>
         {/* bolt rivets — the "작은 볼트" motif from the brass/steampunk frame spec */}
         <View style={[styles.rivet, styles.rivetN]} />
@@ -70,7 +73,7 @@ function ButtonFace({ label, role, big, scale }: { label: string; role: ButtonRo
         <Animated.View pointerEvents="none" style={[styles.pressGlow, { opacity: glowOpacity }]} />
         <Text style={[styles.label, big && styles.bigLabel]}>{label}</Text>
         <Text style={[styles.roleLabel, big && styles.bigRoleLabel]}>
-          {role === 'move' ? 'MOVE' : role === 'grapple' ? 'HOOK' : role === 'dash' ? 'DASH' : 'JUMP'}
+          {role === 'move' ? 'MOVE' : role === 'grapple' ? 'HOOK' : role === 'dash' ? 'DASH' : role === 'attack' ? 'ARROW' : 'JUMP'}
         </Text>
       </LinearGradient>
     </Animated.View>
@@ -96,33 +99,38 @@ export default function Controls({
   onDash,
   onGrappleIn,
   onGrappleOut,
+  onAttack,
+  hasBow,
 }: Props) {
   const leftRef = useRef<View>(null);
   const rightRef = useRef<View>(null);
   const jumpRef = useRef<View>(null);
   const dashRef = useRef<View>(null);
   const grappleRef = useRef<View>(null);
+  const attackRef = useRef<View>(null);
 
-  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null; dash: Rect | null; grapple: Rect | null }>({
+  const rects = useRef<{ left: Rect | null; right: Rect | null; jump: Rect | null; dash: Rect | null; grapple: Rect | null; attack: Rect | null }>({
     left: null,
     right: null,
     jump: null,
     dash: null,
     grapple: null,
+    attack: null,
   });
-  const held = useRef({ left: false, right: false, jump: false, dash: false, grapple: false });
+  const held = useRef({ left: false, right: false, jump: false, dash: false, grapple: false, attack: false });
 
   const leftScale = useRef(new Animated.Value(1)).current;
   const rightScale = useRef(new Animated.Value(1)).current;
   const jumpScale = useRef(new Animated.Value(1)).current;
   const dashScale = useRef(new Animated.Value(1)).current;
   const grappleScale = useRef(new Animated.Value(1)).current;
+  const attackScale = useRef(new Animated.Value(1)).current;
 
   const animateTo = (value: Animated.Value, toValue: number) => {
     Animated.spring(value, { toValue, useNativeDriver: true, speed: toValue < 1 ? 30 : 20 }).start();
   };
 
-  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump' | 'dash' | 'grapple') => {
+  const measure = useCallback((ref: React.RefObject<View | null>, key: 'left' | 'right' | 'jump' | 'dash' | 'grapple' | 'attack') => {
     ref.current?.measure((_x, _y, width, height, pageX, pageY) => {
       rects.current[key] = { pageX, pageY, width, height };
     });
@@ -141,6 +149,7 @@ export default function Controls({
       const hitJump = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.jump));
       const hitDash = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.dash));
       const hitGrapple = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.grapple));
+      const hitAttack = touches.some((t) => pointInRect(t.pageX, t.pageY, rects.current.attack));
 
       if (hitLeft !== held.current.left) {
         held.current.left = hitLeft;
@@ -170,6 +179,11 @@ export default function Controls({
         if (hitGrapple) onGrappleIn();
         else onGrappleOut();
       }
+      if (hitAttack !== held.current.attack) {
+        animateTo(attackScale, hitAttack ? 0.88 : 1);
+        if (hitAttack && hasBow) onAttack();
+        held.current.attack = hitAttack;
+      }
     },
     [
       onLeftIn,
@@ -185,6 +199,9 @@ export default function Controls({
       jumpScale,
       dashScale,
       grappleScale,
+      attackScale,
+      hasBow,
+      onAttack,
     ]
   );
 
@@ -222,6 +239,9 @@ export default function Controls({
         </View>
       </View>
       <View style={styles.actionPad}>
+        <View ref={attackRef} onLayout={() => measure(attackRef, 'attack')}>
+          <ButtonFace label="➤" role="attack" scale={attackScale} disabled={!hasBow} />
+        </View>
         <View ref={grappleRef} onLayout={() => measure(grappleRef, 'grapple')}>
           <ButtonFace label="◎" role="grapple" scale={grappleScale} />
         </View>
@@ -291,7 +311,7 @@ const styles = StyleSheet.create({
   actionPad: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 14,
+    gap: 8,
   },
   buttonShadow: {
     width: 60,
@@ -328,6 +348,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: '#5a3d00',
   },
+  disabledButton: { opacity: 0.38 },
   roleLabel: {
     marginTop: -2,
     fontSize: 7,

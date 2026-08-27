@@ -2,8 +2,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Background from '../components/Background';
+import ArrowView from '../components/ArrowView';
 import BioCoilView from '../components/BioCoilView';
 import BossView from '../components/BossView';
+import BowPickupView from '../components/BowPickupView';
 import CheckpointView from '../components/CheckpointView';
 import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
@@ -12,14 +14,17 @@ import EffectsView from '../components/EffectsView';
 import EnemyView from '../components/EnemyView';
 import FlagView from '../components/FlagView';
 import Hud from '../components/Hud';
+import JumperView from '../components/JumperView';
 import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
 import PortalView from '../components/PortalView';
 import PressurePistonView from '../components/PressurePistonView';
 import RootPointView from '../components/RootPointView';
 import RopeView from '../components/RopeView';
+import SeedProjectileView from '../components/SeedProjectileView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import SteamBlowerView from '../components/SteamBlowerView';
+import TurretView from '../components/TurretView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
@@ -119,6 +124,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             {gameState.cogPickups.map((c) => (
               <CogPickupView key={c.id} cog={c} />
             ))}
+            <BowPickupView pickup={gameState.bowPickup} />
             {level.checkpoints.slice(1).map((c, i) => (
               <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
             ))}
@@ -142,6 +148,18 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             ))}
             {gameState.sporeSprites.map((s) => (
               <SporeSpriteView key={s.id} sprite={s} />
+            ))}
+            {gameState.jumpers.map((j) => (
+              <JumperView key={j.id} jumper={j} />
+            ))}
+            {gameState.turrets.map((t) => (
+              <TurretView key={t.id} turret={t} />
+            ))}
+            {gameState.seeds.map((s) => (
+              <SeedProjectileView key={s.id} seed={s} />
+            ))}
+            {gameState.arrows.map((a) => (
+              <ArrowView key={a.id} arrow={a} />
             ))}
             <RopeView player={gameState.player} />
             <PlayerView player={gameState.player} />
@@ -167,6 +185,8 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         onDash={() => (inputRef.current.dashPressed = true)}
         onGrappleIn={() => (inputRef.current.grappleHeld = true)}
         onGrappleOut={() => (inputRef.current.grappleHeld = false)}
+        onAttack={() => (inputRef.current.attackPressed = true)}
+        hasBow={gameState.player.hasBow}
       />
 
       {gameState.phase !== 'playing' && (
