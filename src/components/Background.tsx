@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
 import { BloomState } from '../game/types';
 import { palette } from '../theme';
@@ -25,7 +25,11 @@ const FAR_FACTOR = 0.15;
 const SCENE_MECH_SOURCE = require('../../assets/backgrounds/scene_mechanical.png');
 const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild.png');
 
-function SceneTiles({
+// Memoized so this (large, tiled full-screen images) subtree is skipped on
+// the 60fps re-renders `cameraX` drives in the parent — its own props only
+// ever change on a Bloom Shift or a viewport resize, never per frame
+// (CLAUDE.md 18.7: avoid unnecessary per-frame work).
+const SceneTiles = React.memo(function SceneTiles({
   source,
   opacity,
   tileWidth,
@@ -50,7 +54,7 @@ function SceneTiles({
       ))}
     </Animated.View>
   );
-}
+});
 
 export default function Background({ cameraX, worldWidth, viewportWidth, viewportHeight, bloomState }: Props) {
   const farOffset = -cameraX * FAR_FACTOR;
@@ -68,7 +72,11 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
     }).start();
   }, [bloomState, wildAnim]);
   const wildOpacity = wildAnim;
-  const mechOpacity = wildAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  // Memoized: `.interpolate()` returns a new object each call, and this
+  // component re-renders every physics frame (driven by `cameraX`) — without
+  // memoizing, SceneTiles would see a "changed" opacity prop every frame and
+  // never benefit from the React.memo above.
+  const mechOpacity = useMemo(() => wildAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }), [wildAnim]);
 
   // Each tile is a full viewport-width crop of the scene painting (via
   // resizeMode="cover"), not the image's own natural aspect width — sizing
