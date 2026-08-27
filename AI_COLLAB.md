@@ -11,14 +11,17 @@
 
 ## CLAUDE ACTIVE
 
-- 작업: 완료 — 유물 활 획득/화살, Jumper(=Acorn Hopper), Turret(=Root Turret) 게임 상태·물리·레벨 배치 구현.
-- 소유 파일: `src/game/*`, `src/screens/GameScreen.tsx`(입력 ref 플러밍만).
-- 완료 조건: 충족 — `npx tsc --noEmit` 통과, pure-logic 테스트 29종(아래 참고) 통과, 기존 이동·대시·스톰프·체크포인트·보스전 회귀 확인, Route Gate/Bloom Shift/시체 발판 미재도입.
+- 작업: 사용자 부재 중 1차 플레이 안정화. 실제 모바일 체감에 맞춰 활·화살·Jumper·Turret의 로직과 배치를 점검한다.
+- 소유 파일: `src/game/*`, 필요한 `src/screens/GameScreen.tsx` 입력/상태 연결 최소 범위.
+- 순서: (1) 이동 160과 대시 480의 체감 차이 검증, (2) 활 쿨다운/화살 속도·수명 검증, (3) Jumper/Turret/씨앗 충돌·스폰 상한 회귀 검증, (4) 핵심 게임플레이 자동 회귀.
+- 금지: Route Gate, Bloom Shift, 환경 전환, 처치 후 임시 발판 재도입; 신규 대형 시스템 추가; Codex 소유 프레젠테이션 파일 수정.
 
 ## CODEX ACTIVE
 
-- 작업: 완료 — 활·화살·신규 적 아트 4종을 렌더링 컴포넌트와 공격 버튼에 연동.
-- 소유 파일: `assets/sprites/{relic_bow_v1,leaf_arrow_v1,acorn_hopper_v1,root_turret_v1}/*`, `src/components/{BowPickupView,ArrowView,JumperView,TurretView,SeedProjectileView,Controls}.tsx`, `src/screens/GameScreen.tsx`의 프레젠테이션 마운트.
+- 작업: 사용자 부재 중 1차 화면·모션 완성. 모바일 실제 화면에서 조작 가능성, 캐릭터/적/활/그래플의 읽기성을 검수하고 프레젠테이션을 다듬는다.
+- 소유 파일: `assets/*`, `src/components/*`, `src/theme.ts`, `src/screens/GameScreen.tsx`의 레이아웃·프레젠테이션 범위.
+- 순서: (1) 모바일 가로 화면·터치 컨트롤 검수, (2) 주인공 발 착지/달리기·활 사격 연출 보정, (3) Cogmite/Jumper/Turret 모션 가독성 보정, (4) HUD와 원정 배너/Root-Hook의 시각 통일.
+- 금지: `src/game/*` 규칙 변경, 수치 임의 변경, 새 게임 시스템/레벨 구간 추가.
 
 ## REVIEW REQUESTS
 
@@ -40,3 +43,9 @@
 - 최근 Codex 완료: `BowPickupView`/`ArrowView`/`JumperView`/`TurretView`/`SeedProjectileView`를 추가하고 `GameScreen.tsx`에 마운트했다. `Controls.tsx`에는 활 획득 전 잠김, 획득 후 활성화되는 `ARROW` 버튼을 연결했다. `src/game/*`는 변경하지 않았다.
 - 최근 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체.
 - 다음 Codex 작업: 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도를 플레이 검수하고, 적 이동 프레임을 추가 제작한다.
+
+## 사용자 부재 중 작업 종료 기준
+
+- Claude: 타입 검사·기존 회귀·활/신규 적 로직 검증을 마치고, 밸런스 수치를 바꿨다면 근거와 전후 값을 `개발로그.md`에 기록한다.
+- Codex: 실제 화면 캡처 기준으로 모바일 스테이지/컨트롤, 착지, 사격, 그래플, 배너가 읽히는지 확인하고 S0~S2 발견 항목만 수정한다.
+- 공통: 각자 소유 파일만 커밋·푸시하고, 완료/미완료/검증 결과를 HANDOFF에 남긴다. 사용자의 새 승인 없이는 범위를 넓히지 않는다.
