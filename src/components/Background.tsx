@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Image, StyleSheet, View } from 'react-native';
 import { BloomState } from '../game/types';
 import { palette } from '../theme';
 
@@ -11,84 +11,58 @@ interface Props {
   bloomState: BloomState;
 }
 
-function Cloud({ x, y, scale }: { x: number; y: number; scale: number }) {
+const MOUNTAIN_SOURCES = [
+  require('../../assets/backgrounds/mountain_1.png'),
+  require('../../assets/backgrounds/mountain_2.png'),
+];
+const CLOUD_SOURCES = [
+  require('../../assets/backgrounds/cloud_1.png'),
+  require('../../assets/backgrounds/cloud_2.png'),
+];
+const DECOR_MECH_SOURCE = require('../../assets/backgrounds/decor_mech.png');
+const DECOR_WILD_SOURCE = require('../../assets/backgrounds/decor_wild.png');
+
+function Cloud({ x, y, scale, variant }: { x: number; y: number; scale: number; variant: number }) {
   return (
-    <View style={[styles.cloud, { left: x, top: y, transform: [{ scale }] }]}>
-      <View style={[styles.cloudLobe, { width: 46, height: 30, left: 0, top: 6 }]} />
-      <View style={[styles.cloudLobe, { width: 34, height: 34, left: 22, top: -6 }]} />
-      <View style={[styles.cloudLobe, { width: 40, height: 26, left: 46, top: 8 }]} />
-    </View>
+    <Image
+      source={CLOUD_SOURCES[variant % CLOUD_SOURCES.length]}
+      resizeMode="contain"
+      style={[styles.cloud, { left: x, top: y, transform: [{ scale }] }]}
+    />
   );
 }
 
-// Mechanical-state decoration: a distant gear silhouette poking over the horizon.
-function GearSilhouette({ x, size, opacity }: { x: number; size: number; opacity: Animated.AnimatedInterpolation<number> }) {
-  const teeth = 8;
+function Mountain({ x, size, variant }: { x: number; size: number; variant: number }) {
   return (
-    <Animated.View style={{ position: 'absolute', left: x, bottom: -size * 0.3, width: size, height: size, opacity }}>
-      {Array.from({ length: teeth }, (_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.gearTooth,
-            {
-              width: size * 0.16,
-              height: size * 0.16,
-              left: size / 2 - (size * 0.16) / 2,
-              top: size / 2 - (size * 0.16) / 2,
-              transform: [{ rotate: `${(360 / teeth) * i}deg` }, { translateY: -size * 0.42 }],
-            },
-          ]}
-        />
-      ))}
-      <View
-        style={{
-          position: 'absolute',
-          left: size * 0.18,
-          top: size * 0.18,
-          width: size * 0.64,
-          height: size * 0.64,
-          borderRadius: size / 2,
-          borderWidth: size * 0.1,
-          borderColor: 'rgba(140, 100, 50, 0.4)',
-        }}
-      />
-    </Animated.View>
+    <Image
+      source={MOUNTAIN_SOURCES[variant % MOUNTAIN_SOURCES.length]}
+      resizeMode="contain"
+      style={[styles.mountain, { left: x, bottom: -size * 0.08, width: size, height: size * 0.56 }]}
+    />
   );
 }
 
-// Wild-state decoration: a cluster of leaning vine/leaf fronds, cross-faded
-// in against the same silhouette slots the gears use.
-function VineCluster({ x, size, opacity }: { x: number; size: number; opacity: Animated.AnimatedInterpolation<number> }) {
+// Mechanical-state decoration: an illustrated gear-tower ruin poking over the
+// horizon, cross-faded against the wild decoration in the same slot.
+function GearDecor({ x, size, opacity }: { x: number; size: number; opacity: Animated.AnimatedInterpolation<number> }) {
   return (
-    <Animated.View style={{ position: 'absolute', left: x, bottom: -size * 0.1, width: size, height: size * 1.3, opacity }}>
-      <View
-        style={{
-          position: 'absolute',
-          left: size * 0.42,
-          bottom: 0,
-          width: size * 0.16,
-          height: size * 1.2,
-          borderRadius: size * 0.08,
-          backgroundColor: 'rgba(60, 122, 86, 0.4)',
-        }}
-      />
-      {[0.2, 0.45, 0.7].map((t, i) => (
-        <View
-          key={i}
-          style={{
-            position: 'absolute',
-            left: i % 2 === 0 ? size * 0.1 : size * 0.5,
-            bottom: size * 1.2 * t,
-            width: size * 0.42,
-            height: size * 0.22,
-            borderRadius: size * 0.12,
-            backgroundColor: 'rgba(60, 122, 86, 0.35)',
-            transform: [{ rotate: i % 2 === 0 ? '-25deg' : '25deg' }],
-          }}
-        />
-      ))}
-    </Animated.View>
+    <Animated.Image
+      source={DECOR_MECH_SOURCE}
+      resizeMode="contain"
+      style={[styles.decor, { left: x, bottom: 0, width: size, height: size * 1.3, opacity }]}
+    />
+  );
+}
+
+// Wild-state decoration: an illustrated moss tree/rock cluster, cross-faded
+// in against the same silhouette slots the gear towers use.
+function VineDecor({ x, size, opacity }: { x: number; size: number; opacity: Animated.AnimatedInterpolation<number> }) {
+  return (
+    <Animated.Image
+      source={DECOR_WILD_SOURCE}
+      resizeMode="contain"
+      style={[styles.decor, { left: x, bottom: 0, width: size, height: size * 1.3, opacity }]}
+    />
   );
 }
 
@@ -133,15 +107,17 @@ export default function Background({ cameraX, worldWidth, viewportHeight, bloomS
         x: 60 + i * 380 + (i % 3) * 40,
         y: 18 + ((i * 53) % 60),
         scale: 0.7 + ((i * 29) % 40) / 100,
+        variant: i,
       })),
     [worldWidth]
   );
 
   const farHills = useMemo(
     () =>
-      Array.from({ length: Math.ceil(worldWidth / 260) }, (_, i) => ({
-        x: i * 260 - 40,
-        size: 180 + ((i * 37) % 70),
+      Array.from({ length: Math.ceil(worldWidth / 420) }, (_, i) => ({
+        x: i * 420 - 60,
+        size: 420 + ((i * 37) % 120),
+        variant: i,
       })),
     [worldWidth]
   );
@@ -179,17 +155,17 @@ export default function Background({ cameraX, worldWidth, viewportHeight, bloomS
       </View>
 
       <View style={[styles.parallaxLayer, { width: worldWidth, transform: [{ translateX: farOffset }] }]}>
-        {clouds.map((c, i) => (
-          <Cloud key={`cloud-${i}`} x={c.x} y={c.y} scale={c.scale} />
-        ))}
         {farHills.map((h, i) => (
-          <Hill key={`far-${i}`} x={h.x} size={h.size} color={palette.hillFar} />
+          <Mountain key={`mtn-${i}`} x={h.x} size={h.size} variant={h.variant} />
+        ))}
+        {clouds.map((c, i) => (
+          <Cloud key={`cloud-${i}`} x={c.x} y={c.y} scale={c.scale} variant={c.variant} />
         ))}
         {decorSlots.map((g, i) => (
-          <GearSilhouette key={`gear-${i}`} x={g.x} size={g.size} opacity={mechOpacity} />
+          <GearDecor key={`gear-${i}`} x={g.x} size={g.size} opacity={mechOpacity} />
         ))}
         {decorSlots.map((g, i) => (
-          <VineCluster key={`vine-${i}`} x={g.x} size={g.size} opacity={wildOpacity} />
+          <VineDecor key={`vine-${i}`} x={g.x} size={g.size} opacity={wildOpacity} />
         ))}
       </View>
 
@@ -234,15 +210,13 @@ const styles = StyleSheet.create({
   },
   cloud: {
     position: 'absolute',
+    width: 90,
+    height: 50,
   },
-  cloudLobe: {
+  mountain: {
     position: 'absolute',
-    backgroundColor: palette.cloud,
-    borderRadius: 999,
   },
-  gearTooth: {
+  decor: {
     position: 'absolute',
-    backgroundColor: 'rgba(140, 100, 50, 0.4)',
-    borderRadius: 2,
   },
 });

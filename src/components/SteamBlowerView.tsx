@@ -1,24 +1,32 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { isFlameLobActive, isSteamGustActive } from '../game/physics';
 import { BloomState, SteamBlower } from '../game/types';
 import { STEAMBLOWER_HP, STEAM_GUST_RANGE, FLAME_LOB_RANGE } from '../game/constants';
 import { palette } from '../theme';
 
-// No AI-generated sprite exists yet for this monster, so — like BioCoilView
-// and SporeSpriteView — it's drawn procedurally: an open, stompable moss cap
-// in the wild state collapses into an armored, stomp-proof brass shell once
-// shifted to mechanical, so the risk/reward reads at a glance.
+// AI-generated illustration (matches the Sprout/Cogmite art direction),
+// drawn larger than the hitbox — a mini-boss should read as bigger and more
+// threatening than the small monsters, per CLAUDE.md 19.10. The artwork
+// itself is the wild-state look (cap open, weak point exposed); mechanical
+// state is represented by sealing a brass dome over the cap rather than a
+// second illustration.
+const VISUAL_SCALE = 1.6;
+
 export default function SteamBlowerView({ blower, bloomState }: { blower: SteamBlower; bloomState: BloomState }) {
   if (!blower.alive) return null;
 
   const isWild = bloomState === 'wild';
-  const capHeight = isWild ? 24 : 10;
   const gusting = isSteamGustActive(blower);
   const lobbing = isFlameLobActive(blower);
 
+  const visualWidth = blower.width * VISUAL_SCALE;
+  const visualHeight = blower.height * VISUAL_SCALE;
+  const left = blower.x + blower.width / 2 - visualWidth / 2;
+  const top = blower.y + blower.height - visualHeight;
+
   return (
-    <View style={[styles.wrap, { left: blower.x, top: blower.y, width: blower.width, height: blower.height }]}>
+    <View style={[styles.wrap, { left, top, width: visualWidth, height: visualHeight }]}>
       <View style={styles.hpRow}>
         {Array.from({ length: STEAMBLOWER_HP }).map((_, i) => (
           <View key={i} style={[styles.hpPip, { backgroundColor: i < blower.hp ? palette.uiDanger : 'rgba(0,0,0,0.15)' }]} />
@@ -33,26 +41,18 @@ export default function SteamBlowerView({ blower, bloomState }: { blower: SteamB
       )}
       {lobbing && (
         <>
-          <View style={[styles.ember, styles.emberLeft, { left: -FLAME_LOB_RANGE * 0.6 }]} />
-          <View style={[styles.ember, styles.emberRight, { right: -FLAME_LOB_RANGE * 0.6 }]} />
+          <View style={[styles.ember, { left: -FLAME_LOB_RANGE * 0.6 }]} />
+          <View style={[styles.ember, { right: -FLAME_LOB_RANGE * 0.6 }]} />
         </>
       )}
 
-      <View
-        style={[
-          styles.cap,
-          {
-            height: capHeight,
-            backgroundColor: isWild ? palette.moss : palette.uiPrimaryDark,
-            borderColor: isWild ? palette.mossDark : palette.uiDanger,
-          },
-        ]}
-      >
-        {isWild && <View style={styles.capHighlight} />}
-      </View>
-      <View style={styles.boiler}>
-        <View style={styles.boilerBand} />
-      </View>
+      <Image source={require('../../assets/sprites/steam_blower.png')} resizeMode="contain" style={styles.sprite} />
+
+      {!isWild && (
+        <View pointerEvents="none" style={styles.capSeal}>
+          <View style={styles.capSealRivet} />
+        </View>
+      )}
     </View>
   );
 }
@@ -62,46 +62,42 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
   },
+  sprite: {
+    width: '100%',
+    height: '100%',
+  },
   hpRow: {
     position: 'absolute',
     top: -12,
     flexDirection: 'row',
     gap: 3,
+    zIndex: 2,
   },
   hpPip: {
     width: 8,
     height: 6,
     borderRadius: 2,
   },
-  cap: {
-    width: '100%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  capSeal: {
+    position: 'absolute',
+    top: '2%',
+    left: '12%',
+    right: '12%',
+    height: '46%',
+    borderRadius: 999,
+    backgroundColor: palette.uiPrimaryDark,
     borderWidth: 2,
-    alignItems: 'center',
-  },
-  capHighlight: {
-    marginTop: 3,
-    width: '55%',
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: palette.mossTint,
-  },
-  boiler: {
-    width: '58%',
-    flex: 1,
-    backgroundColor: palette.uiPrimary,
-    borderWidth: 2,
-    borderColor: palette.uiPrimaryDark,
-    borderTopWidth: 0,
+    borderColor: palette.uiDanger,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boilerBand: {
-    width: '80%',
-    height: 4,
-    backgroundColor: palette.uiPrimaryDark,
-    borderRadius: 2,
+  capSealRivet: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: palette.uiPrimary,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.25)',
   },
   gust: {
     position: 'absolute',
@@ -124,6 +120,4 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: palette.uiDanger,
   },
-  emberLeft: {},
-  emberRight: {},
 });

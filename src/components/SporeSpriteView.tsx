@@ -1,7 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
 import { BloomState, SporeSprite } from '../game/types';
 import { palette } from '../theme';
+
+// AI-generated illustration (matches the Sprout/Cogmite art direction) drawn
+// larger than the hitbox, same convention as PlayerView/EnemyView. Its
+// orbiting spore motes are already baked into the art, so the procedural
+// dot-motes this view used before the illustration existed are gone.
+const VISUAL_SCALE = 1.8;
 
 export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeSprite; bloomState: BloomState }) {
   const pulse = useRef(new Animated.Value(0)).current;
@@ -17,37 +23,30 @@ export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeS
     return () => loop.stop();
   }, [pulse]);
 
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.1] });
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.08] });
   const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.4] });
   const isMechanical = bloomState === 'mechanical';
-  const bodyColor = isMechanical ? palette.uiPrimary : 'rgba(116, 194, 148, 0.5)';
-  const coreColor = isMechanical ? palette.uiPrimaryDark : palette.moss;
   const glowColor = isMechanical ? palette.uiPrimary : palette.moss;
+  const visualSize = sprite.width * VISUAL_SCALE;
 
   return (
     <Animated.View
       style={[
         styles.wrap,
-        { left: sprite.x, top: sprite.y, width: sprite.width, height: sprite.height },
+        {
+          left: sprite.x + sprite.width / 2 - visualSize / 2,
+          top: sprite.y + sprite.height / 2 - visualSize / 2,
+          width: visualSize,
+          height: visualSize,
+          transform: [{ scale }],
+        },
       ]}
     >
-      {/* Soft halo so the sprite reads as a floating spirit rather than a
-          plain dot, per CLAUDE.md 19.10 ("스포어 스프라이트: 부유하는 생명체"). */}
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.glow, { backgroundColor: glowColor, opacity: glowOpacity, transform: [{ scale }] }]}
-      />
-      <Animated.View
-        style={[
-          styles.body,
-          { width: sprite.width, height: sprite.height, backgroundColor: bodyColor, transform: [{ scale }] },
-        ]}
-      >
-        <Animated.View style={[styles.core, { backgroundColor: coreColor }]} />
-        <Animated.View style={[styles.mote, styles.moteA, { backgroundColor: palette.mossTint, opacity: pulse }]} />
-        <Animated.View style={[styles.mote, styles.moteB, { backgroundColor: palette.mossTint, opacity: pulse }]} />
-        <Animated.View style={[styles.mote, styles.moteC, { backgroundColor: palette.mossTint, opacity: glowOpacity }]} />
-      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.glow, { backgroundColor: glowColor, opacity: glowOpacity }]} />
+      <Image source={require('../../assets/sprites/spore_sprite.png')} resizeMode="contain" style={styles.sprite} />
+      {/* Mechanical state recolors the mood without hiding the illustration's
+          own shading, matching the tint-overlay pattern used elsewhere. */}
+      {isMechanical && <View pointerEvents="none" style={styles.mechTint} />}
     </Animated.View>
   );
 }
@@ -55,41 +54,26 @@ export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeS
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   glow: {
     position: 'absolute',
-    width: '170%',
-    height: '170%',
+    left: '12%',
+    top: '12%',
+    width: '76%',
+    height: '76%',
     borderRadius: 999,
   },
-  body: {
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
+  sprite: {
+    width: '100%',
+    height: '100%',
   },
-  core: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  mote: {
+  mechTint: {
     position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-  moteA: {
-    top: -4,
-    left: -4,
-  },
-  moteB: {
-    bottom: -4,
-    right: -4,
-  },
-  moteC: {
-    top: -6,
-    right: 2,
+    left: '18%',
+    top: '18%',
+    width: '64%',
+    height: '64%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(169,118,47,0.32)',
   },
 });

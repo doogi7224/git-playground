@@ -1,8 +1,42 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Platform } from '../game/types';
 import { palette } from '../theme';
+
+// AI-generated illustrations (matches the Sprout/Cogmite art direction).
+// Both source images are a horizontally-repeating band (evenly spaced rivets /
+// woven vines), so instead of stretching one image across a platform's full
+// width — which would squash or smear the rivet/weave pattern differently on
+// every platform — we tile fixed-aspect copies across the width, the same
+// "array of repeated children" convention this file already used for
+// dirtSeam/rivet/leafBump. Drawn slightly taller than the collision box
+// (graphic vs. hitbox stay separate, CLAUDE.md 19) so the detail reads at
+// this platform's small on-screen size; platform.x/y/width/height (the
+// actual collision rect) are untouched.
+const PLANK_MECH_SOURCE = require('../../assets/platforms/plank_mech.png');
+const PLANK_WILD_SOURCE = require('../../assets/platforms/plank_wild.png');
+const PLANK_IMAGE_ASPECT = 700 / 391;
+const PLANK_VISUAL_SCALE = 1.4;
+
+function PlankTiles({ width, height, source }: { width: number; height: number; source: number }) {
+  const visualHeight = height * PLANK_VISUAL_SCALE;
+  const tileWidth = visualHeight * PLANK_IMAGE_ASPECT;
+  const tileCount = Math.max(1, Math.ceil(width / tileWidth));
+  const top = (height - visualHeight) / 2;
+  return (
+    <View style={[styles.plankClip, { width, height }]}>
+      {Array.from({ length: tileCount }, (_, i) => (
+        <Image
+          key={i}
+          source={source}
+          resizeMode="stretch"
+          style={{ position: 'absolute', left: i * tileWidth, top, width: tileWidth, height: visualHeight }}
+        />
+      ))}
+    </View>
+  );
+}
 
 export default function PlatformView({ platform }: { platform: Platform }) {
   const isGround = platform.id.startsWith('ground');
@@ -27,12 +61,7 @@ export default function PlatformView({ platform }: { platform: Platform }) {
   if (platform.visibleIn === 'wild') {
     return (
       <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-        <LinearGradient colors={[palette.mossTint, palette.moss]} style={[styles.plank, styles.vinePlank]}>
-          <View style={styles.plankHighlight} />
-          {Array.from({ length: Math.max(1, Math.round(platform.width / 20)) }, (_, i) => (
-            <View key={i} style={[styles.leafBump, { left: i * 20 + (i % 2 === 0 ? 2 : 8) }]} />
-          ))}
-        </LinearGradient>
+        <PlankTiles width={platform.width} height={platform.height} source={PLANK_WILD_SOURCE} />
         <View style={styles.plankShadow} />
       </View>
     );
@@ -40,18 +69,7 @@ export default function PlatformView({ platform }: { platform: Platform }) {
 
   return (
     <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
-      <LinearGradient
-        colors={[palette.woodTop, palette.woodBody]}
-        style={styles.plank}
-      >
-        <View style={styles.plankHighlight} />
-        {Array.from({ length: Math.max(1, Math.round(platform.width / 34)) }, (_, i) => (
-          <View key={i} style={[styles.plankSeam, { left: i * 34 }]} />
-        ))}
-        {Array.from({ length: Math.max(1, Math.round(platform.width / 34)) }, (_, i) => (
-          <View key={`r${i}`} style={[styles.rivet, { left: i * 34 + 15, top: '50%', marginTop: -2 }]} />
-        ))}
-      </LinearGradient>
+      <PlankTiles width={platform.width} height={platform.height} source={PLANK_MECH_SOURCE} />
       <View style={styles.plankShadow} />
     </View>
   );
@@ -86,41 +104,8 @@ const styles = StyleSheet.create({
     width: 3,
     backgroundColor: palette.dirtLine,
   },
-  plank: {
-    flex: 1,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: palette.woodDark,
+  plankClip: {
     overflow: 'hidden',
-  },
-  plankHighlight: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    top: 2,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-  },
-  plankSeam: {
-    position: 'absolute',
-    top: 6,
-    bottom: 6,
-    width: 2,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-  },
-  vinePlank: {
-    borderColor: palette.mossDark,
-  },
-  leafBump: {
-    position: 'absolute',
-    top: -3,
-    width: 8,
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: palette.moss,
-    borderWidth: 1,
-    borderColor: palette.mossDark,
   },
   plankShadow: {
     position: 'absolute',
