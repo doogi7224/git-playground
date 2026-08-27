@@ -36,8 +36,8 @@ import { palette } from '../theme';
 // controls never overlap the ground/platform band of the world. Sized to
 // comfortably clear Hud's own content height and Controls' tallest (jump)
 // button + its bottom offset/shadow.
-const HUD_RESERVED_TOP = 96;
-const CONTROLS_RESERVED_BOTTOM = 130;
+const HUD_RESERVED_TOP = 72;
+const CONTROLS_RESERVED_BOTTOM = 104;
 // Clamp how far the fixed VIEWPORT_HEIGHT logical space is scaled up/down so
 // very short landscape windows don't over-shrink the world while tall phone
 // and tablet layouts can still fill the full band between HUD and controls.

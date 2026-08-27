@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
-import { MOVE_SPEED } from '../game/constants';
+import { ARROW_COOLDOWN, MOVE_SPEED } from '../game/constants';
 import { Player } from '../game/types';
 
 // The painted scout is intentionally a little larger than the collision box.
 // The feet remain anchored to the hitbox: presentation never changes physics.
 const VISUAL_SIZE = 48;
+const FOOT_ANCHOR_ADJUST = 18;
 const LANDING_IMPACT_VY = 400; // px/s: falling faster than this on landing triggers a squash pulse
 const DASH_TRAIL_LENGTH = 3; // afterimage copies kept while dashing
 const IDLE_FRAME_MS = 520;
@@ -77,6 +78,7 @@ export default function PlayerView({ player }: { player: Player }) {
   // existing per-frame style used for `bobY` below — no extra state/renders.
   const trailRef = useRef<TrailPoint[]>([]);
   const isDashing = player.dashTimer > 0;
+  const isShooting = player.hasBow && player.arrowCooldown > ARROW_COOLDOWN - 0.14;
 
   // Airborne squash/stretch from vertical speed (jumping up / falling).
   const airStretch = Math.max(-1, Math.min(1, player.vy / 500));
@@ -109,10 +111,10 @@ export default function PlayerView({ player }: { player: Player }) {
 
   // Lean into the run direction; magnitude scales with speed, sign comes
   // from `facing` so it reads correctly after the horizontal flip below.
-  const leanDeg = isRunning ? Math.min(1, Math.abs(player.vx) / MOVE_SPEED) * 7 : 0;
+  const leanDeg = isShooting ? -9 : isRunning ? Math.min(1, Math.abs(player.vx) / MOVE_SPEED) * 7 : 0;
 
   const left = player.x + player.width / 2 - VISUAL_SIZE / 2;
-  const top = player.y + player.height - VISUAL_SIZE + bobY;
+  const top = player.y + player.height - VISUAL_SIZE + FOOT_ANCHOR_ADJUST + bobY;
 
   if (isDashing) {
     trailRef.current = [{ left, top, facing: player.facing }, ...trailRef.current].slice(0, DASH_TRAIL_LENGTH);
@@ -184,6 +186,21 @@ export default function PlayerView({ player }: { player: Player }) {
         ]}
       />
 
+      {isShooting && (
+        <Image
+          source={require('../../assets/sprites/relic_bow_v1/relic_bow_pickup.png')}
+          resizeMode="contain"
+          style={[
+            styles.bow,
+            {
+              left: left + (player.facing > 0 ? VISUAL_SIZE * 0.48 : -VISUAL_SIZE * 0.08),
+              top: top + VISUAL_SIZE * 0.16,
+              transform: [{ scaleX: player.facing }, { rotate: player.facing > 0 ? '12deg' : '-12deg' }],
+            },
+          ]}
+        />
+      )}
+
       {/* Wall-jump puff: a few dust/leaf flecks kicking off the wall side. */}
       <Animated.View
         pointerEvents="none"
@@ -247,4 +264,5 @@ const styles = StyleSheet.create({
     width: VISUAL_SIZE,
     height: VISUAL_SIZE,
   },
+  bow: { position: 'absolute', width: 20, height: 34 },
 });

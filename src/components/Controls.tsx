@@ -259,7 +259,7 @@ export default function Controls({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 10,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -273,9 +273,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dpadModule: {
-    padding: 5,
-    paddingTop: 12,
-    borderRadius: 38,
+    padding: 4,
+    paddingTop: 11,
+    borderRadius: 34,
     backgroundColor: palette.uiPlateDeep,
     borderWidth: 1.5,
     borderColor: palette.uiPlateEdge,
@@ -311,12 +311,12 @@ const styles = StyleSheet.create({
   actionPad: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
+    gap: 6,
   },
   buttonShadow: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
@@ -324,9 +324,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   bigButton: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
   },
   buttonInner: {
     flex: 1,

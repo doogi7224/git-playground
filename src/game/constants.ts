@@ -1,7 +1,9 @@
 export const TILE = 40;
 
 export const GRAVITY = 1800; // px/s^2
-export const MOVE_SPEED = 220; // px/s
+// Tuned after real mobile play: normal running must leave room to read jumps
+// and enemies. Dash remains the intentionally fast traversal action.
+export const MOVE_SPEED = 160; // px/s
 export const JUMP_VELOCITY = -650; // px/s
 export const STOMP_BOUNCE = -450; // px/s
 export const STOMP_TOLERANCE = 8; // px of slack when checking if the player approached an enemy from above

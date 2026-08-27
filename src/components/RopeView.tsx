@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Player } from '../game/types';
 import { palette } from '../theme';
 
-const LEAF_SPACING = 26; // px along the rope between leaf bumps
+const LEAF_SPACING = 18; // px along the rope between leaf bumps
 
 // The Root-Hook's line while swinging. Sized and positioned as a horizontal
 // segment spanning the anchor-to-player midpoint, then rotated around its own
@@ -40,13 +40,14 @@ export default function RopeView({ player }: { player: Player }) {
         styles.wrap,
         {
           left: midX - length / 2,
-          top: midY - 4,
+          top: midY - 5,
           width: length,
           transform: [{ rotate: `${angleDeg}deg` }],
         },
       ]}
     >
-      <LinearGradient colors={[palette.moss, palette.mossDark]} style={styles.rope} />
+      <View style={styles.shadow} />
+      <LinearGradient colors={[palette.mossTint, palette.mossDark]} style={styles.rope} />
       {leaves.map((leaf, i) => (
         <View
           key={i}
@@ -67,22 +68,23 @@ export default function RopeView({ player }: { player: Player }) {
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    height: 8,
+    height: 10,
   },
+  shadow: { position: 'absolute', top: 4.5, left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: 'rgba(29, 52, 35, 0.55)' },
   rope: {
     position: 'absolute',
-    top: 2.5,
+    top: 2,
     left: 0,
     right: 0,
-    height: 3,
-    borderRadius: 1.5,
+    height: 4,
+    borderRadius: 2,
   },
   leaf: {
     position: 'absolute',
-    width: 7,
+    width: 8,
     height: 5,
-    borderRadius: 3,
-    backgroundColor: palette.moss,
+    borderRadius: 4,
+    backgroundColor: palette.mossTint,
     borderWidth: 1,
     borderColor: palette.mossDark,
   },
