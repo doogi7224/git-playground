@@ -58,4 +58,11 @@ export const palette = {
   overlayBg: 'rgba(20, 24, 18, 0.72)',
   cardBg: '#fbf5e8',
   textDark: '#2c2416',
+
+  // Portal (Area 3's gateway into the boss arena) and the boss placeholder —
+  // new content with no established palette entry to match yet.
+  portalGlow: '#7a5cff',
+  portalGlowDark: '#4a35b0',
+  bossAccent: '#5c2a4a',
+  bossAccentDark: '#341828',
 };

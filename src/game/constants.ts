@@ -133,6 +133,28 @@ export const CORPSE_PLATFORM_DURATION = 3; // seconds, per the doc's "3초간 �
 export const BIOCOIL_CORPSE_BOUNCE_MULT = 1.3; // doc: jumping off a defeated Bio-Coil's spring gives +30% jump height
 export const STEAMBLOWER_CORPSE_WIDTH_MULT = 2.5; // doc calls its collapse a "wide" platform, vs. the other two using their own body size
 
+// Portal: purely a level-transition marker into the boss arena, no collision
+// logic of its own — just a rect the player crosses once, which plays a
+// one-time effect burst (see `portalActivated` in GameState).
+export const PORTAL_WIDTH = 40;
+export const PORTAL_HEIGHT = 70;
+
+// Boss (Area 3 finale): new content, not part of the original 5-monster
+// roster, so these numbers have no prior established value to preserve —
+// sized noticeably larger than Steam Blower (the previous largest monster)
+// for a "final fight" feel. While alive, the boss is added to the solid
+// collision platform list (see stepGame) so it physically blocks the path
+// rather than being a walk-through hazard, matching how a boss arena reads.
+export const BOSS_WIDTH = 90;
+export const BOSS_HEIGHT = 110;
+export const BOSS_HP = 5;
+export const BOSS_IDLE_DURATION = 1.5; // safe to approach
+export const BOSS_TELEGRAPH_DURATION = 1.0; // clear visual warning before the attack lands (CLAUDE.md 18: 예고 부족 방지)
+export const BOSS_ATTACK_DURATION = 0.6; // damage window
+export const BOSS_VULNERABLE_DURATION = 1.5; // weak point exposed, stompable
+export const BOSS_ATTACK_RANGE = 100; // px, extends this far on both sides of the boss during the attack phase
+export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the boss
+
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations
 // that render against these events before physics prunes them.

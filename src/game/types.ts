@@ -88,6 +88,30 @@ export interface SteamBlower extends Rect {
   alive: boolean;
 }
 
+// Marks the transition from the main level into the boss arena. Purely a
+// trigger rect (no collision) — crossing it once fires a one-time effect
+// burst via `portalActivated` in GameState.
+export interface Portal extends Rect {
+  id: string;
+}
+
+export type BossPhase = 'idle' | 'telegraph' | 'attack' | 'vulnerable';
+
+// Area 3's finale — new content with no prior established design to match
+// (see CLAUDE.md decision log). Cycles idle (safe to approach) -> telegraph
+// (clear visual warning) -> attack (damage/knockback zone) -> vulnerable
+// (weak point exposed, stompable) -> back to idle. While alive it is added
+// to the solid collision platform list in stepGame, so it physically blocks
+// the path to the goal instead of being a walk-through hazard.
+export interface Boss extends Rect {
+  id: string;
+  phase: BossPhase;
+  timer: number;
+  hp: number;
+  alive: boolean;
+  facing: 1 | -1;
+}
+
 // A defeated monster's remains, per the monster design doc: Cogmite, Bio-Coil,
 // and Steam Blower all leave a temporary solid platform for a few seconds
 // after being defeated. Bio-Coil's is additionally a bonus-bounce spring.
@@ -153,6 +177,8 @@ export interface Level {
   steamBlowers: SteamBlower[];
   rootPoints: RootPoint[];
   cogPickups: CogPickup[];
+  portal: Portal;
+  boss: Boss;
 }
 
 export interface Player extends Rect {
@@ -215,6 +241,9 @@ export interface GameState {
   steamBlowers: SteamBlower[];
   cogPickups: CogPickup[];
   corpsePlatforms: CorpsePlatform[];
+  boss: Boss;
+  /** True once the player has crossed the portal into the boss arena; only used to fire the one-time crossing effect. */
+  portalActivated: boolean;
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
   checkpointIndex: number;
   /** Recent stomp/hit/pickup moments for effect components to render; never read by physics itself. */

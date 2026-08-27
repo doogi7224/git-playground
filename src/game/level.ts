@@ -1,6 +1,9 @@
 import {
   BIOCOIL_HEIGHT,
   BIOCOIL_WIDTH,
+  BOSS_HEIGHT,
+  BOSS_HP,
+  BOSS_WIDTH,
   COG_PICKUP_SIZE,
   COIN_SIZE,
   ENEMY_HEIGHT,
@@ -9,6 +12,8 @@ import {
   FLAG_WIDTH,
   PISTON_HEIGHT,
   PISTON_WIDTH,
+  PORTAL_HEIGHT,
+  PORTAL_WIDTH,
   ROOTHOOK_SIZE,
   SHIFT_NODE_SIZE,
   SPORE_SPRITE_HEIGHT,
@@ -20,12 +25,14 @@ import {
 } from './constants';
 import {
   BioCoil,
+  Boss,
   CogPickup,
   CogType,
   Coin,
   Enemy,
   Level,
   Platform,
+  Portal,
   PressurePiston,
   RootPoint,
   ShiftNode,
@@ -48,6 +55,9 @@ const groundSegments: [number, number][] = [
   [4750, 5300],
   [5450, 6150],
   [6220, 6800],
+  // Boss arena: one flat, pit-free room reached through the portal at the end
+  // of area 3. No jump challenges here — the boss itself is the obstacle.
+  [6800, 7700],
 ];
 
 function makeGroundPlatforms(): Platform[] {
@@ -288,6 +298,25 @@ function makeCoins(): Coin[] {
   }));
 }
 
+function makePortal(): Portal {
+  return { id: 'portal1', x: 6830, y: GROUND_Y - PORTAL_HEIGHT, width: PORTAL_WIDTH, height: PORTAL_HEIGHT };
+}
+
+function makeBoss(): Boss {
+  return {
+    id: 'boss1',
+    x: 7300,
+    y: GROUND_Y - BOSS_HEIGHT,
+    width: BOSS_WIDTH,
+    height: BOSS_HEIGHT,
+    phase: 'idle',
+    timer: 0,
+    hp: BOSS_HP,
+    alive: true,
+    facing: -1,
+  };
+}
+
 // Respawn points, one near the start of each later ground segment (well clear
 // of pit edges). [0] matches spawn — death respawns at the highest one the
 // player has already crossed, not always the level start; with the level now
@@ -303,19 +332,23 @@ function makeCheckpoints(): { x: number; y: number }[] {
     { x: 4060, y: GROUND_Y - 100 },
     { x: 4750, y: GROUND_Y - 100 },
     { x: 5600, y: GROUND_Y - 100 },
+    { x: 6830, y: GROUND_Y - 100 }, // just past the portal, so dying mid-boss-fight doesn't send the player all the way back
   ];
 }
 
 export function createLevel(): Level {
   return {
-    worldWidth: 6900,
+    worldWidth: 7800,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
     platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bloomPlatforms],
     enemies: makeEnemies(),
     coins: makeCoins(),
-    flag: { x: 6820, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
+    // Decorative now — reaching it no longer wins on its own, since the boss
+    // physically blocks the path there while alive (see stepGame). Defeating
+    // the boss is what actually triggers the win.
+    flag: { x: 7650, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
     shiftNodes: makeShiftNodes(),
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
@@ -323,5 +356,7 @@ export function createLevel(): Level {
     steamBlowers: makeSteamBlowers(),
     rootPoints: makeRootPoints(),
     cogPickups: makeCogPickups(),
+    portal: makePortal(),
+    boss: makeBoss(),
   };
 }

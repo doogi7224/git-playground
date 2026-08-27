@@ -2,6 +2,12 @@ import {
   AIR_CONTROL_MULT,
   BIOCOIL_CORPSE_BOUNCE_MULT,
   BIOCOIL_LANDED_DURATION,
+  BOSS_ATTACK_DURATION,
+  BOSS_ATTACK_KNOCKBACK,
+  BOSS_ATTACK_RANGE,
+  BOSS_IDLE_DURATION,
+  BOSS_TELEGRAPH_DURATION,
+  BOSS_VULNERABLE_DURATION,
   BIOCOIL_LAUNCH_VY_MECHANICAL,
   BIOCOIL_LAUNCH_VY_WILD,
   BIOCOIL_LEAP_VX_MECHANICAL,
@@ -74,6 +80,7 @@ import {
 import {
   BioCoil,
   BloomState,
+  Boss,
   CogPickup,
   CorpsePlatform,
   EffectEvent,
@@ -148,6 +155,8 @@ export function createInitialState(level: Level): GameState {
     steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
     cogPickups: level.cogPickups.map((c) => ({ ...c })),
     corpsePlatforms: [],
+    boss: { ...level.boss },
+    portalActivated: false,
     checkpointIndex: 0,
     effects: [],
     effectSeq: 0,
@@ -252,6 +261,34 @@ export function isFlameLobActive(blower: SteamBlower): boolean {
   return blower.sporeTimer >= FLAME_LOB_CHARGE && blower.sporeTimer < FLAME_LOB_CHARGE + FLAME_LOB_ACTIVE;
 }
 
+// Cycles idle -> telegraph -> attack -> vulnerable -> idle on a fixed timer,
+// independent of the player (the fight is a rhythm to learn, not a reaction
+// to player position) — same shape as the Steam Blower's timer-driven phases.
+const BOSS_PHASE_DURATIONS: Record<Boss['phase'], number> = {
+  idle: BOSS_IDLE_DURATION,
+  telegraph: BOSS_TELEGRAPH_DURATION,
+  attack: BOSS_ATTACK_DURATION,
+  vulnerable: BOSS_VULNERABLE_DURATION,
+};
+const BOSS_PHASE_ORDER: Boss['phase'][] = ['idle', 'telegraph', 'attack', 'vulnerable'];
+
+function stepBoss(boss: Boss, dt: number): Boss {
+  if (!boss.alive) return boss;
+  const timer = boss.timer + dt;
+  const duration = BOSS_PHASE_DURATIONS[boss.phase];
+  if (timer < duration) return { ...boss, timer };
+  const nextPhase = BOSS_PHASE_ORDER[(BOSS_PHASE_ORDER.indexOf(boss.phase) + 1) % BOSS_PHASE_ORDER.length];
+  return { ...boss, phase: nextPhase, timer: 0 };
+}
+
+export function isBossAttackActive(boss: Boss): boolean {
+  return boss.alive && boss.phase === 'attack';
+}
+
+export function isBossVulnerable(boss: Boss): boolean {
+  return boss.alive && boss.phase === 'vulnerable';
+}
+
 export function stepGame(prev: GameState, input: InputState, level: Level, dt: number): GameState {
   if (prev.phase !== 'playing') return prev;
 
@@ -307,7 +344,17 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const decayedCorpsePlatforms: CorpsePlatform[] = prev.corpsePlatforms
     .map((p) => ({ ...p, timeLeft: p.timeLeft - dt }))
     .filter((p) => p.timeLeft > 0);
-  const platforms: (Platform | CorpsePlatform)[] = [...activePlatforms(level, bloomState), ...decayedCorpsePlatforms];
+  // The boss (while alive) is solid, unlike every other monster in this file —
+  // it physically blocks the path to the arena's far side instead of being a
+  // walk-through hazard, so defeating it is the only way past. Decided from
+  // prev.boss.alive (this frame's stomp resolution, below, can't remove its
+  // own blocking mid-frame — same "not available until next frame" pattern
+  // used for freshly-created corpse platforms).
+  const platforms: (Platform | CorpsePlatform | Boss)[] = [
+    ...activePlatforms(level, bloomState),
+    ...decayedCorpsePlatforms,
+    ...(prev.boss.alive ? [prev.boss] : []),
+  ];
 
   // Same decay pattern as corpse platforms, for the read-only effect log
   // consumed by particle-burst components — physics never reads this back.
@@ -373,6 +420,11 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       grappledThisFrame = true;
     }
   }
+
+  // Set inside the vertical collision loop below (landing on the boss
+  // specifically, not just any platform); read later once the stepped boss
+  // is available, alongside the other monsters' hit/stomp resolution.
+  let landedOnBoss = false;
 
   if (!grappledThisFrame) {
     // Dash: a fixed-velocity horizontal burst with brief invincibility (per the
@@ -483,6 +535,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
           player.vy = 0;
           player.onGround = true;
           if ('source' in plat && plat.source === 'bioCoil') landedOnBounceCorpse = true;
+          if ('hp' in plat) landedOnBoss = true;
         } else if (player.vy < 0 && preMoveBottom - player.height >= plat.y + plat.height) {
           player.y = plat.y + plat.height;
           player.vy = 0;
@@ -659,6 +712,40 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return b;
   });
 
+  // Boss: solid while alive (handled above, in the platform collision list),
+  // so touching its sides just stops the player like a wall. The two ways it
+  // actually interacts are the wide attack-phase damage zone and stomping it
+  // from above during its vulnerable phase (detected via landedOnBoss, set
+  // in the vertical collision loop above, since a solid landing resolves to
+  // flush contact rather than overlap).
+  let boss = stepBoss(prev.boss, dt);
+  if (boss.alive) {
+    if (isBossAttackActive(boss)) {
+      const zone: Rect = { x: boss.x - BOSS_ATTACK_RANGE, y: boss.y, width: boss.width + BOSS_ATTACK_RANGE * 2, height: boss.height };
+      if (rectIntersect(player, zone) && player.invulnerableFor <= 0) {
+        pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+        lives = applyHit(player, lives, respawnPoint);
+        const bossCenter = boss.x + boss.width / 2;
+        player.vx = (player.x + player.width / 2 < bossCenter ? -1 : 1) * BOSS_ATTACK_KNOCKBACK;
+      }
+    }
+    if (landedOnBoss) {
+      player.vy = STOMP_BOUNCE;
+      if (isBossVulnerable(boss)) {
+        pushEffect('impact', boss.x + boss.width / 2, boss.y);
+        gaugeGain += OVERDRIVE_STOMP_GAIN;
+        const hp = boss.hp - 1;
+        if (hp <= 0) {
+          score += 1000;
+          boss = { ...boss, hp: 0, alive: false };
+        } else {
+          score += 100;
+          boss = { ...boss, hp };
+        }
+      }
+    }
+  }
+
   const pressurePistons = stepPressurePistons(prev.pressurePistons, dt);
   for (const piston of pressurePistons) {
     if (!isPistonDangerous(piston, bloomState)) continue;
@@ -756,8 +843,20 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   if (lives <= 0) {
     phase = 'gameover';
-  } else if (rectIntersect(player, level.flag)) {
+  } else if (!boss.alive) {
+    // Defeating the boss is the only way to win — it physically blocks the
+    // path to the (now purely decorative) flag while alive, so there's no
+    // separate flag-touch win path to keep in sync with this.
     phase = 'win';
+  }
+
+  // One-time crossing effect the first frame the player passes the portal
+  // into the boss arena — purely cosmetic, doesn't gate anything (the boss
+  // itself, not the portal, is what blocks progress).
+  let portalActivated = prev.portalActivated;
+  if (!portalActivated && player.x + player.width > level.portal.x) {
+    portalActivated = true;
+    pushEffect('impact', level.portal.x + level.portal.width / 2, level.portal.y + level.portal.height / 2);
   }
 
   // Advance past any checkpoint(s) now behind the player. Using the final
@@ -784,6 +883,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     steamBlowers: resolvedSteamBlowers,
     cogPickups: resolvedCogPickups,
     corpsePlatforms: [...decayedCorpsePlatforms, ...newCorpsePlatforms],
+    boss,
+    portalActivated,
     checkpointIndex,
     effects: [...decayedEffects, ...newEffects],
     effectSeq,

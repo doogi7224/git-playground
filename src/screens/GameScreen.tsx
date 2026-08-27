@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Background from '../components/Background';
 import BioCoilView from '../components/BioCoilView';
+import BossView from '../components/BossView';
 import CheckpointView from '../components/CheckpointView';
 import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
@@ -14,6 +15,7 @@ import FlagView from '../components/FlagView';
 import Hud from '../components/Hud';
 import PlatformView from '../components/PlatformView';
 import PlayerView from '../components/PlayerView';
+import PortalView from '../components/PortalView';
 import PressurePistonView from '../components/PressurePistonView';
 import RootPointView from '../components/RootPointView';
 import RopeView from '../components/RopeView';
@@ -152,6 +154,8 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
               <PressurePistonView key={p.id} piston={p} bloomState={gameState.bloomState} />
             ))}
             <FlagView flag={level.flag} />
+            <PortalView portal={level.portal} />
+            <BossView boss={gameState.boss} />
             {gameState.coins.map((c) => (
               <CoinView key={c.id} coin={c} />
             ))}
