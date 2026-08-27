@@ -71,10 +71,10 @@
 - **공용**: `GameScreen.tsx`를 계속 공유해서 쓸지, 아니면 "게임 루프 훅 + 프레젠테이션 레이아웃"으로 분리할지는 두 담당자가 실제로 충돌을 겪기 전엔 결정 보류(과도한 사전 리팩터링 금지 원칙).
 
 ## CLAUDE ACTIVE
-- 작업: 완료 — Route Gate Foundation. Area 1에 `vineGate1`/`gearGate1` 로컬 게이트 1쌍 구현(스폰~x=220 사이, 기존 컨텐츠와 완전히 겹치지 않는 구간으로 재배치 — 아래 HANDOFF 참고). 전역 Bloom Shift는 코드 한 줄도 건드리지 않고 완전히 병행하는 별도 시스템으로 추가.
-- 소유 파일: `src/game/types.ts`, `src/game/constants.ts`, `src/game/level.ts`, `src/game/physics.ts`, 신규 `src/components/RouteGateView.tsx`, `src/screens/GameScreen.tsx`(렌더 필터 1줄 + 마운트 2줄만, 기능적 필요 최소 변경)
+- 작업: 완료 — Bloom Shift/Route Gate/처치 후 발판 3종 제거(Codex가 직접 수행)에 대한 기술 검수. pure-logic 회귀 테스트 12종(몬스터 5종 스톰프 규칙, 보스전 무피해 클리어, 대시/그래플/체크포인트/Gear Socket) 전부 PASS + tsc + Playwright 웹 렌더링 확인. 세션 (23)에서 만든 Route Gate 보상 코인 7개가 게이트 제거 후에도 순수 점프만으로 전부 도달 가능함을 확인(우려했던 "도달 불가 코인" 문제 없음 — 새 기획 방향의 "높은 코인 줄" 컨셉과 우연히 부합해 그대로 유지). 다음 지시 대기.
+- 소유 파일: 없음 (대기 중)
 - 시작 시각/세션: 2026-08-27
-- 완료 조건: 충족 — 2개 로컬 게이트, 6초 제한, 안전한 실패 경로(모든 보상 발판이 solid ground 위), pure-logic 테스트 7종 + tsc + Playwright 통과
+- 완료 조건: 사용자 지시 대기
 
 ## CODEX ACTIVE
 - 작업: 완료 — Route Gate 시각 언어 및 보상 발판 프레젠테이션 리빌드.
