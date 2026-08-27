@@ -9,7 +9,7 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
   const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
 
   return (
-    <ImageBackground source={require('../../assets/backgrounds/scene_wild.png')} resizeMode="cover" style={styles.container}>
+    <ImageBackground source={require('../../assets/backgrounds/scene_wild_v2.png')} resizeMode="cover" style={styles.container}>
       <LinearGradient
         colors={['rgba(16,35,32,0.04)', 'rgba(22,40,34,0.18)', 'rgba(18,28,24,0.62)']}
         style={StyleSheet.absoluteFill}
@@ -39,11 +39,11 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
             style={styles.hero}
           />
           <View style={styles.storyBlock}>
-            <Text style={styles.storyTitle}>두 세계 사이를 달려라</Text>
+            <Text style={styles.storyTitle}>멈춘 숲을 질주하라</Text>
             <Text style={styles.subtitle}>
-              기계와 자연을 전환하고, 대시와 루트훅으로 기어숲의 멈춘 심장을 다시 깨우세요.
+              대시와 루트훅, 정확한 스톰프로 기어숲의 멈춘 심장을 다시 깨우세요.
             </Text>
-            <Text style={styles.featureLine}>BLOOM SHIFT  ·  ROOT-HOOK  ·  OVERDRIVE</Text>
+            <Text style={styles.featureLine}>DASH  ·  ROOT-HOOK  ·  OVERDRIVE</Text>
           </View>
         </View>
 

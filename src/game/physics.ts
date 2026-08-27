@@ -288,8 +288,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // block below has had a chance to add to it).
   let gaugeGain = 0;
 
-  // Decided from the pre-frame timer, matching the pattern used for Bloom
-  // Shift/slow/dash below: this frame's speed and jump power reflect whether
+  // Decided from the pre-frame timer, matching the slow/dash pattern below:
+  // this frame's speed and jump power reflect whether
   // Overdrive was already active going into it.
   const overdriveActive = prev.player.overdriveTimer > 0;
 

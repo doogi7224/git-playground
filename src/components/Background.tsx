@@ -20,10 +20,8 @@ const FAR_FACTOR = 0.15;
 // support the run instead of introducing a second ruleset.
 const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild_v2.png');
 
-// Memoized so this (large, tiled full-screen images) subtree is skipped on
-// the 60fps re-renders `cameraX` drives in the parent — its own props only
-// ever change on a Bloom Shift or a viewport resize, never per frame
-// (CLAUDE.md 18.7: avoid unnecessary per-frame work).
+// Memoized so this large tiled image subtree is skipped on the 60fps camera
+// updates; it only changes when the viewport changes.
 const SceneTiles = React.memo(function SceneTiles({
   source,
   tileWidth,

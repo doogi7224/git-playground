@@ -44,7 +44,7 @@ export const palette = {
   flagCloth: '#3c7a56',
   flagClothDark: '#285940',
 
-  // Bloom Shift wild-state platforms (vine/moss) and the shift node itself.
+  // Forest-world accent colors for plants, collectibles, and friendly UI.
   moss: '#3c7a56',
   mossDark: '#285940',
   mossTint: '#d9ead9',

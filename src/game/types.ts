@@ -48,9 +48,8 @@ export interface PressurePiston extends Rect {
 
 export type BioCoilPhase = 'coiled' | 'windup' | 'launch' | 'landed';
 
-// A vine-and-spring enemy that waits coiled at a home spot, then leaps at the
-// player when they're in range. Bloom Shift trades a big/telegraphed wild
-// leap for a short/instant mechanical one. Only stompable while 'landed'
+// A vine-and-spring enemy that waits coiled at a home spot, then telegraphs
+// a leap when the player enters range. Only stompable while 'landed'
 // (post-leap, defenseless); stomping it coiled/mid-leap bounces the player
 // off and damages them instead of defeating it.
 export interface BioCoil extends Rect {

@@ -20,8 +20,6 @@ export const ENEMY_SPEED = 60; // px/s
 // doc calls luring it into a pit a valid strategy; this prototype keeps
 // charges within the existing patrol bounds instead of adding fall physics
 // for enemies, ending the charge at a bound rather than running off it).
-// Neutralized entirely in the wild Bloom Shift state, which also slows its
-// normal patrol to 60%.
 export const ENEMY_CHARGE_SPEED = 120;
 export const ENEMY_DETECT_RANGE = 160; // px; not given a number in the doc, a judgment call
 
@@ -146,12 +144,6 @@ export const BOSS_ATTACK_DURATION = 0.6; // damage window
 export const BOSS_VULNERABLE_DURATION = 1.5; // weak point exposed, stompable
 export const BOSS_ATTACK_RANGE = 100; // px, extends this far on both sides of the boss during the attack phase
 export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the boss
-
-// Route Gate (GAME_DIRECTION_V2.md "Momentum Route" foundation): a local,
-// temporary choice point replacing the global Bloom Shift toggle's role as
-// the level's core "state changes what's available" hook. New content, no
-// prior numbers to preserve — sized as a walk/dash-through doorway roughly
-// matching the existing Shift Node/Portal trigger footprint.
 
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations
