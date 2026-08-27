@@ -1,6 +1,6 @@
 # AI Collaboration Board
 
-> 운영 규칙은 `CLAUDE_CODEX_COLLAB_PROMPT.md` 참고. 역할 고정: **Codex = 디자인 총괄·UI 구현 책임자**, **Claude Code = 기능 구현·시스템 통합 책임자**.
+> 운영 규칙은 `CLAUDE_CODEX_COLLAB_PROMPT.md` 참고. 최신 사용자 결정: **Codex = 게임 기획·디자인 디렉터·UI/아트 구현 책임자**, **Claude Code = 메인 시스템 구현·테스트 책임자**. 최신 게임 방향은 `GAME_DIRECTION_V2.md`가 기준이다.
 
 ## CURRENT STATUS
 - 현재 빌드/실행 상태: 정상. `npx tsc --noEmit` 통과(에러 0). 브랜치 `claude/game-app-development-thc8pw`, working tree clean, 최신 커밋 `9765bf5 Add portal + boss encounter logic (no art yet, placeholder rendering)`.
@@ -71,14 +71,14 @@
 - **공용**: `GameScreen.tsx`를 계속 공유해서 쓸지, 아니면 "게임 루프 훅 + 프레젠테이션 레이아웃"으로 분리할지는 두 담당자가 실제로 충돌을 겪기 전엔 결정 보류(과도한 사전 리팩터링 금지 원칙).
 
 ## CLAUDE ACTIVE
-- 작업: (구현 없음) — 보스전 밸런스 반응형 봇 검증, 화면 비율 검증, Codex 보스 아트 기술 검수(통합/회귀 관점) 완료. 다음 지시 대기.
-- 소유 파일: 없음 (대기 중)
+- 작업: Route Gate Foundation — 전역 Bloom Shift를 국소적인 선택형 `Vine Route`/`Gear Route` 게이트로 단계적 교체. 상세 명세·금지·완료 조건은 `GAME_DIRECTION_V2.md`의 **Claude의 첫 구현 지시**를 따른다.
+- 소유 파일: `src/game/types.ts`, `src/game/constants.ts`, `src/game/level.ts`, `src/game/physics.ts` 및 필요한 게임 루프 통합부
 - 시작 시각/세션: 2026-08-27
-- 완료 조건: 사용자 지시 대기
+- 완료 조건: Area 1의 2개 로컬 Route Gate, 6초 제한, 안전한 실패 경로, 최소 Presentation 상태, 타입·pure-logic·회귀 검증 완료
 
 ## CODEX ACTIVE
-- 작업: 완료 — 비주얼 리부트 Vertical Slice 2b (새 숲 배경 + Cogmite 마스코트 프레임 애니메이션)
-- 소유 파일: 없음
+- 작업: 진행 — 게임 기획 V2 및 Route Gate 시각 언어 설계. Claude의 Foundation 구현 후 플레이 경험·UI·아트 검수 예정.
+- 소유 파일: `GAME_DIRECTION_V2.md`, `src/components/*` Presentation Layer, `assets/*`, `src/theme.ts`
 - 시작 시각/세션: 2026-08-27
 - 완료 조건: 새 배경의 기계/자연 전환, Cogmite 8프레임 자산·순찰/돌진 프레임 전환, 실제 웹 렌더링·타입 검사 완료.
 
@@ -96,15 +96,16 @@
 ## DECISIONS
 - 2026-08-27: Claude Code × Codex 협업 체계 도입, 역할 고정(Codex=디자인/UI, Claude=기능/로직) / 근거: 사용자 지시 / 승인자: 사용자
 - 2026-08-27: 보스전 수치(HP5/페이즈 지속시간) 변경 불필요로 결론 / 근거: 반응형 봇 시뮬레이션에서 무피해 클리어 확인(개발로그.md (19)) / 승인자: Claude 자체 검증, 사용자 확인 대기 없음(수치 변경이 아니므로)
+- 2026-08-27: 사용자가 기존 전역 Bloom Shift의 쓰임·재미가 불명확하다고 판단. Codex가 게임 기획을 주도하고 Claude는 시스템 구현을 주로 담당하도록 역할을 확대 전환. 전역 상태 전환은 `Momentum Route`의 선택형 로컬 게이트로 단계 교체한다 / 승인자: 사용자
 
 ## NEXT
-1. 비주얼 리부트 Vertical Slice 2 — 첫 배경·플랫폼 및 Cogmite/Spore Sprite를 새 밝은 숲 화풍으로 교체(Codex)
-2. 새 몬스터의 상태별 프레임 애니메이션 프레젠테이션 설계(Codex, `src/game/*` 변경 필요 시 REVIEW REQUEST)
-3. 보스전 사람 실플레이 피드백 및 실기기 Expo Go 검증
+1. Claude: `GAME_DIRECTION_V2.md` Route Gate Foundation 구현 및 검증
+2. Codex: Vine/Gear Gate 시각·HUD·첫 90초 구간 UX 검수와 아트 구현
+3. Route Gate Vertical Slice가 재미있다는 확인 뒤에만 Spore Sprite/플랫폼/Area 2~3 확장
 
 ## HANDOFF
 - 마지막 완료 지점: 새 Sprout 8프레임과 새 숲 배경 한 쌍에 이어, Cogmite를 귀여운 태엽 딱정벌레 마스코트 8프레임으로 교체했다. `EnemyView.tsx`는 기존 `chargeDir`/좌표만 읽어 순찰 4프레임과 돌진 경고 프레임을 전환한다. 물리·입력·충돌 수치는 변경하지 않았다.
 - 검증: `npx tsc --noEmit` 통과. Expo 웹 실제 플레이 화면에서 새 Sprout·배경·Cogmite 렌더링 확인, 브라우저 콘솔 error 0.
-- 남은 일: 플랫폼 표면과 Spore Sprite 등 나머지 일반 몬스터를 같은 밝은 숲 화풍으로 교체하고, 상태별 프레임 애니메이션을 추가한다. 보스전 사람 실플레이·실기기 Expo Go 검증도 남아 있다.
-- 다음 담당자가 먼저 볼 파일: `src/components/EnemyView.tsx`, `assets/sprites/cogmite_v2/`, `src/components/PlatformView.tsx`, `src/components/SporeSpriteView.tsx`.
+- **방향 전환**: 단순 전역 Bloom Shift는 더 이상 확장하지 않는다. 최신 기획은 `GAME_DIRECTION_V2.md`의 Momentum Route. Claude는 먼저 Area 1의 로컬 Vine/Gear Route Gate Foundation을 구현하고, Codex는 그 구현을 기준으로 시각·UX를 완성한다.
+- 다음 담당자가 먼저 볼 파일: `GAME_DIRECTION_V2.md`, `src/game/level.ts`, `src/game/physics.ts`, `src/components/ShiftNodeView.tsx`.
 - 실행 및 검증 명령: `npm run web`, `npx tsc --noEmit`.
