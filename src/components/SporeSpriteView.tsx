@@ -18,34 +18,53 @@ export default function SporeSpriteView({ sprite, bloomState }: { sprite: SporeS
   }, [pulse]);
 
   const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.1] });
+  const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.4] });
   const isMechanical = bloomState === 'mechanical';
   const bodyColor = isMechanical ? palette.uiPrimary : 'rgba(116, 194, 148, 0.5)';
   const coreColor = isMechanical ? palette.uiPrimaryDark : palette.moss;
+  const glowColor = isMechanical ? palette.uiPrimary : palette.moss;
 
   return (
     <Animated.View
       style={[
-        styles.body,
-        {
-          left: sprite.x,
-          top: sprite.y,
-          width: sprite.width,
-          height: sprite.height,
-          backgroundColor: bodyColor,
-          transform: [{ scale }],
-        },
+        styles.wrap,
+        { left: sprite.x, top: sprite.y, width: sprite.width, height: sprite.height },
       ]}
     >
-      <Animated.View style={[styles.core, { backgroundColor: coreColor }]} />
-      <Animated.View style={[styles.mote, styles.moteA, { backgroundColor: palette.mossTint, opacity: pulse }]} />
-      <Animated.View style={[styles.mote, styles.moteB, { backgroundColor: palette.mossTint, opacity: pulse }]} />
+      {/* Soft halo so the sprite reads as a floating spirit rather than a
+          plain dot, per CLAUDE.md 19.10 ("스포어 스프라이트: 부유하는 생명체"). */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.glow, { backgroundColor: glowColor, opacity: glowOpacity, transform: [{ scale }] }]}
+      />
+      <Animated.View
+        style={[
+          styles.body,
+          { width: sprite.width, height: sprite.height, backgroundColor: bodyColor, transform: [{ scale }] },
+        ]}
+      >
+        <Animated.View style={[styles.core, { backgroundColor: coreColor }]} />
+        <Animated.View style={[styles.mote, styles.moteA, { backgroundColor: palette.mossTint, opacity: pulse }]} />
+        <Animated.View style={[styles.mote, styles.moteB, { backgroundColor: palette.mossTint, opacity: pulse }]} />
+        <Animated.View style={[styles.mote, styles.moteC, { backgroundColor: palette.mossTint, opacity: glowOpacity }]} />
+      </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  body: {
+  wrap: {
     position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glow: {
+    position: 'absolute',
+    width: '170%',
+    height: '170%',
+    borderRadius: 999,
+  },
+  body: {
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -68,5 +87,9 @@ const styles = StyleSheet.create({
   moteB: {
     bottom: -4,
     right: -4,
+  },
+  moteC: {
+    top: -6,
+    right: 2,
   },
 });

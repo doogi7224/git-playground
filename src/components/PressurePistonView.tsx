@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { isPistonDangerous } from '../game/physics';
 import { BloomState, PressurePiston } from '../game/types';
 import { PISTON_CHARGE_DURATION } from '../game/constants';
@@ -35,6 +35,15 @@ export default function PressurePistonView({ piston, bloomState }: { piston: Pre
       <Animated.View style={[styles.pipe, { backgroundColor: pipeColor, borderColor: pipeDark }]}>
         <Animated.View style={[styles.stripe, { backgroundColor: pipeDark }]} />
       </Animated.View>
+      {/* Base mounting bracket, drawn wider than the pipe's own hitbox — reads
+          as a fixture bolted into the floor rather than a free-standing
+          monster (CLAUDE.md 19.10: "몬스터라기보다 거대한 환경 장치처럼").
+          Purely visual; piston.x/y/width/height (the collision rect) are
+          untouched. */}
+      <View style={[styles.bracket, { borderColor: pipeDark }]}>
+        <View style={[styles.bolt, styles.boltL]} />
+        <View style={[styles.bolt, styles.boltR]} />
+      </View>
       {isWild && (
         <>
           <Animated.View style={[styles.bloomLeaf, styles.bloomLeafA]} />
@@ -90,5 +99,26 @@ const styles = StyleSheet.create({
   bloomLeafB: {
     top: 14,
     right: -2,
+  },
+  bracket: {
+    width: '130%',
+    height: 6,
+    borderRadius: 2,
+    borderWidth: 1.5,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  bolt: {
+    position: 'absolute',
+    top: 1,
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  boltL: {
+    left: 3,
+  },
+  boltR: {
+    right: 3,
   },
 });
