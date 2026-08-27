@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Scratch output from packaging a self-contained web build for Artifact publishing
+artifact-build/
+
 # Native
 .kotlin/
 *.orig.*
