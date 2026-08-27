@@ -18,7 +18,9 @@ const FAR_FACTOR = 0.15;
 
 // One painterly forest scene keeps the world readable and lets parallax
 // support the run instead of introducing a second ruleset.
-const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_wild_v2.png');
+const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_forest_v3.png');
+const SCENE_WATERFALL_SOURCE = require('../../assets/backgrounds/scene_forest_waterfall_v3.png');
+const SCENE_RUINS_SOURCE = require('../../assets/backgrounds/scene_forest_ruins_v3.png');
 
 // Memoized so this large tiled image subtree is skipped on the 60fps camera
 // updates; it only changes when the viewport changes.
@@ -27,14 +29,16 @@ const SceneTiles = React.memo(function SceneTiles({
   tileWidth,
   tileCount,
   height,
+  opacity = 1,
 }: {
   source: number;
   tileWidth: number;
   tileCount: number;
   height: number;
+  opacity?: number;
 }) {
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, { opacity }]}>
       {Array.from({ length: tileCount }, (_, i) => (
         <Image
           key={i}
@@ -49,6 +53,15 @@ const SceneTiles = React.memo(function SceneTiles({
 
 export default function Background({ cameraX, worldWidth, viewportWidth, viewportHeight }: Props) {
   const farOffset = -cameraX * FAR_FACTOR;
+
+  // These are visual chapters, not gameplay zones: the player never changes
+  // mode, rules, or collision. The scenery simply evolves from open valley
+  // to waterfall woods to ancient grove as the one continuous journey moves
+  // forward. Generous overlap prevents a hard scene cut during a run.
+  const waterfallBlend = Math.max(0, Math.min(1, (cameraX - 2350) / 500));
+  const ruinsBlend = Math.max(0, Math.min(1, (cameraX - 5000) / 500));
+  const meadowOpacity = 1 - waterfallBlend;
+  const waterfallOpacity = waterfallBlend * (1 - ruinsBlend);
 
   // Each tile is a full viewport-width crop of the scene painting (via
   // resizeMode="cover"), not the image's own natural aspect width — sizing
@@ -68,7 +81,9 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
       <LinearGradient colors={[palette.skyTop, palette.skyBottom]} style={styles.fill} />
 
       <View style={[styles.parallaxLayer, { width: farLayerWidth, transform: [{ translateX: farOffset }] }]}>
-        <SceneTiles source={SCENE_WILD_SOURCE} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
+        <SceneTiles source={SCENE_WILD_SOURCE} opacity={meadowOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
+        <SceneTiles source={SCENE_WATERFALL_SOURCE} opacity={waterfallOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
+        <SceneTiles source={SCENE_RUINS_SOURCE} opacity={ruinsBlend} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
       </View>
     </View>
   );
