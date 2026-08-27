@@ -4,9 +4,10 @@ import { MOVE_SPEED } from '../game/constants';
 import { Player } from '../game/types';
 
 // Sprout is drawn larger than its collision box (a full-body AI-generated
-// sprite with some padding) and anchored so its feet sit on the hitbox's
+// running-pose sprite with limbs splayed wide, so a good portion of the
+// square is empty space) and anchored so its feet sit on the hitbox's
 // bottom edge, centered on the hitbox's horizontal center.
-const VISUAL_SIZE = 52;
+const VISUAL_SIZE = 58;
 const LANDING_IMPACT_VY = 400; // px/s: falling faster than this on landing triggers a squash pulse
 const DASH_TRAIL_LENGTH = 3; // afterimage copies kept while dashing
 

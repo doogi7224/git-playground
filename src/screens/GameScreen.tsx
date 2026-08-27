@@ -123,6 +123,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           <Background
             cameraX={cameraX}
             worldWidth={level.worldWidth}
+            viewportWidth={viewportWidth}
             viewportHeight={VIEWPORT_HEIGHT}
             bloomState={gameState.bloomState}
           />
