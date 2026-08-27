@@ -60,6 +60,7 @@ import {
   ROOTHOOK_PUMP_ACCEL,
   ROOTHOOK_RANGE,
   ROOTHOOK_SWING_GRAVITY,
+  ROUTE_GATE_DURATION,
   SPORE_AMPLITUDE,
   SPORE_PERIOD,
   SPORE_RADIUS_MECHANICAL,
@@ -93,6 +94,7 @@ import {
   Player,
   PressurePiston,
   Rect,
+  RouteGate,
   SporeSprite,
   SteamBlower,
 } from './types';
@@ -105,8 +107,28 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function activePlatforms(level: Level, bloomState: BloomState): Platform[] {
-  return level.platforms.filter((p) => !p.visibleIn || p.visibleIn === bloomState);
+function activePlatforms(level: Level, bloomState: BloomState, activeGateIds: ReadonlySet<string>): Platform[] {
+  return level.platforms.filter(
+    (p) => (!p.visibleIn || p.visibleIn === bloomState) && (!p.activeGate || activeGateIds.has(p.activeGate))
+  );
+}
+
+// Route Gate foundation (GAME_DIRECTION_V2.md): same "pre-frame state decides
+// this frame's behavior" + edge-triggered-arming pattern as the Bloom Shift
+// node above, just per-gate and additive instead of a single global toggle.
+// Walking (or dashing) into an armed gate opens it for ROUTE_GATE_DURATION
+// seconds; leaving its rect re-arms it for next time.
+function stepRouteGates(gates: RouteGate[], player: Rect, dt: number): RouteGate[] {
+  return gates.map((g) => {
+    const touching = rectIntersect(player, g);
+    if (touching && g.armed) {
+      return { ...g, active: true, timer: ROUTE_GATE_DURATION, armed: false };
+    }
+    const armed = touching ? g.armed : true;
+    if (!g.active) return armed === g.armed ? g : { ...g, armed };
+    const timer = g.timer - dt;
+    return timer > 0 ? { ...g, armed, timer } : { ...g, armed, active: false, timer: 0 };
+  });
 }
 
 export function createInitialState(level: Level): GameState {
@@ -157,6 +179,7 @@ export function createInitialState(level: Level): GameState {
     corpsePlatforms: [],
     boss: { ...level.boss },
     portalActivated: false,
+    routeGates: level.routeGates.map((g) => ({ ...g })),
     checkpointIndex: 0,
     effects: [],
     effectSeq: 0,
@@ -336,6 +359,13 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   } else if (!touchingShiftNode) {
     bloomNodeArmed = true;
   }
+
+  // Route Gate foundation (GAME_DIRECTION_V2.md): decided from the same
+  // pre-frame player position as Bloom Shift above, for the same reason (no
+  // one-frame lag between what's drawn solid and what's collided against).
+  const routeGates = stepRouteGates(prev.routeGates, prev.player, dt);
+  const activeGateIds = new Set(routeGates.filter((g) => g.active).map((g) => g.id));
+
   // Post-defeat corpse platforms: decayed from prev's list so this frame's
   // collision reflects how much time was left going into it. Newly-defeated
   // enemies below add to a fresh list instead, available starting next frame
@@ -351,7 +381,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // own blocking mid-frame — same "not available until next frame" pattern
   // used for freshly-created corpse platforms).
   const platforms: (Platform | CorpsePlatform | Boss)[] = [
-    ...activePlatforms(level, bloomState),
+    ...activePlatforms(level, bloomState, activeGateIds),
     ...decayedCorpsePlatforms,
     ...(prev.boss.alive ? [prev.boss] : []),
   ];
@@ -885,6 +915,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     corpsePlatforms: [...decayedCorpsePlatforms, ...newCorpsePlatforms],
     boss,
     portalActivated,
+    routeGates,
     checkpointIndex,
     effects: [...decayedEffects, ...newEffects],
     effectSeq,

@@ -11,6 +11,8 @@ export interface Platform extends Rect {
   id: string;
   /** Only exists (renders + collides) while bloomState matches. Undefined = always present. */
   visibleIn?: BloomState;
+  /** Only exists (renders + collides) while the named RouteGate is active. Undefined = always present. */
+  activeGate?: string;
 }
 
 export interface Enemy extends Rect {
@@ -32,6 +34,29 @@ export interface Flag extends Rect {}
 
 export interface ShiftNode extends Rect {
   id: string;
+}
+
+export type RouteGateKind = 'vine' | 'gear';
+
+// GAME_DIRECTION_V2.md's "Momentum Route" foundation: a local, temporary
+// choice point, unlike the global always-on Bloom Shift toggle above. Walking
+// (or dashing) into one opens ITS OWN local reward platforms (tagged via
+// Platform.activeGate) for ROUTE_GATE_DURATION seconds, then they revert —
+// safely, since every Route Gate's reward platforms are positioned above
+// solid ground, never a pit, so a closed/missed gate just returns the player
+// to normal footing (per the doc's fairness rule). Same shape/lifecycle
+// pattern as Boss: one type serves both the static level definition
+// (Level.routeGates, freshly copied into GameState.routeGates on
+// createInitialState/restart) and the evolving runtime record.
+export interface RouteGate extends Rect {
+  id: string;
+  kind: RouteGateKind;
+  /** True for ROUTE_GATE_DURATION seconds after being triggered; gates this gate's tagged platforms. */
+  active: boolean;
+  /** Seconds remaining while active; unused otherwise. */
+  timer: number;
+  /** True once the player has left this gate's rect, so re-entering re-triggers it (same arming pattern as bloomNodeArmed). */
+  armed: boolean;
 }
 
 // A floating hazard that hovers on a fixed sine-wave path and slows the
@@ -179,6 +204,7 @@ export interface Level {
   cogPickups: CogPickup[];
   portal: Portal;
   boss: Boss;
+  routeGates: RouteGate[];
 }
 
 export interface Player extends Rect {
@@ -244,6 +270,7 @@ export interface GameState {
   boss: Boss;
   /** True once the player has crossed the portal into the boss arena; only used to fire the one-time crossing effect. */
   portalActivated: boolean;
+  routeGates: RouteGate[];
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */
   checkpointIndex: number;
   /** Recent stomp/hit/pickup moments for effect components to render; never read by physics itself. */

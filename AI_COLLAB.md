@@ -71,10 +71,10 @@
 - **공용**: `GameScreen.tsx`를 계속 공유해서 쓸지, 아니면 "게임 루프 훅 + 프레젠테이션 레이아웃"으로 분리할지는 두 담당자가 실제로 충돌을 겪기 전엔 결정 보류(과도한 사전 리팩터링 금지 원칙).
 
 ## CLAUDE ACTIVE
-- 작업: Route Gate Foundation — 전역 Bloom Shift를 국소적인 선택형 `Vine Route`/`Gear Route` 게이트로 단계적 교체. 상세 명세·금지·완료 조건은 `GAME_DIRECTION_V2.md`의 **Claude의 첫 구현 지시**를 따른다.
-- 소유 파일: `src/game/types.ts`, `src/game/constants.ts`, `src/game/level.ts`, `src/game/physics.ts` 및 필요한 게임 루프 통합부
+- 작업: 완료 — Route Gate Foundation. Area 1에 `vineGate1`/`gearGate1` 로컬 게이트 1쌍 구현(스폰~x=220 사이, 기존 컨텐츠와 완전히 겹치지 않는 구간으로 재배치 — 아래 HANDOFF 참고). 전역 Bloom Shift는 코드 한 줄도 건드리지 않고 완전히 병행하는 별도 시스템으로 추가.
+- 소유 파일: `src/game/types.ts`, `src/game/constants.ts`, `src/game/level.ts`, `src/game/physics.ts`, 신규 `src/components/RouteGateView.tsx`, `src/screens/GameScreen.tsx`(렌더 필터 1줄 + 마운트 2줄만, 기능적 필요 최소 변경)
 - 시작 시각/세션: 2026-08-27
-- 완료 조건: Area 1의 2개 로컬 Route Gate, 6초 제한, 안전한 실패 경로, 최소 Presentation 상태, 타입·pure-logic·회귀 검증 완료
+- 완료 조건: 충족 — 2개 로컬 게이트, 6초 제한, 안전한 실패 경로(모든 보상 발판이 solid ground 위), pure-logic 테스트 7종 + tsc + Playwright 통과
 
 ## CODEX ACTIVE
 - 작업: 진행 — 게임 기획 V2 및 Route Gate 시각 언어 설계. Claude의 Foundation 구현 후 플레이 경험·UI·아트 검수 예정.
@@ -99,13 +99,14 @@
 - 2026-08-27: 사용자가 기존 전역 Bloom Shift의 쓰임·재미가 불명확하다고 판단. Codex가 게임 기획을 주도하고 Claude는 시스템 구현을 주로 담당하도록 역할을 확대 전환. 전역 상태 전환은 `Momentum Route`의 선택형 로컬 게이트로 단계 교체한다 / 승인자: 사용자
 
 ## NEXT
-1. Claude: `GAME_DIRECTION_V2.md` Route Gate Foundation 구현 및 검증
-2. Codex: Vine/Gear Gate 시각·HUD·첫 90초 구간 UX 검수와 아트 구현
-3. Route Gate Vertical Slice가 재미있다는 확인 뒤에만 Spore Sprite/플랫폼/Area 2~3 확장
+1. Codex: Route Gate 실제 시각 언어(덩굴 문/황동 아치/방향 화살표/숫자 없는 6초 카운트다운) + 첫 90초 구간 UX 검수/조정 — 현재는 `RouteGateView.tsx`의 색깔 사각형 placeholder뿐.
+2. 사람 실플레이로 Vine/Gear Route가 실제로 재밌는지 확인 (자동 검증은 "메커니즘이 의도대로 작동하는가"까지만 확인 완료).
+3. Route Gate Vertical Slice가 재미있다는 확인 뒤에만 Spore Sprite/플랫폼/Area 2~3 확장(기획 문서 명시 순서).
 
 ## HANDOFF
-- 마지막 완료 지점: 새 Sprout 8프레임과 새 숲 배경 한 쌍에 이어, Cogmite를 귀여운 태엽 딱정벌레 마스코트 8프레임으로 교체했다. `EnemyView.tsx`는 기존 `chargeDir`/좌표만 읽어 순찰 4프레임과 돌진 경고 프레임을 전환한다. 물리·입력·충돌 수치는 변경하지 않았다.
-- 검증: `npx tsc --noEmit` 통과. Expo 웹 실제 플레이 화면에서 새 Sprout·배경·Cogmite 렌더링 확인, 브라우저 콘솔 error 0.
-- **방향 전환**: 단순 전역 Bloom Shift는 더 이상 확장하지 않는다. 최신 기획은 `GAME_DIRECTION_V2.md`의 Momentum Route. Claude는 먼저 Area 1의 로컬 Vine/Gear Route Gate Foundation을 구현하고, Codex는 그 구현을 기준으로 시각·UX를 완성한다.
-- 다음 담당자가 먼저 볼 파일: `GAME_DIRECTION_V2.md`, `src/game/level.ts`, `src/game/physics.ts`, `src/components/ShiftNodeView.tsx`.
+- 마지막 완료 지점(Claude): Route Gate Foundation 구현 완료. `src/game/types.ts`에 `RouteGate` 타입(Boss와 동일하게 정적+런타임 상태 결합) 및 `Platform.activeGate` 추가, `constants.ts`에 `ROUTE_GATE_*` 3개 추가, `level.ts`에 게이트 2개+보상 발판 5개+보상 코인 7개 추가, `physics.ts`에 `stepRouteGates()`(Bloom Shift 노드와 동일한 edge-triggered arming 패턴) 추가, `GameScreen.tsx`는 플랫폼 렌더 필터에 조건 1개 추가 + `RouteGateView` 마운트 2줄만 추가(그 외 Codex의 HUD/Controls/StartScreen 변경분은 건드리지 않음).
+- **배치 관련 중요 사항**: 최초 계획한 위치(x=560~700, 기존 Bloom 튜토리얼 존 바로 다음)에 이미 `piston1`(x=650)과 `e1` 코그마이트 순찰(400~620)이 있다는 걸 뒤늦게 발견해 **스폰(x=40)~첫 Shift Node(x=220) 사이(x=85~215)**로 재배치했다. Codex가 실제 화면에서 배치를 검수할 때 이 좌표 기준으로 볼 것 — 결과적으로 "학습" 단계가 게임 시작 직후로 앞당겨진 형태다.
+- 검증: pure-logic 테스트 7종(게이트 발동/보상 도달 가능성/안전한 실패/재발동/기존 시스템 회귀) + `npx tsc --noEmit` + Playwright 웹 빌드 콘솔 에러 0 + 스크린샷으로 게이트 마커 육안 확인(개발로그.md 2026-08-27 (23) 참고).
+- 남은 일: Codex의 시각 언어 작업, 사람 실플레이 재미 검증, 검증 후 Area 2~3 확장.
+- 다음 담당자가 먼저 볼 파일: `GAME_DIRECTION_V2.md`, `src/components/RouteGateView.tsx`, `src/game/level.ts`(x=85~220 구간), `개발로그.md` 2026-08-27 (23).
 - 실행 및 검증 명령: `npm run web`, `npx tsc --noEmit`.

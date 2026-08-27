@@ -155,6 +155,15 @@ export const BOSS_VULNERABLE_DURATION = 1.5; // weak point exposed, stompable
 export const BOSS_ATTACK_RANGE = 100; // px, extends this far on both sides of the boss during the attack phase
 export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the boss
 
+// Route Gate (GAME_DIRECTION_V2.md "Momentum Route" foundation): a local,
+// temporary choice point replacing the global Bloom Shift toggle's role as
+// the level's core "state changes what's available" hook. New content, no
+// prior numbers to preserve — sized as a walk/dash-through doorway roughly
+// matching the existing Shift Node/Portal trigger footprint.
+export const ROUTE_GATE_WIDTH = 30;
+export const ROUTE_GATE_HEIGHT = 70;
+export const ROUTE_GATE_DURATION = 6; // seconds a gate's tagged platforms stay active, per the design doc
+
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations
 // that render against these events before physics prunes them.
