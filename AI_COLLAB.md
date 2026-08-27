@@ -77,10 +77,10 @@
 - 완료 조건: 사용자 지시 대기
 
 ## CODEX ACTIVE
-- 작업: 완료 — Phase 2 HUD·모바일 컨트롤 디자인 시스템 리빌드
+- 작업: 완료 — 비주얼 리부트 Vertical Slice 1 (새 Sprout 아트 + 실제 프레임 애니메이션 + 시작/결과 화면 정리)
 - 소유 파일: 없음
 - 시작 시각/세션: 2026-08-27
-- 완료 조건: 충족 — HUD 계기판화, 이동 모듈 통합, 액션 역할 표기, 입력 코드 보존, 세로·가로 렌더링 및 타입 검사 통과
+- 완료 조건: 충족 — 8프레임 Sprout 자산, 이동/대기/상승/하강 프레임 전환, 기존 입력·물리 보존, 웹 실렌더·타입 검사 통과
 
 ## REVIEW REQUESTS
 - 요청자: Claude / 대상: Codex / 검증 포인트: 세로형 큰 화면의 스테이지 하단 빈 공간 / 처리: `MAX_STAGE_SCALE`을 3→4.5로 완화하고 4개 대표 화면비에서 검증 / 상태: RESOLVED
@@ -91,19 +91,20 @@
 - [S2] 보스 아트 부재 / 재현: `BossView.tsx` 확인 / 영향: 출시 품질 미달 / 담당: Codex / 상태: RESOLVED (4페이즈 Rootwarden 아트 적용, Claude가 기술 검수: `npx tsc --noEmit` 통과 + Playwright로 웹 빌드 로드 시 콘솔 에러/리소스 실패 0건 확인. 단, 아래 신규 이슈 참고)
 - [S2] 신규 보스 스프라이트 4장 파일 용량 과다 / 담당: Codex / 상태: RESOLVED (총 약 9.1MB→2.4MB, 73% 감소)
 - [S2] 세로형 큰 화면(태블릿/대형 폰 세로)에서 게임 스테이지 아래 빈 공간 발생 / 원인: `MAX_STAGE_SCALE=3` 상한 / 담당: Codex / 상태: RESOLVED (`MAX_STAGE_SCALE=4.5`로 완화, 810×1080/390×844/844×390/1440×900 4종 화면비 재검증 완료)
+- [S2] 세계 아트·기존 일반 몬스터가 새 Sprout의 밝은 프리미엄 화풍과 불일치 / 재현: 첫 스테이지 실렌더에서 황량한 기계 배경 및 구형 몬스터와 신형 주인공 비교 / 영향: 전체 화면이 하나의 상용 게임처럼 읽히지 않음 / 담당: Codex(아트·프레젠테이션), Claude(필요 시 상태 훅 지원) / 상태: OPEN
 
 ## DECISIONS
 - 2026-08-27: Claude Code × Codex 협업 체계 도입, 역할 고정(Codex=디자인/UI, Claude=기능/로직) / 근거: 사용자 지시 / 승인자: 사용자
 - 2026-08-27: 보스전 수치(HP5/페이즈 지속시간) 변경 불필요로 결론 / 근거: 반응형 봇 시뮬레이션에서 무피해 클리어 확인(개발로그.md (19)) / 승인자: Claude 자체 검증, 사용자 확인 대기 없음(수치 변경이 아니므로)
 
 ## NEXT
-1. CLAUDE.md 19장 Phase 2 — 시작 화면·게임오버·승리 오버레이 디자인 리빌드(Codex)
-2. 보스전 사람 실플레이 피드백 및 실기기 Expo Go 검증
-3. 캐릭터·몬스터 프레임 애니메이션 계획
+1. 비주얼 리부트 Vertical Slice 2 — 첫 배경·플랫폼 및 Cogmite/Spore Sprite를 새 밝은 숲 화풍으로 교체(Codex)
+2. 새 몬스터의 상태별 프레임 애니메이션 프레젠테이션 설계(Codex, `src/game/*` 변경 필요 시 REVIEW REQUEST)
+3. 보스전 사람 실플레이 피드백 및 실기기 Expo Go 검증
 
 ## HANDOFF
-- 마지막 완료 지점: HUD와 모바일 컨트롤을 공통 어두운 금속 계기판 디자인으로 리빌드. HUD에 GEAR/LIFE/OVERDRIVE 위계를 추가하고 좌우 이동을 단일 MOVEMENT 모듈로 통합, HOOK/DASH/JUMP 역할 레이블 추가. 멀티터치·입력 콜백은 변경하지 않음.
-- 검증: `npx tsc --noEmit` 통과. Expo 웹 390×844 세로·844×390 가로 렌더링에서 잘림·겹침 없음, 콘솔 오류 0.
-- 남은 일: Phase 2 시작 화면·게임오버·승리 오버레이, 보스전 사람 실플레이, 실기기 Expo Go 검증.
-- 다음 담당자가 먼저 볼 파일: `src/screens/StartScreen.tsx`, `src/screens/GameScreen.tsx`의 overlay Presentation Layer.
+- 마지막 완료 지점: 새 Sprout(식물+태엽 모험가) 8프레임을 `assets/sprites/sprout_v2/`에 추가. `PlayerView.tsx`가 게임 상태를 읽어 대기 2프레임, 주행 4프레임, 점프·낙하 전용 프레임으로 전환한다. 물리·입력·충돌 수치는 변경하지 않았다. 시작 및 결과 화면도 공통 패널 스타일로 정리했다.
+- 검증: `npx tsc --noEmit` 통과. Expo 웹 시작 화면과 실제 플레이 화면에서 새 Sprout 렌더링 확인, 브라우저 콘솔 error 0(기존 React Native web deprecation warning만 존재).
+- 남은 일: 첫 스테이지 배경·플랫폼·일반 몬스터를 같은 밝은 숲 화풍으로 교체하고, 몬스터 프레임 애니메이션을 추가한다. 보스전 사람 실플레이·실기기 Expo Go 검증도 남아 있다.
+- 다음 담당자가 먼저 볼 파일: `src/components/PlayerView.tsx`, `assets/sprites/sprout_v2/`, `src/components/Background.tsx`, `src/components/EnemyView.tsx`.
 - 실행 및 검증 명령: `npm run web`, `npx tsc --noEmit`.

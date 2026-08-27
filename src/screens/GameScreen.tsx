@@ -220,15 +220,40 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <View style={[styles.rivetCorner, styles.rivetTR]} />
             <View style={[styles.rivetCorner, styles.rivetBL]} />
             <View style={[styles.rivetCorner, styles.rivetBR]} />
-            <Text style={styles.overlayTitle}>{gameState.phase === 'win' ? '🎉 클리어!' : '💀 게임 오버'}</Text>
-            <View style={styles.overlayScoreRow}>
-              <View style={styles.coinDot} />
-              <Text style={styles.overlayScore}>{gameState.score}점</Text>
+            <Text style={styles.overlayEyebrow}>
+              {gameState.phase === 'win' ? 'EXPEDITION COMPLETE' : 'EXPEDITION INTERRUPTED'}
+            </Text>
+            <View
+              style={[
+                styles.statusSeal,
+                { borderColor: gameState.phase === 'win' ? palette.moss : palette.uiDanger },
+              ]}
+            >
+              <View
+                style={[
+                  styles.statusSealCore,
+                  { backgroundColor: gameState.phase === 'win' ? palette.moss : palette.uiDanger },
+                ]}
+              />
+            </View>
+            <Text style={styles.overlayTitle}>
+              {gameState.phase === 'win' ? '기어숲의 심장이 다시 뜁니다' : '태엽이 멈췄습니다'}
+            </Text>
+            <Text style={styles.overlaySubtitle}>
+              {gameState.phase === 'win' ? '보호자를 깨우고 숲의 균형을 되찾았습니다.' : '장비를 정비하고 마지막 체크포인트에서 다시 도전하세요.'}
+            </Text>
+            <View style={styles.overlayScorePanel}>
+              <Text style={styles.overlayScoreLabel}>COLLECTED GEAR</Text>
+              <View style={styles.overlayScoreRow}>
+                <View style={styles.coinDot}><View style={styles.coinDotCore} /></View>
+                <Text style={styles.overlayScore}>{gameState.score}</Text>
+              </View>
             </View>
             <View style={styles.overlayButtons}>
               <Pressable onPress={restart}>
                 <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.overlayButton}>
-                  <Text style={styles.overlayButtonText}>다시 시작</Text>
+                  <Text style={styles.overlayButtonKicker}>RETRY EXPEDITION</Text>
+                  <Text style={styles.overlayButtonText}>다시 도전</Text>
                 </LinearGradient>
               </Pressable>
               <Pressable onPress={onExit}>
@@ -236,6 +261,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
                   colors={[palette.uiSecondary, palette.uiSecondaryDark]}
                   style={styles.overlayButton}
                 >
+                  <Text style={styles.overlayButtonKickerLight}>RETURN TO WORKSHOP</Text>
                   <Text style={styles.overlayButtonTextLight}>메인 메뉴</Text>
                 </LinearGradient>
               </Pressable>
@@ -284,13 +310,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: palette.cardBg,
-    borderRadius: 24,
-    paddingVertical: 28,
-    paddingHorizontal: 36,
+    width: '88%',
+    maxWidth: 460,
+    backgroundColor: palette.uiPlateDeep,
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 28,
     alignItems: 'center',
-    gap: 14,
-    borderWidth: 3,
+    gap: 10,
+    borderWidth: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
@@ -313,9 +341,56 @@ const styles = StyleSheet.create({
   rivetBL: { bottom: 10, left: 10 },
   rivetBR: { bottom: 10, right: 10 },
   overlayTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: palette.textDark,
+    fontSize: 24,
+    fontWeight: '900',
+    color: palette.coinShine,
+    textAlign: 'center',
+  },
+  overlayEyebrow: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    color: palette.uiTextMuted,
+  },
+  overlaySubtitle: {
+    maxWidth: 340,
+    fontSize: 12,
+    lineHeight: 18,
+    color: palette.uiTextMuted,
+    textAlign: 'center',
+  },
+  statusSeal: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.uiPlate,
+  },
+  statusSealCore: {
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: palette.coinShine,
+  },
+  overlayScorePanel: {
+    minWidth: 150,
+    marginTop: 2,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: palette.uiPlateEdge,
+    backgroundColor: palette.uiPlate,
+    alignItems: 'center',
+  },
+  overlayScoreLabel: {
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: palette.uiTextMuted,
   },
   overlayScoreRow: {
     flexDirection: 'row',
@@ -329,11 +404,19 @@ const styles = StyleSheet.create({
     backgroundColor: palette.coinGold,
     borderWidth: 1.5,
     borderColor: palette.coinGoldDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coinDotCore: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.coinShine,
   },
   overlayScore: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: palette.textDark,
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#fff',
   },
   overlayButtons: {
     flexDirection: 'row',
@@ -341,9 +424,25 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   overlayButton: {
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 22,
+    minWidth: 132,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: palette.uiPlateHighlight,
+    alignItems: 'center',
+  },
+  overlayButtonKicker: {
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    color: '#5a3d00',
+  },
+  overlayButtonKickerLight: {
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    color: palette.uiTextMuted,
   },
   overlayButtonText: {
     fontSize: 15,

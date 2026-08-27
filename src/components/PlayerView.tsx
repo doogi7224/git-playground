@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, StyleSheet, View } from 'react-native';
+import { Animated, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { MOVE_SPEED } from '../game/constants';
 import { Player } from '../game/types';
 
@@ -10,6 +10,28 @@ import { Player } from '../game/types';
 const VISUAL_SIZE = 58;
 const LANDING_IMPACT_VY = 400; // px/s: falling faster than this on landing triggers a squash pulse
 const DASH_TRAIL_LENGTH = 3; // afterimage copies kept while dashing
+const IDLE_FRAME_MS = 520;
+const RUN_FRAME_MS = 90;
+
+const SPROUT_FRAMES = {
+  idle: [
+    require('../../assets/sprites/sprout_v2/sprout_idle_0.png'),
+    require('../../assets/sprites/sprout_v2/sprout_idle_1.png'),
+  ],
+  run: [
+    require('../../assets/sprites/sprout_v2/sprout_run_0.png'),
+    require('../../assets/sprites/sprout_v2/sprout_run_1.png'),
+    require('../../assets/sprites/sprout_v2/sprout_run_2.png'),
+    require('../../assets/sprites/sprout_v2/sprout_run_3.png'),
+  ],
+  jump: require('../../assets/sprites/sprout_v2/sprout_jump.png'),
+  fall: require('../../assets/sprites/sprout_v2/sprout_fall.png'),
+} satisfies {
+  idle: ImageSourcePropType[];
+  run: ImageSourcePropType[];
+  jump: ImageSourcePropType;
+  fall: ImageSourcePropType;
+};
 
 interface TrailPoint {
   left: number;
@@ -72,6 +94,21 @@ export default function PlayerView({ player }: { player: Player }) {
   const isRunning = player.onGround && Math.abs(player.vx) > 10;
   const bobY = isRunning ? Math.sin(player.x * 0.28) * 2.4 : Math.sin(Date.now() / 480) * 1.1;
 
+  // The game loop already re-renders this presentation component every tick,
+  // so frame selection can stay local and consume no gameplay state. Running
+  // advances by distance to keep feet visually tied to movement speed; idle
+  // advances gently by time. Airborne poses follow the existing vertical
+  // velocity and never alter physics.
+  let spriteSource: ImageSourcePropType;
+  if (!player.onGround) {
+    spriteSource = player.vy < 30 ? SPROUT_FRAMES.jump : SPROUT_FRAMES.fall;
+  } else if (isRunning || isDashing) {
+    const runIndex = Math.floor(Math.abs(player.x) / (MOVE_SPEED * (RUN_FRAME_MS / 1000))) % SPROUT_FRAMES.run.length;
+    spriteSource = SPROUT_FRAMES.run[runIndex];
+  } else {
+    spriteSource = SPROUT_FRAMES.idle[Math.floor(Date.now() / IDLE_FRAME_MS) % SPROUT_FRAMES.idle.length];
+  }
+
   // Lean into the run direction; magnitude scales with speed, sign comes
   // from `facing` so it reads correctly after the horizontal flip below.
   const leanDeg = isRunning ? Math.min(1, Math.abs(player.vx) / MOVE_SPEED) * 7 : 0;
@@ -95,7 +132,7 @@ export default function PlayerView({ player }: { player: Player }) {
         trailRef.current.map((point, i) => (
           <Image
             key={i}
-            source={require('../../assets/sprites/sprout.png')}
+            source={spriteSource}
             resizeMode="contain"
             style={[
               styles.sprite,
@@ -130,7 +167,7 @@ export default function PlayerView({ player }: { player: Player }) {
       )}
 
       <Animated.Image
-        source={require('../../assets/sprites/sprout.png')}
+        source={spriteSource}
         resizeMode="contain"
         style={[
           styles.sprite,
