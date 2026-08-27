@@ -77,10 +77,10 @@
 - 완료 조건: 충족 — 2개 로컬 게이트, 6초 제한, 안전한 실패 경로(모든 보상 발판이 solid ground 위), pure-logic 테스트 7종 + tsc + Playwright 통과
 
 ## CODEX ACTIVE
-- 작업: 진행 — 게임 기획 V2 및 Route Gate 시각 언어 설계. Claude의 Foundation 구현 후 플레이 경험·UI·아트 검수 예정.
-- 소유 파일: `GAME_DIRECTION_V2.md`, `src/components/*` Presentation Layer, `assets/*`, `src/theme.ts`
+- 작업: 완료 — Route Gate 시각 언어 및 보상 발판 프레젠테이션 리빌드.
+- 소유 파일: 없음
 - 시작 시각/세션: 2026-08-27
-- 완료 조건: 새 배경의 기계/자연 전환, Cogmite 8프레임 자산·순찰/돌진 프레임 전환, 실제 웹 렌더링·타입 검사 완료.
+- 완료 조건: Vine/Gear Gate 구분, 숫자 없는 잔여시간, 열린 보상 발판 강조, 타입 검사·웹 렌더링 완료.
 
 ## REVIEW REQUESTS
 - 요청자: Claude / 대상: Codex / 검증 포인트: 세로형 큰 화면의 스테이지 하단 빈 공간 / 처리: `MAX_STAGE_SCALE`을 3→4.5로 완화하고 4개 대표 화면비에서 검증 / 상태: RESOLVED
@@ -99,8 +99,8 @@
 - 2026-08-27: 사용자가 기존 전역 Bloom Shift의 쓰임·재미가 불명확하다고 판단. Codex가 게임 기획을 주도하고 Claude는 시스템 구현을 주로 담당하도록 역할을 확대 전환. 전역 상태 전환은 `Momentum Route`의 선택형 로컬 게이트로 단계 교체한다 / 승인자: 사용자
 
 ## NEXT
-1. Codex: Route Gate 실제 시각 언어(덩굴 문/황동 아치/방향 화살표/숫자 없는 6초 카운트다운) + 첫 90초 구간 UX 검수/조정 — 현재는 `RouteGateView.tsx`의 색깔 사각형 placeholder뿐.
-2. 사람 실플레이로 Vine/Gear Route가 실제로 재밌는지 확인 (자동 검증은 "메커니즘이 의도대로 작동하는가"까지만 확인 완료).
+1. Codex: 실제 사람이 EASY/FAST 선택과 보상 동선을 이해하는지 플레이 검수.
+2. Claude: Codex의 플레이 검수 피드백이 들어올 때까지 Route Gate 로직 변경 대기.
 3. Route Gate Vertical Slice가 재미있다는 확인 뒤에만 Spore Sprite/플랫폼/Area 2~3 확장(기획 문서 명시 순서).
 
 ## HANDOFF
@@ -110,3 +110,4 @@
 - 남은 일: Codex의 시각 언어 작업, 사람 실플레이 재미 검증, 검증 후 Area 2~3 확장.
 - 다음 담당자가 먼저 볼 파일: `GAME_DIRECTION_V2.md`, `src/components/RouteGateView.tsx`, `src/game/level.ts`(x=85~220 구간), `개발로그.md` 2026-08-27 (23).
 - 실행 및 검증 명령: `npm run web`, `npx tsc --noEmit`.
+- Codex 시각 구현: `RouteGateView.tsx`를 Vine(덩굴 문·잎·연두 코어·EASY)과 Gear(황동 아치·기어·전진 셰브런·FAST)로 교체. 활성 중에는 숫자 대신 6칸 빛 막대로 남은 시간을 보여 준다. `PlatformView.tsx`는 Route 보상 발판에 종류별 상단 발광·진행 화살표를 추가했다.

@@ -40,6 +40,7 @@ function PlankTiles({ width, height, source }: { width: number; height: number; 
 
 export default function PlatformView({ platform }: { platform: Platform }) {
   const isGround = platform.id.startsWith('ground');
+  const routeKind = platform.activeGate?.startsWith('vine') ? 'vine' : platform.activeGate?.startsWith('gear') ? 'gear' : null;
 
   if (isGround) {
     return (
@@ -62,6 +63,18 @@ export default function PlatformView({ platform }: { platform: Platform }) {
     return (
       <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
         <PlankTiles width={platform.width} height={platform.height} source={PLANK_WILD_SOURCE} />
+        <View style={styles.plankShadow} />
+      </View>
+    );
+  }
+
+  if (routeKind) {
+    const isVineRoute = routeKind === 'vine';
+    return (
+      <View style={[styles.base, { left: platform.x, top: platform.y, width: platform.width, height: platform.height }]}>
+        <PlankTiles width={platform.width} height={platform.height} source={isVineRoute ? PLANK_WILD_SOURCE : PLANK_MECH_SOURCE} />
+        <View style={[styles.routeGlow, { backgroundColor: isVineRoute ? 'rgba(150, 235, 118, 0.48)' : 'rgba(255, 204, 90, 0.52)' }]} />
+        <View style={styles.routeArrow} />
         <View style={styles.plankShadow} />
       </View>
     );
@@ -115,5 +128,24 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 8,
     backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  routeGlow: {
+    position: 'absolute',
+    top: -3,
+    left: 2,
+    right: 2,
+    height: 5,
+    borderRadius: 4,
+  },
+  routeArrow: {
+    position: 'absolute',
+    right: 5,
+    top: 3,
+    width: 5,
+    height: 5,
+    borderTopWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.85)',
+    transform: [{ rotate: '45deg' }],
   },
 });
