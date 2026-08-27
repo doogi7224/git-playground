@@ -36,10 +36,10 @@ import { palette } from '../theme';
 const HUD_RESERVED_TOP = 96;
 const CONTROLS_RESERVED_BOTTOM = 130;
 // Clamp how far the fixed VIEWPORT_HEIGHT logical space is scaled up/down so
-// very short (landscape phone) or very tall (desktop) windows don't zoom the
-// world to an absurd degree.
+// very short landscape windows don't over-shrink the world while tall phone
+// and tablet layouts can still fill the full band between HUD and controls.
 const MIN_STAGE_SCALE = 0.6;
-const MAX_STAGE_SCALE = 3;
+const MAX_STAGE_SCALE = 4.5;
 
 export default function GameScreen({ onExit }: { onExit: () => void }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
