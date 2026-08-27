@@ -36,9 +36,14 @@ export default function PressurePistonView({ piston, bloomState }: { piston: Pre
   return (
     <View style={[styles.wrap, { left, top, width: visualWidth, height: visualHeight }]}>
       {!isWild && (
-        <Animated.View
-          style={[styles.jet, { transform: [{ scaleY: jetScaleY }], opacity: jet, backgroundColor: charging ? palette.uiDanger : '#eef2ea' }]}
-        />
+        <Animated.View style={[styles.jetWrap, { transform: [{ scaleY: jetScaleY }], opacity: jet }]}>
+          {/* A soft stack of puffs reads as steam; the old single flat
+              rectangle looked like a hard-edged sliver next to the new
+              painterly pipe art (CLAUDE.md 19 — 절차적 요소가 새 그림과 확 튀는 문제). */}
+          <View style={[styles.jetPuff, styles.jetPuffBottom, { backgroundColor: charging ? palette.uiDanger : '#f4f7f0' }]} />
+          <View style={[styles.jetPuff, styles.jetPuffMid, { backgroundColor: charging ? palette.uiDanger : '#f4f7f0' }]} />
+          <View style={[styles.jetPuff, styles.jetPuffTop, { backgroundColor: charging ? palette.uiDanger : '#f4f7f0' }]} />
+        </Animated.View>
       )}
       <Image source={require('../../assets/sprites/pressure_piston.png')} resizeMode="contain" style={styles.sprite} />
       {isWild && <View pointerEvents="none" style={styles.wildTint} />}
@@ -80,13 +85,35 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(60,122,86,0.4)',
   },
-  jet: {
+  jetWrap: {
     position: 'absolute',
-    top: -30,
+    top: -34,
     alignSelf: 'center',
-    width: 8,
-    height: 34,
-    borderRadius: 4,
+    width: 20,
+    height: 38,
+    alignItems: 'center',
+  },
+  jetPuff: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  jetPuffBottom: {
+    bottom: 0,
+    width: 12,
+    height: 14,
+    opacity: 0.95,
+  },
+  jetPuffMid: {
+    bottom: 12,
+    width: 16,
+    height: 16,
+    opacity: 0.7,
+  },
+  jetPuffTop: {
+    bottom: 24,
+    width: 20,
+    height: 18,
+    opacity: 0.45,
   },
   bloomLeaf: {
     position: 'absolute',
