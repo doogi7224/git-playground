@@ -21,7 +21,13 @@ export default function TurretView({ turret }: { turret: Turret }) {
   return (
     <View style={[styles.wrap, { left: turret.x + turret.width / 2 - size / 2, top: turret.y + turret.height - size, width: size, height: size }]}>
       {charging && <View pointerEvents="none" style={styles.chargeHalo} />}
-      <Animated.Image source={require('../../assets/sprites/root_turret_v1/root_turret_idle.png')} resizeMode="contain" style={[styles.sprite, charging && { transform: [{ translateX: recoil }, { scale }] }]} />
+      <Animated.Image
+        source={charging
+          ? require('../../assets/sprites/root_turret_v4_fire.png')
+          : require('../../assets/sprites/root_turret_v1/root_turret_idle.png')}
+        resizeMode="contain"
+        style={[styles.sprite, charging && { transform: [{ translateX: recoil }, { scale }] }]}
+      />
     </View>
   );
 }

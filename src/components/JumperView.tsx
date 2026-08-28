@@ -23,7 +23,13 @@ export default function JumperView({ jumper }: { jumper: Jumper }) {
   return (
     <Animated.View style={[styles.wrap, { left: jumper.x + jumper.width / 2 - size / 2, top: jumper.y + jumper.height - size, width: size, height: size, transform: [{ translateY: bob }, { scaleX }, { scaleY }] }]}>
       {windup && <View pointerEvents="none" style={styles.warningRing} />}
-      <Image source={require('../../assets/sprites/acorn_hopper_v1/acorn_hopper_idle.png')} resizeMode="contain" style={styles.sprite} />
+      <Image
+        source={airborne
+          ? require('../../assets/sprites/acorn_hopper_v4_jump.png')
+          : require('../../assets/sprites/acorn_hopper_v1/acorn_hopper_idle.png')}
+        resizeMode="contain"
+        style={styles.sprite}
+      />
     </Animated.View>
   );
 }

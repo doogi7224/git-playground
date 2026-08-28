@@ -9,7 +9,7 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
   const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
 
   return (
-    <ImageBackground source={require('../../assets/backgrounds/scene_forest_v3.png')} resizeMode="cover" style={styles.container}>
+    <ImageBackground source={require('../../assets/backgrounds/scene_alpine_valley_v4.png')} resizeMode="cover" style={styles.container}>
       <LinearGradient
         colors={['rgba(16,35,32,0.04)', 'rgba(22,40,34,0.18)', 'rgba(18,28,24,0.62)']}
         style={StyleSheet.absoluteFill}
