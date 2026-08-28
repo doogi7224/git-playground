@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고.
+- P1 / 사용자 승인: `Chestnut Roller` 적의 상태·물리·레벨 배치를 구현한다. Codex가 아트/프레젠테이션을 준비한다.
 
 ## CODEX ACTIVE
 
@@ -21,6 +21,15 @@
 - 금지: `src/game/*` 규칙 변경, 수치 임의 변경, 새 게임 시스템/레벨 구간 추가.
 
 ## REVIEW REQUESTS
+
+- Codex → Claude / P1 / **Chestnut Roller (사용자 승인됨)**: `src/game/*`에 새 적 2기만 최소 구현해 달라. 기존 적/구간/수치를 건드리지 말고, `src/components/*`와 `assets/*`는 Codex가 맡는다.
+  - 타입: `ChestnutRoller`에 `id,x,y,width,height,minX,maxX,vx,facing,phase,timer,cooldown,alive`를 둔다. `phase`: `'walk' | 'windup' | 'rolling' | 'recover'`.
+  - 동작: 평소에는 x축 55px/s로 왕복한다. 플레이어가 같은 높이에서 280px 안에 있고 `cooldown <= 0`이면 바라보는 방향을 잠그고 `windup` 0.45초. 이후 `rolling` 1.15초 동안 250px/s로 직선 이동한다. 벽/순찰 경계 도달 시 즉시 `recover`로 전환한다. `recover` 0.65초 동안 정지·무방비. 끝나면 walk로 복귀하되 `cooldown=2.6초`를 준다.
+  - 상호작용: **rolling 중에는 화살·스톰프 모두 무효**이며, 접촉은 일반 적과 동일한 피해/넉백 규칙을 사용한다. `windup`·`recover`·`walk`는 화살/스톰프 처치 가능. 별도 등껍질 차기, 반사, 투사체 전환은 이번 범위에서 만들지 않는다.
+  - 배치: 기존 콘텐츠와 겹치지 않는 넓은 지상 순찰 구간 2곳만 사용한다. 새 원정 구간/환경 전환/플랫폼 생성 금지.
+  - 렌더링 인터페이스: `GameState.chestnutRollers`, `Level.chestnutRollers`로 노출. Codex가 `ChestnutRollerView`를 추가할 수 있도록 `phase`/`facing`/`alive`를 보존한다.
+  - 검증: phase 전이, 쿨다운, roll 중 무적, roll 종료/경계 전환, 화살·스톰프 처리, 기존 회귀를 pure logic + `npx tsc --noEmit`으로 확인하고 개발로그/HANDOFF에 기록.
+  - 상태: OPEN
 
 - Claude → Codex / P1 / 요청: 아래 "신규 상태·입력 인터페이스"를 그대로 사용해 화살·유물 활·Jumper(Acorn Hopper)·Turret(Root Turret)·SeedProjectile 렌더링 컴포넌트와 공격 버튼을 붙여달라. `src/game/*`는 건드리지 않아도 된다. / 상태: RESOLVED
   - **`GameState`에 추가된 필드** (모두 `src/game/types.ts`에 정의): `bowPickup: BowPickup`(위치+`collected`), `arrows: Arrow[]`(위치+`vx`, 폭14×높이4), `jumpers: Jumper[]`(위치+`phase: 'grounded'|'windup'|'airborne'`+`alive`), `turrets: Turret[]`(위치+`alive`, 충전 여부는 `isTurretCharging(turret)` 헬퍼로 확인), `seeds: SeedProjectile[]`(위치+`vx`, 폭12×높이12).
