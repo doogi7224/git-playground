@@ -51,13 +51,14 @@
 
 - S2: 실제 모바일 터치 플레이에서 활 사격 간격과 Jumper/Turret 밀도 체감 확인 필요.
 - S3: 실제 모바일 터치의 활/Hook 조작 체감 검수가 남아 있다.
-- S3: Chestnut Roller 2기(roller1: x=2720-2880, roller2: x=6260-6760)는 아직 렌더링 컴포넌트가 없어 화면에 보이지 않는다 — 로직은 정상 동작 중, Codex의 `ChestnutRollerView` 연결 대기.
+- S3: 실제 모바일 터치에서 Chestnut Roller의 예고/무적 구간과 활 탄약 체감을 검수해야 한다.
 
 ## HANDOFF
 
 - 최근 완료(Claude, 이번 세션): Chestnut Roller 상태·물리·레벨 배치를 구현했다. `types.ts`에 `ChestnutRoller`/`ChestnutRollerPhase` 추가, `constants.ts`에 `CHESTNUT_ROLLER_*` 8개 상수(요청하신 수치 그대로), `level.ts`에 기존 지상 엔티티 전부를 스캔해 계산한 완전히 빈 두 구간(2720-2880, 6260-6760)에 `makeChestnutRollers()`로 배치, `physics.ts`에 `stepChestnutRollers`(walk→windup→rolling→recover→walk 사이클, 같은 높이+280px 감지, 경계 도달 시 조기 recover)와 화살/스톰프 무효화(rolling 중)+접촉 피해(항상) 해석 로직을 추가했다. `npx tsc --noEmit` 통과, 직접 작성한 pure-logic 시뮬레이션 45종 전부 PASS(배치 좌표 무충돌 확인 포함), 6분 레벨 실주행 스트레스 테스트에서 NaN/패트롤 경계 이탈/자원 누수 없음 확인, Expo 웹 콘솔 에러 0. 상세 내용은 REVIEW REQUESTS의 RESOLVED 항목과 개발로그 (47) 참고.
 - 이전 Codex 완료: `BowPickupView`/`ArrowView`/`JumperView`/`TurretView`/`SeedProjectileView`를 추가하고 `GameScreen.tsx`에 마운트했다. `Controls.tsx`에는 활 획득 전 잠김, 획득 후 활성화되는 `ARROW` 버튼을 연결했다. `src/game/*`는 변경하지 않았다.
 - 이전 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체, 기본 적을 Cogmite→Brambleling으로 교체(2프레임 보행), Jumper 공중 스트레치·Turret 충전 반동 추가.
+- 최근 Codex 완료: `ChestnutRollerView`를 추가해 walk/windup/rolling/recover 상태를 아트에 연결했다. 보행에는 갑옷 수호자, rolling에는 팔다리 없는 밤 껍질 공을 사용하고, 회전·무적 고리·낙엽 먼지·예고 고리로 상태를 분명하게 보인다.
 - 다음 Codex 작업: `ChestnutRollerView`를 위 "렌더링 인터페이스"대로 붙이고(걷기/구르기 스프라이트는 이미 준비됨), 회전·먼지·회복 모션을 연결한다. 이후 여유가 되면 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도도 플레이 검수한다.
 - 다음 담당자가 먼저 볼 파일: (Codex) `src/game/types.ts`의 `ChestnutRoller` 인터페이스, `assets/sprites/chestnut_roller_v1/`, 기존 `JumperView.tsx`/`TurretView.tsx`(가장 가까운 참고 패턴). (Claude 다음 세션) 사용자의 새 지시나 Codex의 REVIEW REQUEST가 생기면 그때 `src/game/*`를 다시 연다.
 

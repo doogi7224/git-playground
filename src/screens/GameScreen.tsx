@@ -7,6 +7,7 @@ import BioCoilView from '../components/BioCoilView';
 import BossView from '../components/BossView';
 import BowPickupView from '../components/BowPickupView';
 import CheckpointView from '../components/CheckpointView';
+import ChestnutRollerView from '../components/ChestnutRollerView';
 import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
@@ -139,6 +140,9 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             ))}
             {gameState.enemies.map((e) => (
               <EnemyView key={e.id} enemy={e} />
+            ))}
+            {gameState.chestnutRollers.map((r) => (
+              <ChestnutRollerView key={r.id} roller={r} />
             ))}
             {gameState.bioCoils.map((c) => (
               <BioCoilView key={c.id} coil={c} />
