@@ -11,13 +11,13 @@ const WALK_FRAME_DISTANCE = 18;
 const BRAMBLING_FRAMES = {
   idle: [
     require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
-    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_1.png'),
   ],
   walk: [
     require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_1.png'),
     require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
-    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
-    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_1.png'),
   ],
   alert: require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
 } satisfies {
