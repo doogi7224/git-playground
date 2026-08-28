@@ -219,6 +219,33 @@ export interface ChestnutRoller extends Rect {
   alive: boolean;
 }
 
+export type TreasureCacheKind = 'rootCache' | 'relicPod';
+export type TreasureReward = 'sunseedBurst' | 'lifeBloom' | 'flowSpark';
+
+// An optional-route pickup with a fixed (never randomized, never empty)
+// reward, opened by a specific committed action rather than a touch: a
+// Root Cache only yields to a dash hit, a Relic Pod only to an arrow hit.
+// No inventory or loot table -- `reward` is baked into level data and
+// applied immediately the frame it opens.
+export interface TreasureCache extends Rect {
+  id: string;
+  kind: TreasureCacheKind;
+  reward: TreasureReward;
+  opened: boolean;
+}
+
+// A short-lived, presentation-only record of "this cache just opened and
+// produced X" -- same "physics writes it, never reads it back" shape as
+// EffectEvent, but carries which reward fired so a popup can show the
+// specific outcome instead of a generic burst.
+export interface LootReveal {
+  id: string;
+  reward: TreasureReward;
+  x: number;
+  y: number;
+  timeLeft: number;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -241,6 +268,7 @@ export interface Level {
   jumpers: Jumper[];
   turrets: Turret[];
   chestnutRollers: ChestnutRoller[];
+  treasureCaches: TreasureCache[];
 }
 
 export interface Player extends Rect {
@@ -307,6 +335,10 @@ export interface GameState {
   jumpers: Jumper[];
   turrets: Turret[];
   chestnutRollers: ChestnutRoller[];
+  treasureCaches: TreasureCache[];
+  lootReveals: LootReveal[];
+  /** Monotonic counter used only to mint unique LootReveal ids, same pattern as effectSeq. */
+  lootRevealSeq: number;
   seeds: SeedProjectile[];
   /** Monotonic counter used only to mint unique Arrow ids, same pattern as effectSeq. */
   arrowSeq: number;

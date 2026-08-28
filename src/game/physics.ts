@@ -42,6 +42,7 @@ import {
   FLAME_LOB_CHARGE,
   FLAME_LOB_CYCLE,
   FLAME_LOB_RANGE,
+  FLOW_SPARK_GAUGE,
   FRICTION,
   GRAVITY,
   INVULNERABLE_TIME,
@@ -49,6 +50,8 @@ import {
   JUMPER_INTERVAL,
   JUMPER_LAUNCH_VY,
   JUMPER_WINDUP_DURATION,
+  LIFE_BLOOM_LIVES,
+  LOOT_REVEAL_DURATION,
   MAX_FALL_SPEED,
   MOVE_SPEED,
   OVERDRIVE_COIN_MULT,
@@ -78,6 +81,7 @@ import {
   SPORE_RADIUS_WILD,
   SPORE_SLOW_DURATION,
   SPORE_SLOW_FACTOR,
+  STARTING_LIVES,
   STEAM_GUST_ACTIVE,
   STEAM_GUST_CHARGE,
   STEAM_GUST_CYCLE,
@@ -85,6 +89,7 @@ import {
   STEAM_GUST_RANGE,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
+  SUNSEED_BURST_SCORE,
   TURRET_CHARGE_DURATION,
   TURRET_FIRE_INTERVAL,
   TURRET_MAX_SEEDS,
@@ -104,6 +109,7 @@ import {
   InputState,
   Jumper,
   Level,
+  LootReveal,
   Platform,
   Player,
   PressurePiston,
@@ -111,6 +117,7 @@ import {
   SeedProjectile,
   SporeSprite,
   SteamBlower,
+  TreasureCache,
   Turret,
 } from './types';
 
@@ -172,6 +179,9 @@ export function createInitialState(level: Level): GameState {
     jumpers: level.jumpers.map((j) => ({ ...j })),
     turrets: level.turrets.map((t) => ({ ...t })),
     chestnutRollers: level.chestnutRollers.map((r) => ({ ...r })),
+    treasureCaches: level.treasureCaches.map((t) => ({ ...t })),
+    lootReveals: [],
+    lootRevealSeq: 0,
     seeds: [],
     arrowSeq: 0,
     portalActivated: false,
@@ -1117,6 +1127,45 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return { ...c, collected: true };
   });
 
+  // Treasure Cache: opened by a specific committed action, not a touch --
+  // Root Cache only to a dash hit (same "dashTimer > 0" check the Spore
+  // Sprite kill uses below), Relic Pod only to an arrow hit (findArrowHit,
+  // same as every other arrow target this frame). No inventory/loot table:
+  // `reward` is fixed in level data and applied the instant it opens.
+  let lootRevealSeq = prev.lootRevealSeq;
+  const newLootReveals: LootReveal[] = [];
+  const resolvedTreasureCaches: TreasureCache[] = prev.treasureCaches.map((cache) => {
+    if (cache.opened) return cache;
+
+    let opened = false;
+    if (cache.kind === 'rootCache') {
+      opened = player.dashTimer > 0 && rectIntersect(player, cache);
+    } else {
+      const hitArrow = findArrowHit(cache);
+      if (hitArrow) {
+        consumedArrowIds.add(hitArrow.id);
+        opened = true;
+      }
+    }
+    if (!opened) return cache;
+
+    if (cache.reward === 'sunseedBurst') {
+      score += SUNSEED_BURST_SCORE;
+    } else if (cache.reward === 'lifeBloom') {
+      lives = Math.min(STARTING_LIVES, lives + LIFE_BLOOM_LIVES);
+    } else {
+      gaugeGain += FLOW_SPARK_GAUGE;
+    }
+    pushEffect('pickup', cache.x + cache.width / 2, cache.y + cache.height / 2);
+    newLootReveals.push({ id: `loot-${lootRevealSeq}`, reward: cache.reward, x: cache.x + cache.width / 2, y: cache.y, timeLeft: LOOT_REVEAL_DURATION });
+    lootRevealSeq++;
+    return { ...cache, opened: true };
+  });
+  const lootReveals = [
+    ...prev.lootReveals.map((l) => ({ ...l, timeLeft: l.timeLeft - dt })).filter((l) => l.timeLeft > 0),
+    ...newLootReveals,
+  ];
+
   const resolvedSporeSprites = stepSporeSprites(prev.sporeSprites, dt).map((s) => {
     if (!s.alive) return s;
     // Only a dash's invincibility frames let the player punch through it —
@@ -1217,6 +1266,9 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     jumpers: resolvedJumpers,
     turrets: resolvedTurrets,
     chestnutRollers: resolvedChestnutRollers,
+    treasureCaches: resolvedTreasureCaches,
+    lootReveals,
+    lootRevealSeq,
     seeds: resolvedSeeds,
     arrowSeq,
     portalActivated,

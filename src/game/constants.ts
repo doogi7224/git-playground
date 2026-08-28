@@ -198,3 +198,14 @@ export const CHESTNUT_ROLLER_ROLL_SPEED = 250; // px/s while rolling (invincible
 export const CHESTNUT_ROLLER_ROLL_DURATION = 1.15; // max roll length; cut short by a patrol-bound hit
 export const CHESTNUT_ROLLER_RECOVER_DURATION = 0.65; // defenseless pause after a roll ends
 export const CHESTNUT_ROLLER_COOLDOWN = 2.6; // seconds after recovering before it can roll again
+
+// Treasure Cache: two fixed-reward pickups on optional side routes. Root
+// Cache opens only to a dash hit, Relic Pod only to an arrow hit -- no
+// inventory, no random loot table, no empty reward. Each instance's kind
+// and reward are baked into level.ts.
+export const TREASURE_CACHE_WIDTH = 28;
+export const TREASURE_CACHE_HEIGHT = 28;
+export const SUNSEED_BURST_SCORE = 8;
+export const LIFE_BLOOM_LIVES = 1; // capped at STARTING_LIVES on pickup
+export const FLOW_SPARK_GAUGE = 30; // added to the Overdrive gauge, clamped like any other gaugeGain source
+export const LOOT_REVEAL_DURATION = 1; // seconds a LootReveal stays around for a reward popup

@@ -26,6 +26,8 @@ import {
   STEAMBLOWER_HEIGHT,
   STEAMBLOWER_HP,
   STEAMBLOWER_WIDTH,
+  TREASURE_CACHE_HEIGHT,
+  TREASURE_CACHE_WIDTH,
   TURRET_HEIGHT,
   TURRET_WIDTH,
   VIEWPORT_HEIGHT,
@@ -47,6 +49,9 @@ import {
   RootPoint,
   SporeSprite,
   SteamBlower,
+  TreasureCache,
+  TreasureCacheKind,
+  TreasureReward,
   Turret,
 } from './types';
 
@@ -296,6 +301,35 @@ function makeChestnutRollers(): ChestnutRoller[] {
   }));
 }
 
+// Treasure Cache: the 5 existing "bonus" platforms (see `bonusPlatforms`
+// above) are already the level's optional, backtrack-worthy high routes --
+// per (35)'s coin-placement notes they're skill rewards that never block the
+// required path, exactly what the design brief asks for. Reusing them means
+// no new coordinates to verify for overlap. 3 Root Cache (dash-only) then 2
+// Relic Pod (arrow-only, both well after the Relic Bow pickup at x=250).
+function makeTreasureCaches(): TreasureCache[] {
+  const defs: [string, TreasureCacheKind, TreasureReward][] = [
+    ['cache-root1', 'rootCache', 'sunseedBurst'],
+    ['cache-root2', 'rootCache', 'flowSpark'],
+    ['cache-root3', 'rootCache', 'sunseedBurst'],
+    ['cache-pod1', 'relicPod', 'lifeBloom'],
+    ['cache-pod2', 'relicPod', 'sunseedBurst'],
+  ];
+  return defs.map(([id, kind, reward], i) => {
+    const platform = bonusPlatforms[i];
+    return {
+      id,
+      kind,
+      reward,
+      x: platform.x + (platform.width - TREASURE_CACHE_WIDTH) / 2,
+      y: platform.y - TREASURE_CACHE_HEIGHT,
+      width: TREASURE_CACHE_WIDTH,
+      height: TREASURE_CACHE_HEIGHT,
+      opened: false,
+    };
+  });
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -448,5 +482,6 @@ export function createLevel(): Level {
     jumpers: makeJumpers(),
     turrets: makeTurrets(),
     chestnutRollers: makeChestnutRollers(),
+    treasureCaches: makeTreasureCaches(),
   };
 }
