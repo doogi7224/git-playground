@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (대기) 사용자 지시: 지금은 새 기능 작업 없음. Codex가 탐험 보상 캐시 그래픽·개봉 파편·보상 팝업·활 탄약 HUD 연결을 마치면, 활 탄약(3발 시작/5발 상한) 소비·차단, 캐시 `arrowBundle` +1 보급, 상자 개봉(대시=Root Cache/화살=Relic Pod) 조건, Chestnut Roller 상태 전이·무적을 포함한 전체 회귀만 다시 수행한다. 그 전까지는 `src/game/*`를 열지 않는다.
+- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 16:9 비주얼 리빌드에 대한 플레이 감각·회귀 검증(사용자 지시)을 마쳤다 — `src/game/*`는 변경하지 않았고, 발견한 항목은 아래 REVIEW REQUESTS에 재현 방법과 함께 남겼다.
 
 ## CODEX ACTIVE
 
@@ -22,6 +22,13 @@
 - 금지: `src/game/*` 규칙 변경, 수치 임의 변경, 새 게임 시스템/레벨 구간 추가.
 
 ## REVIEW REQUESTS
+
+- Claude → 사용자 / P3 / **16:9 리빌드 플레이 감각 회귀 검증 — 발견 3건 (수정 안 함, 승인 대기)**: 사용자 지시(입력 씹힘/착지·전환 자연스러움/애니메이션 상태 검증)에 따라 `src/game/*` pure-logic 시뮬레이션 61종 + `npx tsc --noEmit` + `npx expo export --platform web` 실제 프로덕션 웹 번들 빌드(340 모듈, 정상 완료) + 6분 레벨 실주행 스트레스 테스트(이동/점프/대시/그래플 혼합 입력, 이상 없음) + Playwright로 번들 화면 콘솔 에러 0 확인을 마쳤다. 셋 다 **`src/game/*`의 기존(이번 세션 이전부터 있던) 동작이며, 이번 리빌드가 만든 회귀는 아니다** — 소유권상 나만 고칠 수 있는 부분이라 직접 고치지 않고 재현 방법과 제안만 남긴다.
+  1. **동시 입력(점프+대시) 소실**: 같은 프레임에 점프+대시를 함께 누르면 대시가 항상 이긴다(`dashTimer>0`인 동안 이동/점프 분기 전체를 건너뛰는 구조 때문). 그 프레임의 점프 입력은 시각 피드백 없이 사라지고, 대시 지속시간(`DASH_DURATION=0.18초`, 약 11프레임) 내내 눌리는 점프도 전부 같은 이유로 소실된다 — 재시도되지 않는다. 재현: `freshState` → 착지 상태에서 `{right:true, jumpPressed:true, dashPressed:true}`를 한 프레임 입력 → `vy`가 점프 값이 아니라 대시 값(`vx=DASH_SPEED, vy=0`)이 된다. 제안(적용 안 함): 대시 시작 프레임에 한해 점프 입력을 다음 프레임으로 한 프레임 이월(버퍼링)하거나, 대시 중에도 수직 점프만은 별도로 허용하는 방식 검토.
+  2. **그래플 스윙 중 대시 입력 소실**: 스윙 중(`grappledThisFrame`)에는 대시 블록 전체를 건너뛰므로 대시가 시작되지 않고, 그 프레임의 대시 입력도 다음 프레임엔 이미 리셋되어 사라진다. 해제 직후에는 정상적으로 다시 대시 가능(확인함). "스윙 중 이동 대체 메커니즘끼리는 배타적"이라는 기존 설계와 일관되지만, 참고용으로 함께 남긴다.
+  3. **[가장 중요] 그래플 해제 직후 발판 모서리에서 순간이동**: Root-Hook 스윙은 충돌 판정을 완전히 무시하므로, 해제 시점에 플레이어가 인접 발판의 y밴드에 살짝(관측치 0.5px) 겹친 채로 일반 물리로 복귀할 수 있다. 그 다음 프레임 수평 충돌 보정이 "이미 발판 안쪽 깊이 파묻힌 상태"를 고려하지 않고 이동 방향 부호만으로 발판 가장자리에 그대로 스냅하면서, 입력과 반대 방향으로 큰 폭(관측치 68.8px, 1프레임)의 순간이동이 발생한다. **재현(결정적, `src/game/physics.ts`의 `createLevel()`/`stepGame` 그대로 사용)**: `createInitialState(level)` → `player`를 `{x:776.8, y:80.5, vx:0, vy:30.12, grappling:false, onGround:false}`로 직접 설정(그래플 해제 직후 1프레임과 동일 상태) → `{right:true}` 입력으로 `stepGame` 한 번 호출 → `player.x`가 776.8→708(−68.8px, `touchingWall=-1`)로 스냅된다. 이론상 Root-Hook 지점과 발판이 인접한 모든 배치(예: `root1` x=780 / `p2` x=740-840,y=120-140)에서 재현 가능하나, 정확한 높이로 스윙하다 해제해야 트리거되므로 실전 발생 빈도는 낮다. 제안(적용 안 함, 검토용): (a) 그래플 해제 순간 즉시 겹침 보정 1회 수행, (b) 해제 위치가 발판과 겹치면 겹치지 않는 가장 가까운 위치로 살짝 밀어내기, (c) 스윙 중 발판 근접 감지로 겹치는 각도/반경 자체를 제한. 어느 방향으로 갈지는 게임 규칙 변경이라 사용자 판단이 필요해서 구현하지 않았다.
+  - 참고(문제 아님, 확인만 함): 이동 버튼을 떼면 즉시 힘이 사라지고 FRICTION(900px/s²)으로 약 0.18초 안에 정확히 0으로 멈춘다(순간정지 아님, 이미 확정된 튜닝값). 착지/벽 이탈/화살 발사 직후를 구분할 상태는 이미 충분하다 — `player.onGround`/`touchingWall`/`grappling`의 이전 프레임 대비 변화, `arrowCooldown`이 `ARROW_COOLDOWN`에 가깝게 튄 시점으로 전부 파생 가능함을 `PlayerView.tsx`에서 Codex가 이미 이런 방식(`prevOnGround`, `prevTouchingWall`, `arrowCooldown > ARROW_COOLDOWN-0.14`)으로 쓰고 있는 걸 확인했다 — 새 필드를 추가하지 않았다.
+  - 상태: OPEN (사용자 승인 대기, 급하지 않음 — P3)
 
 - Codex → Claude / P1 / **Chestnut Roller (사용자 승인됨)**: `src/game/*`에 새 적 2기만 최소 구현해 달라. / **상태: RESOLVED (Claude)** — 아래 "렌더링 인터페이스"를 그대로 사용해 `ChestnutRollerView`를 붙여달라.
   - **구현된 타입** (`src/game/types.ts`): `ChestnutRoller`에 `id,x,y,width,height,minX,maxX,vx,facing:1|-1,phase,timer,cooldown,alive`. `phase: 'walk' | 'windup' | 'rolling' | 'recover'`. `GameState.chestnutRollers`/`Level.chestnutRollers`로 노출(요청하신 그대로).
@@ -55,10 +62,9 @@
 ## OPEN ISSUES
 
 - S2: 실제 모바일 터치 플레이에서 활 사격 간격과 Jumper/Turret 밀도 체감 확인 필요.
-- S3: 실제 모바일 터치의 활/Hook 조작 체감 검수가 남아 있다.
-- S3: 탐험 보상 캐시 5개(기존 보너스 발판 5곳 위)는 아직 렌더링/개봉 연출이 없어 화면에 보이지 않는다 — 로직은 정상 동작 중, Codex의 프레젠테이션 연결 대기.
-- S3: 실제 모바일 터치에서 Chestnut Roller의 예고/무적 구간과 활 탄약(3발 시작/5발 상한) 체감을 검수해야 한다.
-- S3: 활 탄약 HUD(현재/최대 표시, 0발 시 공격 버튼 잠금)가 아직 없다 — 로직은 정상 동작 중, Codex의 HUD 연결 대기.
+- S3: 실제 모바일 터치의 활/Hook/Chestnut Roller/활 탄약(3발 시작/5발 상한) 조작·체감 검수가 남아 있다.
+- S3: 동시 입력(점프+대시) 및 그래플 스윙 중 대시 입력이 조용히 소실됨 — 위 REVIEW REQUESTS 참고, 사용자 승인 대기.
+- S2: 그래플 해제 직후 발판 모서리에서 큰 폭 순간이동 가능(결정적 재현 있음) — 위 REVIEW REQUESTS 참고, 사용자 승인 대기.
 
 ## HANDOFF
 
@@ -71,8 +77,9 @@
 - 이전 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체, 기본 적을 Cogmite→Brambleling으로 교체(2프레임 보행), Jumper 공중 스트레치·Turret 충전 반동 추가.
 - 최근 Codex 완료: `ChestnutRollerView`를 추가해 walk/windup/rolling/recover 상태를 아트에 연결했다. 보행에는 갑옷 수호자, rolling에는 팔다리 없는 밤 껍질 공을 사용하고, 회전·무적 고리·낙엽 먼지·예고 고리로 상태를 분명하게 보인다.
 - 최근 Codex 완료: `TreasureCacheView`/`LootRevealView`와 ARROWS HUD를 연결했다. 캐시는 닫힌 상태에서만 보이며, 개봉 결과는 짧은 보상 팝업으로 표시된다. ARROW 버튼은 활 미획득 또는 탄약 0에서 잠긴다.
-- 다음 Codex 작업: `TreasureCacheView`+`LootReveal` 팝업(root_cache/relic_pod 스프라이트는 이미 준비됨, 개봉 파편·보상 아이콘)과 활 탄약 HUD(`player.arrows`/`maxArrows` 표시, 0발 시 공격 버튼 잠금 — 위 REVIEW REQUESTS의 "HUD 인터페이스" 참고)를 위 인터페이스대로 붙인다. 이후 여유가 되면 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도도 플레이 검수한다.
-- 다음 담당자가 먼저 볼 파일: (Codex) `src/game/types.ts`의 `TreasureCache`/`LootReveal`/`Player.arrows`/`Player.maxArrows`, `assets/sprites/treasure_cache_v1/`, 기존 `JumperView.tsx`/`TurretView.tsx`(가장 가까운 참고 패턴). (Claude 다음 세션) 사용자의 새 지시나 Codex의 REVIEW REQUEST가 생기면 그때 `src/game/*`를 다시 연다.
+- 최근 Codex 완료(대형): 16:9 전체 화면 프레임으로 게임을 재구성했다(`GameScreen.tsx`에서 논리 스테이지를 `VIEWPORT_HEIGHT*1.65` 높이로 잡고 `stageScale`로 실제 프레임에 맞춰 스케일 — 게임플레이 좌표는 전혀 건드리지 않음), 새 배경 4종·주인공 2프레임 러닝·Skia 캔버스 도입 등 아트 세트를 전면 교체했다.
+- 최근 완료(Claude, 이번 세션): 사용자 지시에 따라 16:9 리빌드의 플레이 감각·회귀만 검증했다(`src/game/*` 코드 변경 없음). pure-logic 시뮬레이션 61종(입력 씹힘 — 이동 버튼 즉시반응/연속감속, 동시입력 점프+대시/그래플+점프/그래플+대시, 0발 공격 무결성, 시작→플레이→사망·부활→클리어·게임오버→재시작 전체 플로우; 이동·착지 자연스러움 — 발판 착지 좌표 정확성, 대시·벽슬라이드·그래플 전환에서 순간이동/속도폭주 없음(체크포인트 부활 제외), 낙하 관통 안전마진; 새 16:9 프레임의 고정 viewportWidth(≈645px)에서 `computeCameraX` 클램프) 전부 PASS + `npx tsc --noEmit` + **`npx expo export --platform web` 실제 프로덕션 웹 번들 빌드 성공**(340 모듈) + 6분 레벨 실주행 스트레스 테스트(이동/점프/대시/그래플 혼합 입력, 이상 없음) + Playwright로 번들 화면 콘솔 에러 0 확인. 검증 중 **발견 3건**(모두 `src/game/*`의 기존 동작, 이번 리빌드가 만든 회귀 아님, 직접 수정 안 함)을 위 REVIEW REQUESTS에 재현 방법과 함께 남겼다 — 동시 점프+대시 입력 소실, 그래플 스윙 중 대시 소실(둘 다 기존 설계와 일관되어 보임, 참고용), **그래플 해제 직후 발판 모서리 순간이동**(가장 중요, 결정적 재현 스크립트 포함). 애니메이션용 상태는 `PlayerView.tsx`에서 Codex가 이미 이전 프레임 대비 비교(`prevOnGround`, `prevTouchingWall`)와 `arrowCooldown` 임계값 방식으로 착지/벽이탈/발사 직후를 전부 파생해 쓰고 있어 새 필드를 추가하지 않았다. 상세는 개발로그 (53).
+- 다음 담당자가 먼저 볼 파일: (Codex) 계속 진행 중인 16:9 리빌드 — `src/theme.ts`, `assets/*`, `src/screens/GameScreen.tsx`. (Claude 다음 세션) 위 REVIEW REQUESTS의 3건 발견 사항은 사용자 승인 대기 중(P3, 급하지 않음) — 사용자가 방향을 정하면 그때 `src/game/*`를 연다. 그 전까지는 새 지시나 Codex의 REVIEW REQUEST가 생길 때만 연다.
 
 ## 사용자 부재 중 작업 종료 기준
 
