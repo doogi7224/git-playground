@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- P1 / 사용자 승인: `Chestnut Roller` 적의 상태·물리·레벨 배치를 구현한다. Codex가 아트/프레젠테이션을 준비한다.
+- P1 / 사용자 승인: `Chestnut Roller`와 탐험 보상 오브젝트의 상태·물리·레벨 배치를 구현한다. Codex가 아트/프레젠테이션을 준비한다.
 
 ## CODEX ACTIVE
 
@@ -29,6 +29,15 @@
   - 배치: 기존 콘텐츠와 겹치지 않는 넓은 지상 순찰 구간 2곳만 사용한다. 새 원정 구간/환경 전환/플랫폼 생성 금지.
   - 렌더링 인터페이스: `GameState.chestnutRollers`, `Level.chestnutRollers`로 노출. Codex가 `ChestnutRollerView`를 추가할 수 있도록 `phase`/`facing`/`alive`를 보존한다.
   - 검증: phase 전이, 쿨다운, roll 중 무적, roll 종료/경계 전환, 화살·스톰프 처리, 기존 회귀를 pure logic + `npx tsc --noEmit`으로 확인하고 개발로그/HANDOFF에 기록.
+  - 상태: OPEN
+
+- Codex → Claude / P1 / **탐험 보상 캐시 (사용자 승인됨)**: 마리오식 “무엇이 나올까” 기대를 숲 세계관으로 옮긴 2종의 보상 오브젝트를 최소 구현해 달라. `src/game/*`만 수정하고, 아트/열림/보상 프레젠테이션은 Codex가 맡는다.
+  - 타입: `TreasureCache`에 `id,x,y,width,height,kind,reward,opened`를 둔다. `kind`: `'rootCache' | 'relicPod'`, `reward`: `'sunseedBurst' | 'lifeBloom' | 'flowSpark'`.
+  - 상호작용: `rootCache`는 **대시 충돌**로만 열리고, `relicPod`는 **화살 충돌**로만 열린다. 일반 점프/접촉에는 열리지 않는다. 한 번 열리면 `opened=true`, 다시 열리지 않는다.
+  - 보상: `sunseedBurst`는 점수 +8, `lifeBloom`은 life +1(초기 최대 목숨을 넘지 않게 cap), `flowSpark`는 Overdrive 게이지 +30(최대치 clamp). 빈 보상·무작위 런타임 추첨·인벤토리는 만들지 않는다. 보상은 레벨 데이터에 고정하지만, 열기 전에는 UI에 노출하지 않는다.
+  - 프레젠테이션 인터페이스: `GameState.treasureCaches`와 수명이 짧은 `LootReveal`(`id,reward,x,y,timeLeft`) 배열을 노출해 달라. Codex가 오브젝트·파편·보상 팝업을 렌더링한다. 기존 `effects`를 확장해도 되지만, 다른 효과의 동작을 바꾸지 않는다.
+  - 배치: `rootCache` 3개와 `relicPod` 2개만, 기존 필수 동선을 막지 않는 선택 경로/높은 발판/되돌아볼 만한 지점에 둔다. 유물 활 획득 전 구간에는 `relicPod`를 두지 않는다. 새 환경 구간이나 보상 상점은 만들지 않는다.
+  - 검증: 대시/화살의 올바른 개봉 조건, 중복 개봉 방지, 3보상 수치+clamp, reveal 수명, 기존 이동/활/대시/보스 회귀, `npx tsc --noEmit`.
   - 상태: OPEN
 
 - Claude → Codex / P1 / 요청: 아래 "신규 상태·입력 인터페이스"를 그대로 사용해 화살·유물 활·Jumper(Acorn Hopper)·Turret(Root Turret)·SeedProjectile 렌더링 컴포넌트와 공격 버튼을 붙여달라. `src/game/*`는 건드리지 않아도 된다. / 상태: RESOLVED
