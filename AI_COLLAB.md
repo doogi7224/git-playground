@@ -32,10 +32,10 @@
   - **검증**: pure-logic 시뮬레이션 45종(phase 전이 전체 사이클, 쿨다운 재트리거 차단/허용, roll 중 화살·스톰프 무효 + 접촉 피해는 유지, windup/recover/walk 화살·스톰프 처치, 경계 도달 시 조기 recover 전환, 배치 좌표가 기존 지상 엔티티와 전혀 겹치지 않음, 기존 이동/대시/그래플/체크포인트/Cogmite/보스전 회귀) 전부 PASS + `npx tsc --noEmit` + 6분 레벨 실주행 스트레스 테스트(NaN 없음, 패트롤 경계 이탈 없음) + Expo 웹 콘솔 에러 0. 개발로그 (47) 참고.
 
 - Codex → Claude / P1 / **탐험 보상 캐시 (사용자 승인됨)**: 마리오식 “무엇이 나올까” 기대를 숲 세계관으로 옮긴 2종의 보상 오브젝트를 최소 구현해 달라. `src/game/*`만 수정하고, 아트/열림/보상 프레젠테이션은 Codex가 맡는다.
-  - **활 탄약 (사용자 승인됨)**: `Player`에 `arrows:number`, `maxArrows:number`를 추가한다. 유물 활 획득 시 `arrows=6`, `maxArrows=12`. 화살 발사는 `arrows>0`일 때만 가능하며 발사 성공 시 정확히 1발 소비한다. 쿨다운 중/활 미획득/탄약 0에서는 절대 소비하지 않는다. 재시작 시 초기화, 사망 후 체크포인트 부활에는 현재 보유량을 유지한다. Codex가 `arrows/maxArrows` HUD와 0발 버튼 상태를 렌더링한다.
+  - **활 탄약 (사용자 승인됨)**: `Player`에 `arrows:number`, `maxArrows:number`를 추가한다. 유물 활 획득 시 `arrows=3`, `maxArrows=5`. 화살 발사는 `arrows>0`일 때만 가능하며 발사 성공 시 정확히 1발 소비한다. 쿨다운 중/활 미획득/탄약 0에서는 절대 소비하지 않는다. 재시작 시 초기화, 사망 후 체크포인트 부활에는 현재 보유량을 유지한다. Codex가 `arrows/maxArrows` HUD와 0발 버튼 상태를 렌더링한다.
   - 타입: `TreasureCache`에 `id,x,y,width,height,kind,reward,opened`를 둔다. `kind`: `'rootCache' | 'relicPod'`, `reward`: `'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'flowSpark'`.
   - 상호작용: `rootCache`는 **대시 충돌**로만 열리고, `relicPod`는 **화살 충돌**로만 열린다. 일반 점프/접촉에는 열리지 않는다. 한 번 열리면 `opened=true`, 다시 열리지 않는다.
-  - 보상: `sunseedBurst`는 점수 +8, `arrowBundle`은 화살 +4(`maxArrows` clamp), `lifeBloom`은 life +1(초기 최대 목숨을 넘지 않게 cap), `flowSpark`는 Overdrive 게이지 +30(최대치 clamp). 빈 보상·무작위 런타임 추첨·인벤토리는 만들지 않는다. 보상은 레벨 데이터에 고정하지만, 열기 전에는 UI에 노출하지 않는다.
+  - 보상: `sunseedBurst`는 점수 +8, `arrowBundle`은 화살 +1(`maxArrows` clamp), `lifeBloom`은 life +1(초기 최대 목숨을 넘지 않게 cap), `flowSpark`는 Overdrive 게이지 +30(최대치 clamp). 빈 보상·무작위 런타임 추첨·인벤토리는 만들지 않는다. 보상은 레벨 데이터에 고정하지만, 열기 전에는 UI에 노출하지 않는다.
   - 프레젠테이션 인터페이스: `GameState.treasureCaches`와 수명이 짧은 `LootReveal`(`id,reward,x,y,timeLeft`) 배열을 노출해 달라. Codex가 오브젝트·파편·보상 팝업을 렌더링한다. 기존 `effects`를 확장해도 되지만, 다른 효과의 동작을 바꾸지 않는다.
   - 배치: `rootCache` 3개와 `relicPod` 2개만, 기존 필수 동선을 막지 않는 선택 경로/높은 발판/되돌아볼 만한 지점에 둔다. 유물 활 획득 전 구간에는 `relicPod`를 두지 않는다. **첫 Relic Pod보다 앞선 선택 경로에 arrowBundle 1개를 반드시 둔다.** 새 환경 구간이나 보상 상점은 만들지 않는다.
   - 검증: 대시/화살의 올바른 개봉 조건, 중복 개봉 방지, 4보상 수치+clamp, 0발/재보급/부활 탄약 보존, reveal 수명, 기존 이동/활/대시/보스 회귀, `npx tsc --noEmit`.
