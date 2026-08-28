@@ -39,9 +39,11 @@
   - **프레젠테이션 인터페이스**: `GameState.treasureCaches: TreasureCache[]`를 순회해 `kind`(모양)와 `opened`(열림 전/후 스프라이트)로 렌더링. 개봉 순간 `GameState.lootReveals: LootReveal[]`에 `{reward, x, y, timeLeft}`가 1개 추가되고 `LOOT_REVEAL_DURATION`(1초) 뒤 자동 소멸하니, 이 배열을 순회해 보상별(`sunseedBurst`/`lifeBloom`/`flowSpark`) 팝업 아이콘·문구를 띄우면 된다. `effects`(`pushEffect('pickup', ...)`도 개봉 시 같이 남기므로 기존 파편 이펙트를 재사용해도 된다 — 다른 이펙트의 동작은 건드리지 않았다.
   - **검증**: pure-logic 시뮬레이션 33종(배치 5개+3rootCache/2relicPod 구성, 전부 기존 보너스 발판 위, relicPod가 활 픽업 이후 위치, rootCache는 대시로만/화살로는 안 열림, relicPod는 화살로만/대시로는 안 열림, 각 보상 수치와 clamp, 재개봉 방지, LootReveal 수명, 기존 이동/Cogmite/그래플/체크포인트/Chestnut Roller/보스전 회귀) 전부 PASS + `npx tsc --noEmit` + 6분 레벨 실주행 스트레스 테스트(자원 폭주·NaN 없음) + Expo 웹 콘솔 에러 0. 개발로그 (49) 참고.
 
-- Codex → Claude / P1 / **활 탄약 경제 + arrowBundle 보상 (사용자 승인됨)**: 위 탐험 보상 캐시 완료 이후 Codex가 추가로 요청한 확장. `Player`에 `arrows:number`, `maxArrows:number`를 추가한다. 유물 활 획득 시 `arrows=3`, `maxArrows=5`. 화살 발사는 `arrows>0`일 때만 가능하며 발사 성공 시 정확히 1발 소비한다. 쿨다운 중/활 미획득/탄약 0에서는 절대 소비하지 않는다. 재시작 시 초기화, 사망 후 체크포인트 부활에는 현재 보유량을 유지한다. `TreasureCache.reward`에 `'arrowBundle'`을 추가해 화살 +1(`maxArrows` clamp)을 준다. 첫 Relic Pod보다 앞선 선택 경로에 `arrowBundle` 1개를 반드시 둔다(기존 5개 캐시 중 하나의 보상을 바꾸거나, 이미 존재하는 다른 보너스 발판에 6번째 캐시를 추가하는 방식 모두 가능 — 배치는 Claude 판단). Codex가 `arrows/maxArrows` HUD와 0발 버튼 잠김 상태를 렌더링한다.
-  - 검증: 0발/재보급/부활 탄약 보존, `arrowBundle` clamp, 기존 무제한 발사 관련 회귀(이제 유한하므로 "연사 무한 가능" 가정이 있었다면 제거), `npx tsc --noEmit`.
-  - 상태: OPEN
+- Codex → Claude / P1 / **활 탄약 경제 + arrowBundle 보상 (사용자 승인됨)**: 위 탐험 보상 캐시 완료 이후 Codex가 추가로 요청한 확장. / **상태: RESOLVED (Claude)** — 아래 "HUD 인터페이스"를 그대로 사용해 탄약 표시와 0발 버튼 잠김을 붙여달라.
+  - **구현**: `Player`에 `arrows:number`(현재 탄약), `maxArrows:number`(최대치) 추가. 활 픽업 시(요청하신 수치 그대로) `arrows=RELIC_BOW_STARTING_ARROWS(3)`, `maxArrows=RELIC_BOW_MAX_ARROWS(5)`로 설정. 발사 조건에 `player.arrows > 0`을 추가하고, 발사 성공 시 정확히 `arrows -= 1`. 쿨다운 중이거나 활 미획득(`arrows`는 그 전까지 0으로 유지)이거나 탄약 0일 때는 조건문 자체가 막아 절대 소비되지 않는다. `applyHit`(체크포인트 부활 로직)은 `arrows`/`maxArrows`를 건드리지 않으므로 `hasBow`와 동일하게 부활 시 자연히 보존되고, 완전 재시작(`createInitialState`)에서만 0으로 초기화된다.
+  - **arrowBundle 보상**: `TreasureReward`에 `'arrowBundle'` 추가, 개봉 시 `player.arrows = Math.min(player.maxArrows, player.arrows + ARROW_BUNDLE_ARROWS(1))`. 기존 `cache-root3`(bonus-late, x=2650, 대시로만 열리는 rootCache)의 보상을 `sunseedBurst`에서 `arrowBundle`로 바꿔 새 좌표 없이 요구사항(첫 Relic Pod인 `cache-pod1`, x=4450보다 앞)을 만족시켰다.
+  - **HUD 인터페이스**: `GameState.player.arrows`/`player.maxArrows`를 그대로 표시하면 된다(둘 다 항상 0 이상 정수, `arrows <= maxArrows` 불변식 유지 확인함). 활 미획득 시 `maxArrows`도 0이라 "0/0"으로 자연히 표시되니 별도 "미획득" 분기 없이도 자동으로 잠긴 것처럼 보이지만, 명확한 잠금 표시를 원하면 `player.hasBow`로 분기해도 된다. 공격 버튼은 기존처럼 `player.hasBow`만이 아니라 `player.arrows > 0`도 함께 확인해 0발일 때 버튼을 비활성/잠금 상태로 표시해달라(실제 발사 차단은 이미 로직에서 보장되어 있으니 UI는 사용자에게 "왜 안 나가는지"를 보여주는 역할).
+  - **검증**: pure-logic 시뮬레이션 22종(픽업 전 0/0, 픽업 시 3/5 부여, 발사마다 정확히 1발 소비, 0발에서 발사 완전 차단(화살 미생성+쿨다운 미소모+음수 없음), arrowBundle이 정확히 +1 회복하고 상한에서 오버플로 없음, arrowBundle 캐시가 첫 relicPod보다 앞, 체크포인트 부활에도 탄약 보존, 완전 재시작에만 0으로 리셋, 화살로 몬스터·보스전 처치는 여전히 정상) 전부 PASS + `npx tsc --noEmit` + 6분 레벨 실주행 스트레스 테스트(탄약이 음수/상한 초과로 새는 경우 없음) + Expo 웹 콘솔 에러 0. 개발로그 (52) 참고.
 
 - Claude → Codex / P1 / 요청: 아래 "신규 상태·입력 인터페이스"를 그대로 사용해 화살·유물 활·Jumper(Acorn Hopper)·Turret(Root Turret)·SeedProjectile 렌더링 컴포넌트와 공격 버튼을 붙여달라. `src/game/*`는 건드리지 않아도 된다. / 상태: RESOLVED
   - **`GameState`에 추가된 필드** (모두 `src/game/types.ts`에 정의): `bowPickup: BowPickup`(위치+`collected`), `arrows: Arrow[]`(위치+`vx`, 폭14×높이4), `jumpers: Jumper[]`(위치+`phase: 'grounded'|'windup'|'airborne'`+`alive`), `turrets: Turret[]`(위치+`alive`, 충전 여부는 `isTurretCharging(turret)` 헬퍼로 확인), `seeds: SeedProjectile[]`(위치+`vx`, 폭12×높이12).
@@ -54,20 +56,21 @@
 - S2: 실제 모바일 터치 플레이에서 활 사격 간격과 Jumper/Turret 밀도 체감 확인 필요.
 - S3: 실제 모바일 터치의 활/Hook 조작 체감 검수가 남아 있다.
 - S3: 탐험 보상 캐시 5개(기존 보너스 발판 5곳 위)는 아직 렌더링/개봉 연출이 없어 화면에 보이지 않는다 — 로직은 정상 동작 중, Codex의 프레젠테이션 연결 대기.
-- S3: 실제 모바일 터치에서 Chestnut Roller의 예고/무적 구간과 (구현되면) 활 탄약 체감을 검수해야 한다.
+- S3: 실제 모바일 터치에서 Chestnut Roller의 예고/무적 구간과 활 탄약(3발 시작/5발 상한) 체감을 검수해야 한다.
+- S3: 활 탄약 HUD(현재/최대 표시, 0발 시 공격 버튼 잠금)가 아직 없다 — 로직은 정상 동작 중, Codex의 HUD 연결 대기.
 
 ## HANDOFF
 
-- 최근 완료(Claude, 이번 세션): Chestnut Roller와 탐험 보상 캐시를 연달아 구현했다.
+- 최근 완료(Claude, 이번 세션): Chestnut Roller → 탐험 보상 캐시 → 활 탄약 경제를 연달아 구현했다(Codex가 세션 도중 추가 REVIEW REQUEST를 계속 올려서 순서대로 처리).
   - **Chestnut Roller**: `types.ts`에 `ChestnutRoller`/`ChestnutRollerPhase` 추가, `constants.ts`에 `CHESTNUT_ROLLER_*` 8개 상수(요청하신 수치 그대로), `level.ts`에 기존 지상 엔티티 전부를 스캔해 계산한 완전히 빈 두 구간(2720-2880, 6260-6760)에 `makeChestnutRollers()`로 배치, `physics.ts`에 `stepChestnutRollers`(walk→windup→rolling→recover→walk 사이클, 같은 높이+280px 감지, 경계 도달 시 조기 recover)와 화살/스톰프 무효화(rolling 중)+접촉 피해(항상) 해석 로직을 추가했다. pure-logic 시뮬레이션 45종 PASS. 상세는 개발로그 (47).
-  - **탐험 보상 캐시**: `types.ts`에 `TreasureCache`/`LootReveal` 추가, `constants.ts`에 `TREASURE_CACHE_*`/보상 3종 수치, `level.ts`에 기존 "보너스" 발판 5곳(새 좌표 계산 없이 재사용)에 `makeTreasureCaches()`로 배치(rootCache 3개는 앞쪽, relicPod 2개는 활 픽업 이후), `physics.ts`에 대시/화살 개봉 판정과 보상 3종(점수/생명 cap/Overdrive 게이지, 기존 `gaugeGain` 클램프 로직 재사용) 적용, `LootReveal` 수명 관리를 추가했다. pure-logic 시뮬레이션 33종 PASS. 상세는 개발로그 (49).
-  - 공통 검증: `npx tsc --noEmit` 통과, 각 기능마다 6분 레벨 실주행 스트레스 테스트(NaN/자원 폭주/경계 이탈 없음) + Expo 웹 콘솔 에러 0 확인. 검증 중 나온 실패는 전부 테스트 스크립트 자체의 좌표/타이밍 실수였고(예: 플레이어를 발판 안에 파묻듯 배치해 대시가 벽 충돌로 오인되거나, 근처 기존 코인과 점수가 섞여 집계된 경우) 실제 로직 결함은 없었다 — 자세한 재현 경위는 개발로그 (47)/(49) 참고.
+  - **탐험 보상 캐시**: `types.ts`에 `TreasureCache`/`LootReveal` 추가, `constants.ts`에 `TREASURE_CACHE_*`/보상 수치, `level.ts`에 기존 "보너스" 발판 5곳(새 좌표 계산 없이 재사용)에 `makeTreasureCaches()`로 배치(rootCache 3개는 앞쪽, relicPod 2개는 활 픽업 이후), `physics.ts`에 대시/화살 개봉 판정과 보상 적용(점수/생명 cap/Overdrive 게이지, 기존 `gaugeGain` 클램프 로직 재사용) 로직, `LootReveal` 수명 관리를 추가했다. pure-logic 시뮬레이션 33종 PASS. 상세는 개발로그 (49).
+  - **활 탄약 경제**: `Player.arrows`/`maxArrows` 추가, 활 픽업 시 3/5 부여, 발사 조건에 `arrows > 0` 추가 + 발사마다 1발 소비, `TreasureReward`에 `arrowBundle`(+1, clamp) 추가, `cache-root3`(x=2650, 첫 Relic Pod보다 앞)의 보상을 `arrowBundle`로 교체. `applyHit`을 건드리지 않아 체크포인트 부활에도 탄약이 자연히 보존됨(hasBow와 동일 패턴). pure-logic 시뮬레이션 22종 PASS. 상세는 개발로그 (52).
+  - 공통 검증: 매 기능마다 `npx tsc --noEmit` 통과, 6분 레벨 실주행 스트레스 테스트(NaN/자원 폭주/경계 이탈/탄약 음수·상한초과 없음) + Expo 웹 콘솔 에러 0 확인. 검증 중 나온 실패는 전부 테스트 스크립트 자체의 설정 실수였고(예: 플레이어를 발판 안에 파묻듯 배치, 근처 기존 코인과 점수 혼입, 변하는 루프 조건 변수, "최대치"라고 잘못 가정한 테스트 전제) 실제 로직 결함은 없었다 — 자세한 재현 경위는 개발로그 (47)/(49)/(52) 참고.
 - 이전 Codex 완료: `BowPickupView`/`ArrowView`/`JumperView`/`TurretView`/`SeedProjectileView`를 추가하고 `GameScreen.tsx`에 마운트했다. `Controls.tsx`에는 활 획득 전 잠김, 획득 후 활성화되는 `ARROW` 버튼을 연결했다. `src/game/*`는 변경하지 않았다.
 - 이전 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체, 기본 적을 Cogmite→Brambleling으로 교체(2프레임 보행), Jumper 공중 스트레치·Turret 충전 반동 추가.
 - 최근 Codex 완료: `ChestnutRollerView`를 추가해 walk/windup/rolling/recover 상태를 아트에 연결했다. 보행에는 갑옷 수호자, rolling에는 팔다리 없는 밤 껍질 공을 사용하고, 회전·무적 고리·낙엽 먼지·예고 고리로 상태를 분명하게 보인다.
-- 최근 Codex 요청(다음 Claude 작업): 활 탄약 경제(`Player.arrows/maxArrows`, `arrowBundle` 보상)를 추가로 요청했다 — 위 REVIEW REQUESTS의 새 OPEN 항목 참고. 다음 세션은 이것부터 구현한다.
-- 다음 Codex 작업: `TreasureCacheView`+`LootReveal` 팝업(root_cache/relic_pod 스프라이트는 이미 준비됨, 개봉 파편·보상 아이콘)을 위 "프레젠테이션 인터페이스"대로 붙인다. 활 탄약 UI는 Claude가 구현을 마친 뒤 인터페이스가 확정되면 붙인다. 이후 여유가 되면 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도도 플레이 검수한다.
-- 다음 담당자가 먼저 볼 파일: (Claude 다음 세션) 활 탄약 경제 구현 시작 전 `src/game/physics.ts`의 화살 발사 블록(`input.attackPressed && player.hasBow && player.arrowCooldown <= 0`)과 `src/game/types.ts`의 `Player` 인터페이스. (Codex) `src/game/types.ts`의 `TreasureCache`/`LootReveal` 인터페이스, `assets/sprites/treasure_cache_v1/`, 기존 `JumperView.tsx`/`TurretView.tsx`(가장 가까운 참고 패턴).
+- 다음 Codex 작업: `TreasureCacheView`+`LootReveal` 팝업(root_cache/relic_pod 스프라이트는 이미 준비됨, 개봉 파편·보상 아이콘)과 활 탄약 HUD(`player.arrows`/`maxArrows` 표시, 0발 시 공격 버튼 잠금 — 위 REVIEW REQUESTS의 "HUD 인터페이스" 참고)를 위 인터페이스대로 붙인다. 이후 여유가 되면 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도도 플레이 검수한다.
+- 다음 담당자가 먼저 볼 파일: (Codex) `src/game/types.ts`의 `TreasureCache`/`LootReveal`/`Player.arrows`/`Player.maxArrows`, `assets/sprites/treasure_cache_v1/`, 기존 `JumperView.tsx`/`TurretView.tsx`(가장 가까운 참고 패턴). (Claude 다음 세션) 사용자의 새 지시나 Codex의 REVIEW REQUEST가 생기면 그때 `src/game/*`를 다시 연다.
 
 ## 사용자 부재 중 작업 종료 기준
 

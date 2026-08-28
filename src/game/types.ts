@@ -220,7 +220,7 @@ export interface ChestnutRoller extends Rect {
 }
 
 export type TreasureCacheKind = 'rootCache' | 'relicPod';
-export type TreasureReward = 'sunseedBurst' | 'lifeBloom' | 'flowSpark';
+export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'flowSpark';
 
 // An optional-route pickup with a fixed (never randomized, never empty)
 // reward, opened by a specific committed action rather than a touch: a
@@ -313,6 +313,10 @@ export interface Player extends Rect {
   hasBow: boolean;
   /** Seconds until another arrow may be fired, so mashing attack can't produce a solid stream of arrows. */
   arrowCooldown: number;
+  /** Current arrow ammo; 0 (meaningless until hasBow) until the bow is picked up, then RELIC_BOW_STARTING_ARROWS. Firing consumes one; a Treasure Cache's arrowBundle reward restores some, clamped to maxArrows. */
+  arrows: number;
+  /** Ammo capacity, set once on bow pickup; arrows is clamped to this. */
+  maxArrows: number;
 }
 
 export type GamePhase = 'start' | 'playing' | 'gameover' | 'win';

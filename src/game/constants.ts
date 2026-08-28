@@ -161,6 +161,12 @@ export const ARROW_SPEED = 500; // px/s, faster than DASH_SPEED for a punchy ran
 export const ARROW_COOLDOWN = 0.35; // seconds between shots -- the "짧은 연사 간격" the brief asks for
 export const ARROW_LIFETIME = 1.2; // seconds; safety despawn over open ground with nothing to hit
 
+// Relic Bow ammo economy: finite arrows so ranged attack doesn't dominate
+// every other option. Granted on pickup, restored in small amounts by the
+// Treasure Cache's arrowBundle reward (see constants below).
+export const RELIC_BOW_STARTING_ARROWS = 3;
+export const RELIC_BOW_MAX_ARROWS = 5;
+
 // Jumper: purely timer-driven, no player detection. Hops straight up in
 // place, so it can be placed on any platform without risking hopping off
 // the edge. A brief windup (mirroring Bio-Coil's telegraph) keeps every hop
@@ -206,6 +212,7 @@ export const CHESTNUT_ROLLER_COOLDOWN = 2.6; // seconds after recovering before 
 export const TREASURE_CACHE_WIDTH = 28;
 export const TREASURE_CACHE_HEIGHT = 28;
 export const SUNSEED_BURST_SCORE = 8;
+export const ARROW_BUNDLE_ARROWS = 1; // capped at RELIC_BOW_MAX_ARROWS on pickup
 export const LIFE_BLOOM_LIVES = 1; // capped at STARTING_LIVES on pickup
 export const FLOW_SPARK_GAUGE = 30; // added to the Overdrive gauge, clamped like any other gaugeGain source
 export const LOOT_REVEAL_DURATION = 1; // seconds a LootReveal stays around for a reward popup

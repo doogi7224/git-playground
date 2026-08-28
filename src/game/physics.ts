@@ -1,5 +1,6 @@
 import {
   AIR_CONTROL_MULT,
+  ARROW_BUNDLE_ARROWS,
   ARROW_COOLDOWN,
   ARROW_HEIGHT,
   ARROW_LIFETIME,
@@ -54,6 +55,8 @@ import {
   LOOT_REVEAL_DURATION,
   MAX_FALL_SPEED,
   MOVE_SPEED,
+  RELIC_BOW_MAX_ARROWS,
+  RELIC_BOW_STARTING_ARROWS,
   OVERDRIVE_COIN_MULT,
   OVERDRIVE_COMBO_BREAK_TIME,
   OVERDRIVE_DASH_GAIN,
@@ -162,6 +165,8 @@ export function createInitialState(level: Level): GameState {
       touchingWall: 0,
       hasBow: false,
       arrowCooldown: 0,
+      arrows: 0,
+      maxArrows: 0,
     },
     enemies: level.enemies.map((e) => ({ ...e })),
     coins: level.coins.map((c) => ({ ...c })),
@@ -687,16 +692,20 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   if (!bowPickup.collected && rectIntersect(player, bowPickup)) {
     bowPickup = { ...bowPickup, collected: true };
     player.hasBow = true;
+    player.arrows = RELIC_BOW_STARTING_ARROWS;
+    player.maxArrows = RELIC_BOW_MAX_ARROWS;
     pushEffect('gearPickup', bowPickup.x + bowPickup.width / 2, bowPickup.y + bowPickup.height / 2);
   }
 
   // Firing: edge-triggered like jumpPressed/dashPressed (GameScreen resets it
-  // after consuming), gated by hasBow and a short cooldown so mashing the
-  // attack button can't produce a solid stream of arrows.
+  // after consuming), gated by hasBow, a short cooldown so mashing the attack
+  // button can't produce a solid stream of arrows, and finite ammo (arrows is
+  // 0 until the bow is picked up, so this also naturally blocks pre-pickup).
   player.arrowCooldown = Math.max(0, prev.player.arrowCooldown - dt);
   let arrowSeq = prev.arrowSeq;
-  if (input.attackPressed && player.hasBow && player.arrowCooldown <= 0) {
+  if (input.attackPressed && player.hasBow && player.arrowCooldown <= 0 && player.arrows > 0) {
     player.arrowCooldown = ARROW_COOLDOWN;
+    player.arrows -= 1;
     arrows = [
       ...arrows,
       {
@@ -1151,6 +1160,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
     if (cache.reward === 'sunseedBurst') {
       score += SUNSEED_BURST_SCORE;
+    } else if (cache.reward === 'arrowBundle') {
+      player.arrows = Math.min(player.maxArrows, player.arrows + ARROW_BUNDLE_ARROWS);
     } else if (cache.reward === 'lifeBloom') {
       lives = Math.min(STARTING_LIVES, lives + LIFE_BLOOM_LIVES);
     } else {

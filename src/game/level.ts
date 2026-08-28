@@ -307,11 +307,14 @@ function makeChestnutRollers(): ChestnutRoller[] {
 // required path, exactly what the design brief asks for. Reusing them means
 // no new coordinates to verify for overlap. 3 Root Cache (dash-only) then 2
 // Relic Pod (arrow-only, both well after the Relic Bow pickup at x=250).
+// cache-root3 (x=2650) carries the arrowBundle reward -- per the arrow-economy
+// brief, one must sit on a selectable route before the first Relic Pod
+// (cache-pod1, x=4450) so running low on ammo never blocks required progress.
 function makeTreasureCaches(): TreasureCache[] {
   const defs: [string, TreasureCacheKind, TreasureReward][] = [
     ['cache-root1', 'rootCache', 'sunseedBurst'],
     ['cache-root2', 'rootCache', 'flowSpark'],
-    ['cache-root3', 'rootCache', 'sunseedBurst'],
+    ['cache-root3', 'rootCache', 'arrowBundle'],
     ['cache-pod1', 'relicPod', 'lifeBloom'],
     ['cache-pod2', 'relicPod', 'sunseedBurst'],
   ];
