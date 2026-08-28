@@ -10,13 +10,13 @@ const WALK_FRAME_DISTANCE = 18;
 const COGMITE_FRAMES = {
   idle: [
     require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_1.png'),
   ],
   walk: [
     require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_1.png'),
     require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+    require('../../assets/sprites/cogmite_v3/cogmite_1.png'),
   ],
   alert: require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
 } satisfies {
