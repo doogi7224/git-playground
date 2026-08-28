@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- P1 / 사용자 승인: `Chestnut Roller` 적의 상태·물리·레벨 배치를 구현한다. Codex가 아트/프레젠테이션을 준비한다.
+- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고.
 
 ## CODEX ACTIVE
 
@@ -22,14 +22,14 @@
 
 ## REVIEW REQUESTS
 
-- Codex → Claude / P1 / **Chestnut Roller (사용자 승인됨)**: `src/game/*`에 새 적 2기만 최소 구현해 달라. 기존 적/구간/수치를 건드리지 말고, `src/components/*`와 `assets/*`는 Codex가 맡는다.
-  - 타입: `ChestnutRoller`에 `id,x,y,width,height,minX,maxX,vx,facing,phase,timer,cooldown,alive`를 둔다. `phase`: `'walk' | 'windup' | 'rolling' | 'recover'`.
-  - 동작: 평소에는 x축 55px/s로 왕복한다. 플레이어가 같은 높이에서 280px 안에 있고 `cooldown <= 0`이면 바라보는 방향을 잠그고 `windup` 0.45초. 이후 `rolling` 1.15초 동안 250px/s로 직선 이동한다. 벽/순찰 경계 도달 시 즉시 `recover`로 전환한다. `recover` 0.65초 동안 정지·무방비. 끝나면 walk로 복귀하되 `cooldown=2.6초`를 준다.
-  - 상호작용: **rolling 중에는 화살·스톰프 모두 무효**이며, 접촉은 일반 적과 동일한 피해/넉백 규칙을 사용한다. `windup`·`recover`·`walk`는 화살/스톰프 처치 가능. 별도 등껍질 차기, 반사, 투사체 전환은 이번 범위에서 만들지 않는다.
-  - 배치: 기존 콘텐츠와 겹치지 않는 넓은 지상 순찰 구간 2곳만 사용한다. 새 원정 구간/환경 전환/플랫폼 생성 금지.
-  - 렌더링 인터페이스: `GameState.chestnutRollers`, `Level.chestnutRollers`로 노출. Codex가 `ChestnutRollerView`를 추가할 수 있도록 `phase`/`facing`/`alive`를 보존한다.
-  - 검증: phase 전이, 쿨다운, roll 중 무적, roll 종료/경계 전환, 화살·스톰프 처리, 기존 회귀를 pure logic + `npx tsc --noEmit`으로 확인하고 개발로그/HANDOFF에 기록.
-  - 상태: OPEN
+- Codex → Claude / P1 / **Chestnut Roller (사용자 승인됨)**: `src/game/*`에 새 적 2기만 최소 구현해 달라. / **상태: RESOLVED (Claude)** — 아래 "렌더링 인터페이스"를 그대로 사용해 `ChestnutRollerView`를 붙여달라.
+  - **구현된 타입** (`src/game/types.ts`): `ChestnutRoller`에 `id,x,y,width,height,minX,maxX,vx,facing:1|-1,phase,timer,cooldown,alive`. `phase: 'walk' | 'windup' | 'rolling' | 'recover'`. `GameState.chestnutRollers`/`Level.chestnutRollers`로 노출(요청하신 그대로).
+  - **수치** (`src/game/constants.ts`, 전부 `CHESTNUT_ROLLER_*` 접두): `WIDTH=32, HEIGHT=30, PATROL_SPEED=55, DETECT_RANGE=280, WINDUP_DURATION=0.45, ROLL_SPEED=250, ROLL_DURATION=1.15, RECOVER_DURATION=0.65, COOLDOWN=2.6` — 요청하신 값 그대로 구현했다.
+  - **동작**: 요청한 그대로 walk(순찰, 감지 시 방향을 잠그고 windup)→windup(정지)→rolling(직선 고속 이동, 벽/순찰 경계 도달 시 즉시 recover로 조기 종료, 아니면 ROLL_DURATION 경과 시 자연 종료)→recover(정지·무방비)→walk(패트롤 재개, cooldown=2.6 부여)로 구현했다. 감지는 `player.y`/`roller.y` 사각형의 수직 겹침("같은 높이")과 280px 이내를 모두 요구해, 플레이어가 머리 위 높이 점프해 지나가면 트리거되지 않는다.
+  - **상호작용**: rolling 중에는 화살(`findArrowHit`)과 스톰프 판정을 모두 건너뛰어 무효화했고, 접촉 피해는 다른 지상 적과 동일한 `applyHit`(무적시간 존중, 체크포인트 리스폰)를 그대로 적용했다. windup/recover/walk는 화살·스톰프 둘 다로 처치 가능. 등껍질 차기/반사/투사체 전환은 이번 범위에 넣지 않았다.
+  - **배치**: 기존 모든 지상 엔티티(적 9기, 피스톤 3기, Bio-Coil, Steam Blower, 스폰/활/코그 클러스터)의 x구간을 스캔해 계산한, 실제로 완전히 비어 있는 두 구간에 배치했다 — `roller1: x=2720-2880`(e4 끝~e5 시작 사이 200px 틈의 중앙 160px), `roller2: x=6260-6760`(e9 이후 보스 포탈 이전, 기존에 지상 콘텐츠가 전혀 없던 580px 구간의 중앙 500px). 새 원정 구간/환경 전환/플랫폼은 추가하지 않았다.
+  - **렌더링 인터페이스**: `GameState.chestnutRollers: ChestnutRoller[]`를 순회하며 각 항목의 `phase`(walk="걷기 스프라이트", windup="걷기 스프라이트 유지 + 예고 연출은 Codex 재량", rolling="구르기 스프라이트 + 회전", recover="구르기 스프라이트 정지 또는 비틀거림 연출 재량")와 `facing`(1|-1, 좌우 반전)만으로 전부 렌더링 가능하다. `alive:false`면 렌더링 생략. 다른 적 뷰(`EnemyView`/`JumperView`)와 동일하게 `x,y,width,height`가 이미 AABB 히트박스 기준으로 채워져 있으니 시각 크기는 자유롭게 오버사이즈해도 된다.
+  - **검증**: pure-logic 시뮬레이션 45종(phase 전이 전체 사이클, 쿨다운 재트리거 차단/허용, roll 중 화살·스톰프 무효 + 접촉 피해는 유지, windup/recover/walk 화살·스톰프 처치, 경계 도달 시 조기 recover 전환, 배치 좌표가 기존 지상 엔티티와 전혀 겹치지 않음, 기존 이동/대시/그래플/체크포인트/Cogmite/보스전 회귀) 전부 PASS + `npx tsc --noEmit` + 6분 레벨 실주행 스트레스 테스트(NaN 없음, 패트롤 경계 이탈 없음) + Expo 웹 콘솔 에러 0. 개발로그 (47) 참고.
 
 - Claude → Codex / P1 / 요청: 아래 "신규 상태·입력 인터페이스"를 그대로 사용해 화살·유물 활·Jumper(Acorn Hopper)·Turret(Root Turret)·SeedProjectile 렌더링 컴포넌트와 공격 버튼을 붙여달라. `src/game/*`는 건드리지 않아도 된다. / 상태: RESOLVED
   - **`GameState`에 추가된 필드** (모두 `src/game/types.ts`에 정의): `bowPickup: BowPickup`(위치+`collected`), `arrows: Arrow[]`(위치+`vx`, 폭14×높이4), `jumpers: Jumper[]`(위치+`phase: 'grounded'|'windup'|'airborne'`+`alive`), `turrets: Turret[]`(위치+`alive`, 충전 여부는 `isTurretCharging(turret)` 헬퍼로 확인), `seeds: SeedProjectile[]`(위치+`vx`, 폭12×높이12).
@@ -41,15 +41,15 @@
 
 - S2: 실제 모바일 터치 플레이에서 활 사격 간격과 Jumper/Turret 밀도 체감 확인 필요.
 - S3: 실제 모바일 터치의 활/Hook 조작 체감 검수가 남아 있다.
+- S3: Chestnut Roller 2기(roller1: x=2720-2880, roller2: x=6260-6760)는 아직 렌더링 컴포넌트가 없어 화면에 보이지 않는다 — 로직은 정상 동작 중, Codex의 `ChestnutRollerView` 연결 대기.
 
 ## HANDOFF
 
-- 최근 완료(Claude, 이번 세션): 사용자 부재 중 1차 안정화 검증 4단계를 전부 수행했다 — (1) 이동 160/대시 480 체감차이, (2) 활 쿨다운(0.35s)/화살 속도(500)·수명(1.2s), (3) Jumper/Turret/씨앗 충돌·전역 스폰 상한(6), (4) 기존 5종 몬스터+체크포인트+그래플+보스전 핵심 회귀. `npx tsc --noEmit` 통과. 직접 작성한 pure-logic 시뮬레이션 42종 전부 PASS(코드는 커밋하지 않고 검증 후 삭제 — 저장소에 임시 스크립트를 남기지 않는 관례 유지). 처음 4건 FAIL이 떴으나 전부 테스트 스크립트 자체의 좌표/타이밍 실수(스폰 직후 공중 상태에서 지상 속도 검사, 대시 무적시간이 같은 프레임에 dt만큼 감쇠되는 걸 미반영, 전역 상한 테스트용 씨앗 좌표가 world 밖이라 despawn 필터에 걸림, 코그마이트 감지 테스트 위치가 패트롤 경계 바로 앞이라 충전 즉시 반전됨)로 확인 후 스크립트를 고쳐 전부 PASS — 실제 게임 로직 결함 없음. Expo 웹 + Playwright로 시작 화면→Start→실제 게임 화면(주인공/Cogmite/활 아이템/코인/HUD/컨트롤) 렌더링과 콘솔 에러 0 확인. 추가로 레벨 전체를 최대 6분간 실주행시키는 스트레스 테스트(단순 휴리스틱 봇)도 돌려 NaN/자원누수/전역 상한 위반이 전혀 없음을 확인했고, 봇이 3번 사망한 것은 전부 신규 콘텐츠와 무관한 기존 `piston1` 타이밍 회피 실패였다(개발로그 (43) 참고). **결론: 코드 변경 없음** — 기존 활/화살/Jumper/Turret 구현이 이미 안정적으로 동작해 밸런스 수치를 바꿀 근거를 찾지 못했다.
+- 최근 완료(Claude, 이번 세션): Chestnut Roller 상태·물리·레벨 배치를 구현했다. `types.ts`에 `ChestnutRoller`/`ChestnutRollerPhase` 추가, `constants.ts`에 `CHESTNUT_ROLLER_*` 8개 상수(요청하신 수치 그대로), `level.ts`에 기존 지상 엔티티 전부를 스캔해 계산한 완전히 빈 두 구간(2720-2880, 6260-6760)에 `makeChestnutRollers()`로 배치, `physics.ts`에 `stepChestnutRollers`(walk→windup→rolling→recover→walk 사이클, 같은 높이+280px 감지, 경계 도달 시 조기 recover)와 화살/스톰프 무효화(rolling 중)+접촉 피해(항상) 해석 로직을 추가했다. `npx tsc --noEmit` 통과, 직접 작성한 pure-logic 시뮬레이션 45종 전부 PASS(배치 좌표 무충돌 확인 포함), 6분 레벨 실주행 스트레스 테스트에서 NaN/패트롤 경계 이탈/자원 누수 없음 확인, Expo 웹 콘솔 에러 0. 상세 내용은 REVIEW REQUESTS의 RESOLVED 항목과 개발로그 (47) 참고.
 - 이전 Codex 완료: `BowPickupView`/`ArrowView`/`JumperView`/`TurretView`/`SeedProjectileView`를 추가하고 `GameScreen.tsx`에 마운트했다. `Controls.tsx`에는 활 획득 전 잠김, 획득 후 활성화되는 `ARROW` 버튼을 연결했다. `src/game/*`는 변경하지 않았다.
-- 이전 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체.
-- 최근 Codex 완료: 기본 적을 기계 곤충 Cogmite에서 숲 수호자형 Brambleling으로 교체했다. 벌레 실루엣을 제거하고, 두 장의 반대 발 보행 포즈·상하 리듬·몸 기울임·반전 반응을 연결했다. Root-Hook 앵커는 작은 고목 고리로 단순화했으며, Jumper 공중 스트레치·Turret 충전 반동을 추가했다. 게임 규칙은 바꾸지 않았다.
-- 다음 Codex 작업: 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도를 플레이 검수한다(위 Claude 검증은 로직 수치가 논리적으로 안전함을 확인한 것이며, 실제 터치 조작 체감은 대체하지 못한다).
-- 다음 담당자가 먼저 볼 파일: `src/components/EnemyView.tsx`, `RootPointView.tsx`, `JumperView.tsx`, `TurretView.tsx`, `assets/sprites/brambleling_v1/`. 다음 Claude 세션은 사용자의 새 지시나 Codex의 REVIEW REQUEST가 생기면 그때 `src/game/*`를 다시 연다.
+- 이전 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체, 기본 적을 Cogmite→Brambleling으로 교체(2프레임 보행), Jumper 공중 스트레치·Turret 충전 반동 추가.
+- 다음 Codex 작업: `ChestnutRollerView`를 위 "렌더링 인터페이스"대로 붙이고(걷기/구르기 스프라이트는 이미 준비됨), 회전·먼지·회복 모션을 연결한다. 이후 여유가 되면 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도도 플레이 검수한다.
+- 다음 담당자가 먼저 볼 파일: (Codex) `src/game/types.ts`의 `ChestnutRoller` 인터페이스, `assets/sprites/chestnut_roller_v1/`, 기존 `JumperView.tsx`/`TurretView.tsx`(가장 가까운 참고 패턴). (Claude 다음 세션) 사용자의 새 지시나 Codex의 REVIEW REQUEST가 생기면 그때 `src/game/*`를 다시 연다.
 
 ## 사용자 부재 중 작업 종료 기준
 

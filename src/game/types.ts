@@ -197,6 +197,28 @@ export interface SeedProjectile extends Rect {
   age: number;
 }
 
+export type ChestnutRollerPhase = 'walk' | 'windup' | 'rolling' | 'recover';
+
+// A ground patrol enemy that alternates a slow, vulnerable walk with a fast,
+// arrow/stomp-immune roll once the player is close (and off cooldown).
+// Shaped like Cogmite's "lock a direction, telegraph, then commit" pattern,
+// with an added invincible-while-rolling window and a post-recover cooldown
+// so it can't roll back-to-back. Shell-kick/deflection is explicitly out of
+// scope for this pass (see CLAUDE.md 4장).
+export interface ChestnutRoller extends Rect {
+  id: string;
+  minX: number;
+  maxX: number;
+  vx: number;
+  facing: 1 | -1;
+  phase: ChestnutRollerPhase;
+  /** Counts up within the current phase; meaning depends on phase (windup/rolling/recover progress). */
+  timer: number;
+  /** Seconds until another roll may start; only checked while 'walk'. */
+  cooldown: number;
+  alive: boolean;
+}
+
 export interface Level {
   worldWidth: number;
   groundY: number;
@@ -218,6 +240,7 @@ export interface Level {
   bowPickup: BowPickup;
   jumpers: Jumper[];
   turrets: Turret[];
+  chestnutRollers: ChestnutRoller[];
 }
 
 export interface Player extends Rect {
@@ -283,6 +306,7 @@ export interface GameState {
   arrows: Arrow[];
   jumpers: Jumper[];
   turrets: Turret[];
+  chestnutRollers: ChestnutRoller[];
   seeds: SeedProjectile[];
   /** Monotonic counter used only to mint unique Arrow ids, same pattern as effectSeq. */
   arrowSeq: number;

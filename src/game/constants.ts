@@ -183,3 +183,18 @@ export const SEED_WIDTH = 12;
 export const SEED_HEIGHT = 12;
 export const SEED_SPEED = 200; // px/s -- slower than an arrow, meant to be dodgeable
 export const SEED_LIFETIME = 3; // seconds; safety despawn
+
+// Chestnut Roller: alternates a slow ground patrol with a fast, arrow/stomp-
+// immune roll once the player is close and off cooldown. Per the design
+// brief, hitting its own patrol bound mid-roll ends the roll early (same
+// "a bound cuts a committed action short" shape as Cogmite's charge).
+// Shell-kick/deflection is explicitly out of scope for this pass.
+export const CHESTNUT_ROLLER_WIDTH = 32;
+export const CHESTNUT_ROLLER_HEIGHT = 30;
+export const CHESTNUT_ROLLER_PATROL_SPEED = 55; // px/s while walking
+export const CHESTNUT_ROLLER_DETECT_RANGE = 280; // px, combined with a same-height check
+export const CHESTNUT_ROLLER_WINDUP_DURATION = 0.45; // telegraph before the roll starts
+export const CHESTNUT_ROLLER_ROLL_SPEED = 250; // px/s while rolling (invincible to arrow/stomp)
+export const CHESTNUT_ROLLER_ROLL_DURATION = 1.15; // max roll length; cut short by a patrol-bound hit
+export const CHESTNUT_ROLLER_RECOVER_DURATION = 0.65; // defenseless pause after a roll ends
+export const CHESTNUT_ROLLER_COOLDOWN = 2.6; // seconds after recovering before it can roll again

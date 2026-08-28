@@ -16,6 +16,12 @@ import {
   BIOCOIL_LEAP_VX_WILD,
   BIOCOIL_RANGE,
   BIOCOIL_WINDUP_WILD,
+  CHESTNUT_ROLLER_COOLDOWN,
+  CHESTNUT_ROLLER_DETECT_RANGE,
+  CHESTNUT_ROLLER_RECOVER_DURATION,
+  CHESTNUT_ROLLER_ROLL_DURATION,
+  CHESTNUT_ROLLER_ROLL_SPEED,
+  CHESTNUT_ROLLER_WINDUP_DURATION,
   COG_CANNON_JUMP_MULT,
   COG_MAGNET_RADIUS,
   COG_MIRROR_TRAIL_SECONDS,
@@ -89,6 +95,7 @@ import {
   Arrow,
   BioCoil,
   Boss,
+  ChestnutRoller,
   CogPickup,
   EffectEvent,
   EffectKind,
@@ -164,6 +171,7 @@ export function createInitialState(level: Level): GameState {
     arrows: [],
     jumpers: level.jumpers.map((j) => ({ ...j })),
     turrets: level.turrets.map((t) => ({ ...t })),
+    chestnutRollers: level.chestnutRollers.map((r) => ({ ...r })),
     seeds: [],
     arrowSeq: 0,
     portalActivated: false,
@@ -354,6 +362,72 @@ function stepTurrets(prev: Turret[], player: Rect, dt: number, existingSeedCount
     return { ...t, timer: 0 };
   });
   return { turrets, newSeeds };
+}
+
+// Chestnut Roller: walk (patrol, vulnerable) -> windup (telegraph, locked
+// facing, stationary) -> rolling (fast, arrow/stomp-immune, ends early on
+// hitting its own patrol bound) -> recover (defenseless pause) -> walk with
+// a cooldown before it can roll again. Detection uses the pre-frame player
+// position (same "prev decides this frame" convention as stepBioCoils) and
+// requires vertical overlap ("same height") in addition to x-range, so a
+// player jumping high overhead doesn't trigger a roll.
+function stepChestnutRollers(prev: ChestnutRoller[], player: Rect, dt: number): ChestnutRoller[] {
+  return prev.map((r) => {
+    if (!r.alive) return r;
+    const cooldown = Math.max(0, r.cooldown - dt);
+
+    if (r.phase === 'walk') {
+      const rCenterX = r.x + r.width / 2;
+      const playerCenterX = player.x + player.width / 2;
+      const sameHeight = player.y < r.y + r.height && player.y + player.height > r.y;
+      const inRange = Math.abs(playerCenterX - rCenterX) <= CHESTNUT_ROLLER_DETECT_RANGE;
+      if (cooldown <= 0 && sameHeight && inRange) {
+        return { ...r, vx: 0, facing: playerCenterX < rCenterX ? -1 : 1, phase: 'windup', timer: 0, cooldown };
+      }
+
+      let nx = r.x + r.vx * dt;
+      let vx = r.vx;
+      let facing = r.facing;
+      if (nx < r.minX) {
+        nx = r.minX;
+        vx = Math.abs(vx);
+        facing = 1;
+      } else if (nx + r.width > r.maxX) {
+        nx = r.maxX - r.width;
+        vx = -Math.abs(vx);
+        facing = -1;
+      }
+      return { ...r, x: nx, vx, facing, cooldown };
+    }
+
+    if (r.phase === 'windup') {
+      const timer = r.timer + dt;
+      if (timer < CHESTNUT_ROLLER_WINDUP_DURATION) return { ...r, timer, cooldown };
+      return { ...r, phase: 'rolling', timer: 0, vx: r.facing * CHESTNUT_ROLLER_ROLL_SPEED, cooldown };
+    }
+
+    if (r.phase === 'rolling') {
+      const timer = r.timer + dt;
+      let nx = r.x + r.vx * dt;
+      let hitBound = false;
+      if (nx < r.minX) {
+        nx = r.minX;
+        hitBound = true;
+      } else if (nx + r.width > r.maxX) {
+        nx = r.maxX - r.width;
+        hitBound = true;
+      }
+      if (hitBound || timer >= CHESTNUT_ROLLER_ROLL_DURATION) {
+        return { ...r, x: nx, vx: 0, phase: 'recover', timer: 0, cooldown };
+      }
+      return { ...r, x: nx, timer, cooldown };
+    }
+
+    // 'recover'
+    const timer = r.timer + dt;
+    if (timer < CHESTNUT_ROLLER_RECOVER_DURATION) return { ...r, timer, cooldown };
+    return { ...r, phase: 'walk', timer: 0, cooldown: CHESTNUT_ROLLER_COOLDOWN };
+  });
 }
 
 export function stepGame(prev: GameState, input: InputState, level: Level, dt: number): GameState {
@@ -755,6 +829,47 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return c;
   });
 
+  // Chestnut Roller resolution: rolling is immune to both an arrow and a
+  // stomp -- per the design brief, only contact damage still applies during
+  // that window (same treatment any other solid hazard gets, not a kill
+  // opportunity). windup/recover/walk are killable by either, same as every
+  // other ground enemy.
+  const chestnutRollersStepped = stepChestnutRollers(prev.chestnutRollers, prev.player, dt);
+  const resolvedChestnutRollers = chestnutRollersStepped.map((r) => {
+    if (!r.alive) return r;
+    const invincible = r.phase === 'rolling';
+
+    if (!invincible) {
+      const hitArrow = findArrowHit(r);
+      if (hitArrow) {
+        consumedArrowIds.add(hitArrow.id);
+        score += 100;
+        gaugeGain += OVERDRIVE_STOMP_GAIN;
+        pushEffect('impact', r.x + r.width / 2, r.y);
+        return { ...r, alive: false };
+      }
+    }
+
+    if (!rectIntersect(player, r)) return r;
+
+    if (!invincible) {
+      const isStomp = wasFalling && prevBottom <= r.y + STOMP_TOLERANCE;
+      if (isStomp) {
+        player.vy = STOMP_BOUNCE;
+        score += 100;
+        gaugeGain += OVERDRIVE_STOMP_GAIN;
+        pushEffect('impact', r.x + r.width / 2, r.y);
+        return { ...r, alive: false };
+      }
+    }
+
+    if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+      lives = applyHit(player, lives, respawnPoint);
+    }
+    return r;
+  });
+
   const resolvedSteamBlowers = stepSteamBlowers(prev.steamBlowers, dt).map((b) => {
     if (!b.alive) return b;
 
@@ -1101,6 +1216,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     arrows: arrows.filter((a) => !consumedArrowIds.has(a.id)),
     jumpers: resolvedJumpers,
     turrets: resolvedTurrets,
+    chestnutRollers: resolvedChestnutRollers,
     seeds: resolvedSeeds,
     arrowSeq,
     portalActivated,

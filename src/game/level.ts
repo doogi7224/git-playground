@@ -5,6 +5,9 @@ import {
   BOSS_HP,
   BOSS_WIDTH,
   BOW_PICKUP_SIZE,
+  CHESTNUT_ROLLER_HEIGHT,
+  CHESTNUT_ROLLER_PATROL_SPEED,
+  CHESTNUT_ROLLER_WIDTH,
   COG_PICKUP_SIZE,
   COIN_SIZE,
   ENEMY_HEIGHT,
@@ -31,6 +34,7 @@ import {
   BioCoil,
   BowPickup,
   Boss,
+  ChestnutRoller,
   CogPickup,
   CogType,
   Coin,
@@ -264,6 +268,34 @@ function makeTurrets(): Turret[] {
   }));
 }
 
+// Chestnut Roller: two wide ground patrol zones, chosen by scanning every
+// other ground-level entity's occupied x-range (existing enemies, pistons,
+// Bio-Coil, Steam Blower, the spawn/bow/cog-spring cluster) and picking the
+// two widest gaps left over (a computed check, not eyeballed -- see
+// 개발로그.md for the exact free-gap list). No new pits, platforms, or
+// level segments were added.
+function makeChestnutRollers(): ChestnutRoller[] {
+  const defs: [string, number, number][] = [
+    ['roller1', 2720, 2880], // gap between e4 (ends 2700) and e5 (starts 2900)
+    ['roller2', 6260, 6760], // fully open ground stretch before the boss portal
+  ];
+  return defs.map(([id, minX, maxX]) => ({
+    id,
+    x: minX,
+    y: GROUND_Y - CHESTNUT_ROLLER_HEIGHT,
+    width: CHESTNUT_ROLLER_WIDTH,
+    height: CHESTNUT_ROLLER_HEIGHT,
+    minX,
+    maxX,
+    vx: CHESTNUT_ROLLER_PATROL_SPEED,
+    facing: 1,
+    phase: 'walk',
+    timer: 0,
+    cooldown: 0,
+    alive: true,
+  }));
+}
+
 function makeEnemies(): Enemy[] {
   const defs: [string, number, number, number][] = [
     ['e1', 400, 620, GROUND_Y],
@@ -415,5 +447,6 @@ export function createLevel(): Level {
     bowPickup: makeBowPickup(),
     jumpers: makeJumpers(),
     turrets: makeTurrets(),
+    chestnutRollers: makeChestnutRollers(),
   };
 }
