@@ -534,10 +534,37 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
   }
 
+  // Root-Hook swinging bypasses platform collision entirely (see the comment
+  // above), so a release can leave the player marginally overlapping a
+  // platform's edge. Left alone, the next frame's directional collision
+  // resolver (which assumes an object is approaching from outside, not
+  // already embedded) snaps the player fully behind the platform's edge --
+  // a large, jarring one-frame displacement instead of a small correction.
+  // Push the player out along whichever axis needs the least movement to
+  // clear the overlap, the instant grappling ends, so no frame ever renders
+  // (or hands normal physics) an embedded position. Same "no clipping into
+  // solid geometry" guarantee every other frame already provides; only the
+  // penetration-depth math is new, not any movement speed or game rule.
+  const resolveEmbeddedOverlap = () => {
+    for (const plat of platforms) {
+      if (!rectIntersect(player, plat)) continue;
+      const overlapLeft = player.x + player.width - plat.x;
+      const overlapRight = plat.x + plat.width - player.x;
+      const overlapTop = player.y + player.height - plat.y;
+      const overlapBottom = plat.y + plat.height - player.y;
+      const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+      if (minOverlap === overlapLeft) player.x -= overlapLeft;
+      else if (minOverlap === overlapRight) player.x += overlapRight;
+      else if (minOverlap === overlapTop) player.y -= overlapTop;
+      else player.y += overlapBottom;
+    }
+  };
+
   let grappledThisFrame = false;
   if (player.grappling) {
     if (!input.grappleHeld) {
       player.grappling = false; // released; vx/vy already hold last frame's tangential velocity
+      resolveEmbeddedOverlap();
     } else if (input.jumpPressed && player.equippedBody === 'rootHookCog') {
       // Cannon Jump synergy (Root-Hook Cog + Spring Cog): a mid-swing jump
       // detaches early, keeps the swing's tangential vx, and fires a fresh
@@ -545,6 +572,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.grappling = false;
       player.vy = jumpVelocity * (player.equippedFoot === 'spring' ? COG_CANNON_JUMP_MULT : 1);
       player.onGround = false;
+      resolveEmbeddedOverlap();
     } else {
       const pump = input.right ? ROOTHOOK_PUMP_ACCEL : input.left ? -ROOTHOOK_PUMP_ACCEL : 0;
       const angularAccel = -(ROOTHOOK_SWING_GRAVITY / player.grappleRadius) * Math.sin(player.grappleAngle) + pump;
