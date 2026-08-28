@@ -23,13 +23,15 @@ const SCOUT_FRAMES = {
     require('../../assets/sprites/scout_v3/scout_run_0.png'),
     require('../../assets/sprites/scout_v3/scout_run_1.png'),
   ],
-  jump: require('../../assets/sprites/scout_v3/scout_run_0.png'),
-  fall: require('../../assets/sprites/scout_v3/scout_run_0.png'),
+  jump: require('../../assets/sprites/scout_v4_jump.png'),
+  fall: require('../../assets/sprites/scout_v4_fall.png'),
+  shoot: require('../../assets/sprites/scout_v4_shoot.png'),
 } satisfies {
   idle: ImageSourcePropType[];
   run: ImageSourcePropType[];
   jump: ImageSourcePropType;
   fall: ImageSourcePropType;
+  shoot: ImageSourcePropType;
 };
 
 interface TrailPoint {
@@ -100,7 +102,9 @@ export default function PlayerView({ player }: { player: Player }) {
   // advances gently by time. Airborne poses follow the existing vertical
   // velocity and never alter physics.
   let spriteSource: ImageSourcePropType;
-  if (!player.onGround) {
+  if (isShooting) {
+    spriteSource = SCOUT_FRAMES.shoot;
+  } else if (!player.onGround) {
     spriteSource = player.vy < 30 ? SCOUT_FRAMES.jump : SCOUT_FRAMES.fall;
   } else if (isRunning || isDashing) {
     const runIndex = Math.floor(Math.abs(player.x) / (MOVE_SPEED * (RUN_FRAME_MS / 1000))) % SCOUT_FRAMES.run.length;
@@ -111,10 +115,14 @@ export default function PlayerView({ player }: { player: Player }) {
 
   // Lean into the run direction; magnitude scales with speed, sign comes
   // from `facing` so it reads correctly after the horizontal flip below.
-  const leanDeg = isShooting ? -9 : isRunning ? Math.min(1, Math.abs(player.vx) / MOVE_SPEED) * 7 : 0;
+  const leanDeg = isRunning && !isShooting ? Math.min(1, Math.abs(player.vx) / MOVE_SPEED) * 7 : 0;
 
-  const left = player.x + player.width / 2 - VISUAL_SIZE / 2;
-  const top = player.y + player.height - VISUAL_SIZE + FOOT_ANCHOR_ADJUST + bobY;
+  // The firing silhouette includes the full bow, so it needs a slightly
+  // wider presentation box. The feet remain anchored to the same hitbox.
+  const spriteWidth = isShooting ? 66 : VISUAL_SIZE;
+  const spriteHeight = isShooting ? 54 : VISUAL_SIZE;
+  const left = player.x + player.width / 2 - spriteWidth / 2;
+  const top = player.y + player.height - spriteHeight + FOOT_ANCHOR_ADJUST + bobY;
 
   if (isDashing) {
     trailRef.current = [{ left, top, facing: player.facing }, ...trailRef.current].slice(0, DASH_TRAIL_LENGTH);
@@ -174,6 +182,8 @@ export default function PlayerView({ player }: { player: Player }) {
           {
             left,
             top,
+            width: spriteWidth,
+            height: spriteHeight,
             opacity: blinking ? 0.35 : 1,
             transform: [
               { scaleX: player.facing * airScaleX },
@@ -185,21 +195,6 @@ export default function PlayerView({ player }: { player: Player }) {
           },
         ]}
       />
-
-      {isShooting && (
-        <Image
-          source={require('../../assets/sprites/relic_bow_v1/relic_bow_pickup.png')}
-          resizeMode="contain"
-          style={[
-            styles.bow,
-            {
-              left: left + (player.facing > 0 ? VISUAL_SIZE * 0.48 : -VISUAL_SIZE * 0.08),
-              top: top + VISUAL_SIZE * 0.16,
-              transform: [{ scaleX: player.facing }, { rotate: player.facing > 0 ? '12deg' : '-12deg' }],
-            },
-          ]}
-        />
-      )}
 
       {/* Wall-jump puff: a few dust/leaf flecks kicking off the wall side. */}
       <Animated.View
@@ -264,5 +259,4 @@ const styles = StyleSheet.create({
     width: VISUAL_SIZE,
     height: VISUAL_SIZE,
   },
-  bow: { position: 'absolute', width: 20, height: 34 },
 });
