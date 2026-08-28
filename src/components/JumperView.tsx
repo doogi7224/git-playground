@@ -17,8 +17,11 @@ export default function JumperView({ jumper }: { jumper: Jumper }) {
   const size = jumper.width * 1.75;
   const bob = breathe.interpolate({ inputRange: [0, 1], outputRange: [0, -1.5] });
   const windup = jumper.phase === 'windup';
+  const airborne = jumper.phase === 'airborne';
+  const scaleX = windup ? 1.1 : airborne ? 0.88 : 1;
+  const scaleY = windup ? 0.76 : airborne ? 1.14 : 1;
   return (
-    <Animated.View style={[styles.wrap, { left: jumper.x + jumper.width / 2 - size / 2, top: jumper.y + jumper.height - size, width: size, height: size, transform: [{ translateY: bob }, { scaleX: windup ? 1.08 : 1 }, { scaleY: windup ? 0.78 : 1 }] }]}>
+    <Animated.View style={[styles.wrap, { left: jumper.x + jumper.width / 2 - size / 2, top: jumper.y + jumper.height - size, width: size, height: size, transform: [{ translateY: bob }, { scaleX }, { scaleY }] }]}>
       {windup && <View pointerEvents="none" style={styles.warningRing} />}
       <Image source={require('../../assets/sprites/acorn_hopper_v1/acorn_hopper_idle.png')} resizeMode="contain" style={styles.sprite} />
     </Animated.View>

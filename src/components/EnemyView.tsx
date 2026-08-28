@@ -3,22 +3,23 @@ import { Animated, Easing, ImageSourcePropType, StyleSheet, View } from 'react-n
 import { Enemy } from '../game/types';
 import { palette } from '../theme';
 
-// Cogmite is a painted, full-body forest automaton. Its visual size never
-// affects the collision box or patrol behaviour.
+// The game-logic type remains Enemy, but its presentation is now a
+// Brambleling: a small masked forest guardian rather than a mechanical bug.
+// Visual size never affects the collision box or patrol behaviour.
 const VISUAL_SIZE = 46;
 const WALK_FRAME_DISTANCE = 18;
-const COGMITE_FRAMES = {
+const BRAMBLING_FRAMES = {
   idle: [
-    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_1.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
   ],
   walk: [
-    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_1.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
-    require('../../assets/sprites/cogmite_v3/cogmite_1.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
+    require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
   ],
-  alert: require('../../assets/sprites/cogmite_v3/cogmite_0.png'),
+  alert: require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
 } satisfies {
   idle: ImageSourcePropType[];
   walk: ImageSourcePropType[];
@@ -60,8 +61,8 @@ export default function EnemyView({ enemy }: { enemy: Enemy }) {
   const left = enemy.x + enemy.width / 2 - VISUAL_SIZE / 2;
   const top = enemy.y + enemy.height - VISUAL_SIZE;
   const spriteSource: ImageSourcePropType = charging
-    ? COGMITE_FRAMES.alert
-    : COGMITE_FRAMES.walk[Math.floor(Math.abs(enemy.x) / WALK_FRAME_DISTANCE) % COGMITE_FRAMES.walk.length];
+    ? BRAMBLING_FRAMES.alert
+    : BRAMBLING_FRAMES.walk[Math.floor(Math.abs(enemy.x) / WALK_FRAME_DISTANCE) % BRAMBLING_FRAMES.walk.length];
 
   return (
     <View style={[styles.wrap, { left, top }]}>
