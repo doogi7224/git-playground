@@ -4,6 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.13",
+    "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.16",
     "expo-linear-gradient": "~57.0.1",
     "expo-status-bar": "~57.0.1",

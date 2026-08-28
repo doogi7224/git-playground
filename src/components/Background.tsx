@@ -18,7 +18,7 @@ const FAR_FACTOR = 0.15;
 
 // One painterly forest scene keeps the world readable and lets parallax
 // support the run instead of introducing a second ruleset.
-const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_forest_v3.png');
+const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_alpine_valley_v4.png');
 const SCENE_WATERFALL_SOURCE = require('../../assets/backgrounds/scene_forest_waterfall_v3.png');
 const SCENE_RUINS_SOURCE = require('../../assets/backgrounds/scene_forest_ruins_v3.png');
 

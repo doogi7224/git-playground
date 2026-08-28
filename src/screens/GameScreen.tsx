@@ -34,33 +34,31 @@ import { computeCameraX, createInitialState, stepGame } from '../game/physics';
 import { GameState, InputState } from '../game/types';
 import { palette } from '../theme';
 
-// Presentation-only layout constants (not game/constants.ts): how much screen
-// space to reserve above/below the scaled game stage so the HUD and mobile
-// controls never overlap the ground/platform band of the world. Sized to
-// comfortably clear Hud's own content height and Controls' tallest (jump)
-// button + its bottom offset/shadow.
-const HUD_RESERVED_TOP = 72;
-const CONTROLS_RESERVED_BOTTOM = 104;
-// Clamp how far the fixed VIEWPORT_HEIGHT logical space is scaled up/down so
-// very short landscape windows don't over-shrink the world while tall phone
-// and tablet layouts can still fill the full band between HUD and controls.
-const MIN_STAGE_SCALE = 0.6;
-const MAX_STAGE_SCALE = 4.5;
+// Gearwood is composed as a full 16:9 game frame: the world fills the frame
+// and HUD/touch controls are overlaid on it. Never reserve a separate top or
+// bottom band — that turns the stage into a thin strip and breaks the visual
+// composition approved for the game.
+const GAME_ASPECT = 16 / 9;
+// At this zoom a 40px player reads at about 10% of the frame height on a
+// 16:9 phone, matching the approved composition without changing any physics
+// or hitbox constants. The extra logical space above is scenery only.
+const DESIGN_VIEW_HEIGHT_MULTIPLIER = 1.65;
+const WORLD_BOTTOM_BREATHING_ROOM = 40;
 
 export default function GameScreen({ onExit }: { onExit: () => void }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const frameWidth = Math.min(windowWidth, windowHeight * GAME_ASPECT);
+  const frameHeight = frameWidth / GAME_ASPECT;
   // The world's Y coordinates (ground, platforms, enemy spawn heights, etc.)
   // are all authored against the fixed VIEWPORT_HEIGHT logical space and must
   // stay untouched — see CLAUDE.md 19 ("그래픽과 실제 충돌 박스를 분리한다").
   // Rather than stretching that logical space, we scale the whole stage up
   // to fill the actual device screen and shrink how many world-px are
   // visible horizontally to match, so gameplay math never sees this at all.
-  const availableStageHeight = Math.max(120, windowHeight - HUD_RESERVED_TOP - CONTROLS_RESERVED_BOTTOM);
-  const stageScale = Math.min(
-    MAX_STAGE_SCALE,
-    Math.max(MIN_STAGE_SCALE, availableStageHeight / VIEWPORT_HEIGHT)
-  );
-  const viewportWidth = windowWidth / stageScale;
+  const logicalStageHeight = VIEWPORT_HEIGHT * DESIGN_VIEW_HEIGHT_MULTIPLIER;
+  const stageScale = frameHeight / logicalStageHeight;
+  const viewportWidth = frameWidth / stageScale;
+  const worldOffsetY = logicalStageHeight - VIEWPORT_HEIGHT - WORLD_BOTTOM_BREATHING_ROOM;
   const level = useMemo(() => createLevel(), []);
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(level));
 
@@ -109,15 +107,16 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 
   return (
     <View style={styles.outer}>
-      <View style={[styles.stageClip, { top: HUD_RESERVED_TOP, height: availableStageHeight }]}>
+      <View style={[styles.gameFrame, { width: frameWidth, height: frameHeight }]}>
+      <View style={styles.stageClip}>
         <View
           style={[
             styles.stage,
-            { width: viewportWidth, height: VIEWPORT_HEIGHT, transform: [{ scale: stageScale }] },
+            { width: viewportWidth, height: logicalStageHeight, transform: [{ scale: stageScale }] },
           ]}
         >
-          <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportWidth={viewportWidth} viewportHeight={VIEWPORT_HEIGHT} />
-          <View style={[styles.world, { width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
+          <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportWidth={viewportWidth} viewportHeight={logicalStageHeight} />
+          <View style={[styles.world, { top: worldOffsetY, width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
             {level.platforms.map((p) => (
               <PlatformView key={p.id} platform={p} />
             ))}
@@ -261,6 +260,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           </View>
         </View>
       )}
+      </View>
     </View>
   );
 }
@@ -268,19 +268,27 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
 const styles = StyleSheet.create({
   outer: {
     flex: 1,
+    backgroundColor: '#101b1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gameFrame: {
+    position: 'relative',
+    overflow: 'hidden',
     backgroundColor: palette.skyBottom,
   },
-  // Fixed-height band between the HUD and the mobile controls; clips the
-  // scaled stage so it can never paint over either.
+  // The complete visual game frame. Hud and Controls remain siblings of the
+  // stage so they overlay the scenery without stealing vertical world space.
   stageClip: {
     position: 'absolute',
-    left: 0,
+    top: 0,
     right: 0,
+    bottom: 0,
+    left: 0,
     overflow: 'hidden',
   },
   // Laid out at its own small logical size (VIEWPORT_HEIGHT-tall) and then
-  // scaled up from its top-left corner to exactly fill stageClip — see the
-  // stageScale comment above. Gameplay coordinates never see this scale.
+  // scaled up into the 16:9 frame. Gameplay coordinates never see this scale.
   stage: {
     top: 0,
     left: 0,
@@ -289,8 +297,6 @@ const styles = StyleSheet.create({
   },
   world: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFill,
