@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고.
+- (대기) 사용자 지시: 지금은 새 기능 작업 없음. Codex가 탐험 보상 캐시 그래픽·개봉 파편·보상 팝업·활 탄약 HUD 연결을 마치면, 활 탄약(3발 시작/5발 상한) 소비·차단, 캐시 `arrowBundle` +1 보급, 상자 개봉(대시=Root Cache/화살=Relic Pod) 조건, Chestnut Roller 상태 전이·무적을 포함한 전체 회귀만 다시 수행한다. 그 전까지는 `src/game/*`를 열지 않는다.
 
 ## CODEX ACTIVE
 
