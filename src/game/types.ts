@@ -346,6 +346,8 @@ export interface GameState {
   seeds: SeedProjectile[];
   /** Monotonic counter used only to mint unique Arrow ids, same pattern as effectSeq. */
   arrowSeq: number;
+  /** Monotonic counter used only to mint unique SeedProjectile ids, same pattern as effectSeq (previously derived from a rounded turret timer, which collided every fire cycle since a turret's timer is always ~TURRET_FIRE_INTERVAL at the moment it fires). */
+  seedSeq: number;
   /** True once the player has crossed the portal into the boss arena; only used to fire the one-time crossing effect. */
   portalActivated: boolean;
   /** Index into level.checkpoints of the highest one crossed so far; death respawns here. */

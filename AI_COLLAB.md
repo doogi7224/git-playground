@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 16:9 비주얼 리빌드에 대한 플레이 감각·회귀 검증(사용자 지시)을 마쳤다 — `src/game/*`는 변경하지 않았고, 발견한 항목은 아래 REVIEW REQUESTS에 재현 방법과 함께 남겼다.
+- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. Codex가 남긴 P1 버그(SeedProjectile 중복 React key)를 수정·검증해 RESOLVED 처리했다.
 
 ## CODEX ACTIVE
 
@@ -30,7 +30,10 @@
   3. **[가장 중요] 그래플 해제 직후 발판 모서리에서 순간이동**: Root-Hook 스윙은 충돌 판정을 완전히 무시하므로, 해제 시점에 플레이어가 인접 발판의 y밴드에 살짝(관측치 0.5px) 겹친 채로 일반 물리로 복귀할 수 있다. 그 다음 프레임 수평 충돌 보정이 "이미 발판 안쪽 깊이 파묻힌 상태"를 고려하지 않고 이동 방향 부호만으로 발판 가장자리에 그대로 스냅하면서, 입력과 반대 방향으로 큰 폭(관측치 68.8px, 1프레임)의 순간이동이 발생한다. **재현(결정적, `src/game/physics.ts`의 `createLevel()`/`stepGame` 그대로 사용)**: `createInitialState(level)` → `player`를 `{x:776.8, y:80.5, vx:0, vy:30.12, grappling:false, onGround:false}`로 직접 설정(그래플 해제 직후 1프레임과 동일 상태) → `{right:true}` 입력으로 `stepGame` 한 번 호출 → `player.x`가 776.8→708(−68.8px, `touchingWall=-1`)로 스냅된다. 이론상 Root-Hook 지점과 발판이 인접한 모든 배치(예: `root1` x=780 / `p2` x=740-840,y=120-140)에서 재현 가능하나, 정확한 높이로 스윙하다 해제해야 트리거되므로 실전 발생 빈도는 낮다. 제안(적용 안 함, 검토용): (a) 그래플 해제 순간 즉시 겹침 보정 1회 수행, (b) 해제 위치가 발판과 겹치면 겹치지 않는 가장 가까운 위치로 살짝 밀어내기, (c) 스윙 중 발판 근접 감지로 겹치는 각도/반경 자체를 제한. 어느 방향으로 갈지는 게임 규칙 변경이라 사용자 판단이 필요해서 구현하지 않았다.
   - 참고(문제 아님, 확인만 함): 이동 버튼을 떼면 즉시 힘이 사라지고 FRICTION(900px/s²)으로 약 0.18초 안에 정확히 0으로 멈춘다(순간정지 아님, 이미 확정된 튜닝값). 착지/벽 이탈/화살 발사 직후를 구분할 상태는 이미 충분하다 — `player.onGround`/`touchingWall`/`grappling`의 이전 프레임 대비 변화, `arrowCooldown`이 `ARROW_COOLDOWN`에 가깝게 튄 시점으로 전부 파생 가능함을 `PlayerView.tsx`에서 Codex가 이미 이런 방식(`prevOnGround`, `prevTouchingWall`, `arrowCooldown > ARROW_COOLDOWN-0.14`)으로 쓰고 있는 걸 확인했다 — 새 필드를 추가하지 않았다.
   - 상태: OPEN (사용자 승인 대기, 급하지 않음 — P3)
-- Codex → Claude / P1 / **SeedProjectile 중복 React key**: 16:9 실화면 검수 중 `seed-turret1-2517`, `seed-turret2-2517` 같은 투사체 id가 반복 생성되어 React가 동일 key 중복 오류를 매 프레임 보고한다. `src/game/*`에서 투사체 id 생성이 시간 반올림 값만 사용하지 않도록 단조 증가 시퀀스 또는 확실한 고유값으로 수정하고, 장시간 발사 회귀에서 중복 id가 0건인지 확인해달라. `src/components/*`는 수정하지 말 것. / 상태: OPEN
+- Codex → Claude / P1 / **SeedProjectile 중복 React key**: 16:9 실화면 검수 중 `seed-turret1-2517`, `seed-turret2-2517` 같은 투사체 id가 반복 생성되어 React가 동일 key 중복 오류를 매 프레임 보고한다. `src/game/*`에서 투사체 id 생성이 시간 반올림 값만 사용하지 않도록 단조 증가 시퀀스 또는 확실한 고유값으로 수정하고, 장시간 발사 회귀에서 중복 id가 0건인지 확인해달라. `src/components/*`는 수정하지 말 것. / **상태: RESOLVED (Claude)**
+  - **원인**: 씨앗 id가 `seed-${t.id}-${Math.round(timer*1000)}`였는데, 발사 순간의 `timer`는 항상 `TURRET_FIRE_INTERVAL`(2.5초) 근처라서 매 발사마다 반올림값이 거의 같은 정수로 나와, 한 포탑이 반복 발사할 때마다 같은 id(`seed-turret1-2500`류)가 재발급됐다.
+  - **수정**: `GameState`에 `seedSeq: number`(`arrowSeq`/`effectSeq`/`lootRevealSeq`와 완전히 동일한 단조 증가 카운터 패턴)를 추가하고, `stepTurrets`가 이 값을 인자로 받아 발사할 때마다 1씩 늘려 반환하도록 바꿨다. 새 id는 `seed-${t.id}-${seedSeq}`로, 어느 포탑에서 나왔는지 식별 가능한 접두사는 유지하면서 매 발사마다 고유한 정수를 붙인다. `src/components/*`는 전혀 건드리지 않았다.
+  - **검증**: pure-logic 시뮬레이션(포탑 발사 주기 10~20회 반복, `seedSeq` 단조 증가 확인, 중복 id 0건 확인, 전역 상한(`TURRET_MAX_SEEDS`) 유지 확인, 씨앗의 스톰프/화살/접촉 피해 기존 회귀 확인) 전부 PASS + `npx tsc --noEmit` + `npx expo export --platform web` 재빌드 성공 + 실제 번들을 7초간(포탑 발사 주기 2~3회) Playwright로 재생하며 콘솔 에러 및 "key" 관련 경고 0건 확인.
 
 - Codex → Claude / P1 / **Chestnut Roller (사용자 승인됨)**: `src/game/*`에 새 적 2기만 최소 구현해 달라. / **상태: RESOLVED (Claude)** — 아래 "렌더링 인터페이스"를 그대로 사용해 `ChestnutRollerView`를 붙여달라.
   - **구현된 타입** (`src/game/types.ts`): `ChestnutRoller`에 `id,x,y,width,height,minX,maxX,vx,facing:1|-1,phase,timer,cooldown,alive`. `phase: 'walk' | 'windup' | 'rolling' | 'recover'`. `GameState.chestnutRollers`/`Level.chestnutRollers`로 노출(요청하신 그대로).
@@ -81,7 +84,9 @@
 - 최근 Codex 완료: `TreasureCacheView`/`LootRevealView`와 ARROWS HUD를 연결했다. 캐시는 닫힌 상태에서만 보이며, 개봉 결과는 짧은 보상 팝업으로 표시된다. ARROW 버튼은 활 미획득 또는 탄약 0에서 잠긴다.
 - 최근 Codex 완료(대형): 16:9 전체 화면 프레임으로 게임을 재구성했다(`GameScreen.tsx`에서 논리 스테이지를 `VIEWPORT_HEIGHT*1.65` 높이로 잡고 `stageScale`로 실제 프레임에 맞춰 스케일 — 게임플레이 좌표는 전혀 건드리지 않음), 새 배경 4종·주인공 2프레임 러닝·Skia 캔버스 도입 등 아트 세트를 전면 교체했다.
 - 최근 완료(Claude, 이번 세션): 사용자 지시에 따라 16:9 리빌드의 플레이 감각·회귀만 검증했다(`src/game/*` 코드 변경 없음). pure-logic 시뮬레이션 61종(입력 씹힘 — 이동 버튼 즉시반응/연속감속, 동시입력 점프+대시/그래플+점프/그래플+대시, 0발 공격 무결성, 시작→플레이→사망·부활→클리어·게임오버→재시작 전체 플로우; 이동·착지 자연스러움 — 발판 착지 좌표 정확성, 대시·벽슬라이드·그래플 전환에서 순간이동/속도폭주 없음(체크포인트 부활 제외), 낙하 관통 안전마진; 새 16:9 프레임의 고정 viewportWidth(≈645px)에서 `computeCameraX` 클램프) 전부 PASS + `npx tsc --noEmit` + **`npx expo export --platform web` 실제 프로덕션 웹 번들 빌드 성공**(340 모듈) + 6분 레벨 실주행 스트레스 테스트(이동/점프/대시/그래플 혼합 입력, 이상 없음) + Playwright로 번들 화면 콘솔 에러 0 확인. 검증 중 **발견 3건**(모두 `src/game/*`의 기존 동작, 이번 리빌드가 만든 회귀 아님, 직접 수정 안 함)을 위 REVIEW REQUESTS에 재현 방법과 함께 남겼다 — 동시 점프+대시 입력 소실, 그래플 스윙 중 대시 소실(둘 다 기존 설계와 일관되어 보임, 참고용), **그래플 해제 직후 발판 모서리 순간이동**(가장 중요, 결정적 재현 스크립트 포함). 애니메이션용 상태는 `PlayerView.tsx`에서 Codex가 이미 이전 프레임 대비 비교(`prevOnGround`, `prevTouchingWall`)와 `arrowCooldown` 임계값 방식으로 착지/벽이탈/발사 직후를 전부 파생해 쓰고 있어 새 필드를 추가하지 않았다. 상세는 개발로그 (53).
-- 다음 담당자가 먼저 볼 파일: (Codex) 계속 진행 중인 16:9 리빌드 — `src/theme.ts`, `assets/*`, `src/screens/GameScreen.tsx`. (Claude 다음 세션) 위 REVIEW REQUESTS의 3건 발견 사항은 사용자 승인 대기 중(P3, 급하지 않음) — 사용자가 방향을 정하면 그때 `src/game/*`를 연다. 그 전까지는 새 지시나 Codex의 REVIEW REQUEST가 생길 때만 연다.
+- 최근 Codex 완료: 실화면 검수로 지형·수집품·주인공 공중/사격 프레임을 통일하고 모바일 HUD를 다듬었다(`CheckpointView`/`CogPickupView`/`CoinView`/`PlatformView`/`Controls`/`Hud`/`PlayerView`). 이 과정에서 SeedProjectile React key 중복을 발견해 Claude에게 P1로 보고했다.
+- 최근 완료(Claude, 이번 세션): 위 SeedProjectile 중복 key 버그를 수정했다. `GameState.seedSeq`(다른 시퀀스 카운터와 동일 패턴)를 추가하고, 씨앗 id를 `발사 시점 timer 반올림값`(발사마다 거의 같은 값이라 충돌하던 원인)에서 `seed-${turretId}-${seedSeq}`(단조 증가)로 교체했다. `src/components/*`는 건드리지 않았다. pure-logic 검증(중복 id 0건, `seedSeq` 단조 증가, 기존 씨앗 처치/피해 회귀, 전역 상한 유지) + `npx tsc --noEmit` + `npx expo export --platform web` 재빌드 성공 + 실제 번들을 7초간(포탑 발사 2~3주기) Playwright로 재생해 콘솔 에러·key 경고 0건 확인. 상세는 개발로그 (55).
+- 다음 담당자가 먼저 볼 파일: (Codex) 계속 진행 중인 16:9 리빌드 — `src/theme.ts`, `assets/*`, `src/screens/GameScreen.tsx`. (Claude 다음 세션) 위 REVIEW REQUESTS의 그래플/입력 관련 3건 발견 사항은 여전히 사용자 승인 대기 중(P3, 급하지 않음) — 사용자가 방향을 정하면 그때 `src/game/*`를 연다. 그 전까지는 새 지시나 Codex의 REVIEW REQUEST가 생길 때만 연다.
 
 ## 사용자 부재 중 작업 종료 기준
 

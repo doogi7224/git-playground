@@ -189,6 +189,7 @@ export function createInitialState(level: Level): GameState {
     lootRevealSeq: 0,
     seeds: [],
     arrowSeq: 0,
+    seedSeq: 0,
     portalActivated: false,
     checkpointIndex: 0,
     effects: [],
@@ -353,8 +354,15 @@ export function isTurretCharging(turret: Turret): boolean {
 // as Cogmite's chargeDir and Bio-Coil's facing, not continuous homing.
 // Skips spawning (but still resets its own timer, so it doesn't instantly
 // retry) when the global seed cap is already full.
-function stepTurrets(prev: Turret[], player: Rect, dt: number, existingSeedCount: number): { turrets: Turret[]; newSeeds: SeedProjectile[] } {
+function stepTurrets(
+  prev: Turret[],
+  player: Rect,
+  dt: number,
+  existingSeedCount: number,
+  startSeedSeq: number
+): { turrets: Turret[]; newSeeds: SeedProjectile[]; nextSeedSeq: number } {
   let seedCount = existingSeedCount;
+  let seedSeq = startSeedSeq;
   const newSeeds: SeedProjectile[] = [];
   const turrets = prev.map((t) => {
     if (!t.alive) return t;
@@ -364,7 +372,11 @@ function stepTurrets(prev: Turret[], player: Rect, dt: number, existingSeedCount
       const center = t.x + t.width / 2;
       const dir: 1 | -1 = player.x + player.width / 2 < center ? -1 : 1;
       newSeeds.push({
-        id: `seed-${t.id}-${Math.round(timer * 1000)}`,
+        // A turret's timer is always ~TURRET_FIRE_INTERVAL at the moment it
+        // fires, so deriving the id from it (as before) produced the same id
+        // every cycle -- a monotonic per-GameState counter guarantees
+        // uniqueness the same way arrowSeq/effectSeq/lootRevealSeq already do.
+        id: `seed-${t.id}-${seedSeq}`,
         x: dir > 0 ? t.x + t.width : t.x - SEED_WIDTH,
         y: t.y + t.height / 2 - SEED_HEIGHT / 2,
         width: SEED_WIDTH,
@@ -373,10 +385,11 @@ function stepTurrets(prev: Turret[], player: Rect, dt: number, existingSeedCount
         age: 0,
       });
       seedCount++;
+      seedSeq++;
     }
     return { ...t, timer: 0 };
   });
-  return { turrets, newSeeds };
+  return { turrets, newSeeds, nextSeedSeq: seedSeq };
 }
 
 // Chestnut Roller: walk (patrol, vulnerable) -> windup (telegraph, locked
@@ -989,8 +1002,9 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // Turrets decide their fire direction from this frame's player position
   // (stepTurrets), using the current seed count (post-movement/filtering,
   // pre-new-shots) against TURRET_MAX_SEEDS as the concurrency backstop.
-  const turretStep = stepTurrets(prev.turrets, player, dt, seeds.length);
+  const turretStep = stepTurrets(prev.turrets, player, dt, seeds.length, prev.seedSeq);
   seeds = [...seeds, ...turretStep.newSeeds];
+  const seedSeq = turretStep.nextSeedSeq;
   const resolvedTurrets = turretStep.turrets.map((t) => {
     if (!t.alive) return t;
 
@@ -1282,6 +1296,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     lootRevealSeq,
     seeds: resolvedSeeds,
     arrowSeq,
+    seedSeq,
     portalActivated,
     checkpointIndex,
     effects: [...decayedEffects, ...newEffects],
