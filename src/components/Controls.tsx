@@ -52,11 +52,13 @@ function pointInRect(x: number, y: number, r: Rect | null): boolean {
 type ButtonRole = 'move' | 'grapple' | 'dash' | 'jump' | 'attack';
 
 const ROLE_COLORS: Record<ButtonRole, [string, string]> = {
-  move: ['#dfe7ea', '#9fb0b8'], // neutral steel — left/right
-  grapple: ['#8fc79c', palette.moss], // Root-Hook green
-  dash: ['#e08a5e', palette.uiDanger], // ember — speed
-  jump: [palette.uiPrimary, palette.uiPrimaryDark], // brass hero button
-  attack: ['#84c9bc', '#287667'], // relic-bow teal
+  // Dark jewel-and-metal faces stay readable over bright scenery without
+  // looking like flat toy controls.
+  move: ['#56615e', '#202b29'],
+  grapple: ['#3f9b86', '#174b43'],
+  dash: ['#b24f37', '#4b1d1b'],
+  jump: ['#d5a947', '#624018'],
+  attack: ['#398b88', '#153f43'],
 };
 
 function ButtonFace({ label, role, big, scale, disabled }: { label: string; role: ButtonRole; big?: boolean; scale: Animated.Value; disabled?: boolean }) {
@@ -336,19 +338,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(230, 186, 92, 0.9)',
+    borderTopColor: 'rgba(255, 239, 187, 0.95)',
     overflow: 'hidden',
   },
   label: {
     marginTop: 5,
     fontSize: 30,
     fontWeight: '800',
-    color: 'rgba(0,0,0,0.55)',
+    color: '#f6edd7',
+    textShadowColor: 'rgba(0,0,0,0.65)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 1,
   },
   bigLabel: {
     marginTop: 4,
     fontSize: 38,
-    color: '#5a3d00',
+    color: '#fff3cb',
   },
   disabledButton: { opacity: 0.38 },
   roleLabel: {
@@ -356,12 +362,12 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.7,
-    color: 'rgba(0,0,0,0.48)',
+    color: 'rgba(255,246,214,0.72)',
   },
   bigRoleLabel: {
     marginTop: -1,
     fontSize: 9,
-    color: '#5a3d00',
+    color: 'rgba(255,247,213,0.86)',
   },
   // Small bolt/rivet dots at the compass points of the ring — the "작은 볼트"
   // detail called for in CLAUDE.md 19 so buttons read as machined parts
@@ -385,7 +391,7 @@ const styles = StyleSheet.create({
     right: '18%',
     height: '38%',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
   // Fades in as the button is pressed (driven by the same scale Animated.Value).
   pressGlow: {
