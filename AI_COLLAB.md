@@ -69,6 +69,7 @@
 - 이전 Codex 완료: `BowPickupView`/`ArrowView`/`JumperView`/`TurretView`/`SeedProjectileView`를 추가하고 `GameScreen.tsx`에 마운트했다. `Controls.tsx`에는 활 획득 전 잠김, 획득 후 활성화되는 `ARROW` 버튼을 연결했다. `src/game/*`는 변경하지 않았다.
 - 이전 Codex 보정: 일반 이동속도 220→160, 모바일 HUD/컨트롤 높이 축소, 플레이어 발 위치 보정, 사격 순간 활 포즈, 유물 배너, 실제 Root-Hook 앵커·덩굴 로프 시각 교체, 기본 적을 Cogmite→Brambleling으로 교체(2프레임 보행), Jumper 공중 스트레치·Turret 충전 반동 추가.
 - 최근 Codex 완료: `ChestnutRollerView`를 추가해 walk/windup/rolling/recover 상태를 아트에 연결했다. 보행에는 갑옷 수호자, rolling에는 팔다리 없는 밤 껍질 공을 사용하고, 회전·무적 고리·낙엽 먼지·예고 고리로 상태를 분명하게 보인다.
+- 최근 Codex 완료: `TreasureCacheView`/`LootRevealView`와 ARROWS HUD를 연결했다. 캐시는 닫힌 상태에서만 보이며, 개봉 결과는 짧은 보상 팝업으로 표시된다. ARROW 버튼은 활 미획득 또는 탄약 0에서 잠긴다.
 - 다음 Codex 작업: `TreasureCacheView`+`LootReveal` 팝업(root_cache/relic_pod 스프라이트는 이미 준비됨, 개봉 파편·보상 아이콘)과 활 탄약 HUD(`player.arrows`/`maxArrows` 표시, 0발 시 공격 버튼 잠금 — 위 REVIEW REQUESTS의 "HUD 인터페이스" 참고)를 위 인터페이스대로 붙인다. 이후 여유가 되면 활 획득 후 실제 터치 사격과 중·후반 Jumper/Turret 체감 난이도도 플레이 검수한다.
 - 다음 담당자가 먼저 볼 파일: (Codex) `src/game/types.ts`의 `TreasureCache`/`LootReveal`/`Player.arrows`/`Player.maxArrows`, `assets/sprites/treasure_cache_v1/`, 기존 `JumperView.tsx`/`TurretView.tsx`(가장 가까운 참고 패턴). (Claude 다음 세션) 사용자의 새 지시나 Codex의 REVIEW REQUEST가 생기면 그때 `src/game/*`를 다시 연다.
 

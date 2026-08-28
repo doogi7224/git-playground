@@ -81,12 +81,16 @@ export default function Hud({
   overdriveGauge,
   overdriveActive,
   equippedCogs,
+  arrows,
+  maxArrows,
 }: {
   score: number;
   lives: number;
   overdriveGauge: number;
   overdriveActive: boolean;
   equippedCogs: (CogType | null)[];
+  arrows: number;
+  maxArrows: number;
 }) {
   const gaugeFill = Math.min(1, overdriveGauge / OVERDRIVE_MAX);
   const equipped = equippedCogs.filter((c): c is CogType => c != null);
@@ -102,6 +106,7 @@ export default function Hud({
         </View>
         <LifePips lives={lives} />
       </View>
+      {maxArrows > 0 && <View style={styles.ammoBadge}><Text style={styles.badgeCaption}>ARROWS</Text><Text style={styles.ammoText}>➤ {arrows}/{maxArrows}</Text></View>}
       <OverdriveGauge gaugeFill={gaugeFill} overdriveActive={overdriveActive} />
       {equipped.length > 0 && (
         <View style={styles.cogRow}>
@@ -139,6 +144,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.uiPlateEdge,
   },
+  ammoBadge: { position: 'absolute', top: 42, left: 16, flexDirection: 'row', gap: 5, alignItems: 'center', backgroundColor: palette.uiPlate, borderRadius: 8, borderWidth: 1, borderColor: palette.uiPlateEdge, paddingHorizontal: 7, paddingVertical: 3 },
+  ammoText: { color: '#8fe4d2', fontSize: 11, fontWeight: '900' },
   gaugeCap: {
     width: 8,
     height: 12,

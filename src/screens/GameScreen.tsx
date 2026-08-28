@@ -8,6 +8,7 @@ import BossView from '../components/BossView';
 import BowPickupView from '../components/BowPickupView';
 import CheckpointView from '../components/CheckpointView';
 import ChestnutRollerView from '../components/ChestnutRollerView';
+import LootRevealView from '../components/LootRevealView';
 import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
@@ -26,6 +27,7 @@ import SeedProjectileView from '../components/SeedProjectileView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import SteamBlowerView from '../components/SteamBlowerView';
 import TurretView from '../components/TurretView';
+import TreasureCacheView from '../components/TreasureCacheView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
@@ -144,6 +146,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             {gameState.chestnutRollers.map((r) => (
               <ChestnutRollerView key={r.id} roller={r} />
             ))}
+            {gameState.treasureCaches.map((c) => <TreasureCacheView key={c.id} cache={c} />)}
             {gameState.bioCoils.map((c) => (
               <BioCoilView key={c.id} coil={c} />
             ))}
@@ -168,6 +171,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <RopeView player={gameState.player} />
             <PlayerView player={gameState.player} />
             <EffectsView effects={gameState.effects} />
+            {gameState.lootReveals.map((l) => <LootRevealView key={l.id} reveal={l} />)}
           </View>
         </View>
       </View>
@@ -178,6 +182,8 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         overdriveGauge={gameState.player.overdriveGauge}
         overdriveActive={gameState.player.overdriveTimer > 0}
         equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody, gameState.player.equippedFoot]}
+        arrows={gameState.player.arrows}
+        maxArrows={gameState.player.maxArrows}
       />
 
       <Controls
@@ -191,6 +197,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         onGrappleOut={() => (inputRef.current.grappleHeld = false)}
         onAttack={() => (inputRef.current.attackPressed = true)}
         hasBow={gameState.player.hasBow}
+        arrows={gameState.player.arrows}
       />
 
       {gameState.phase !== 'playing' && (

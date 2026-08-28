@@ -29,6 +29,7 @@ interface Props {
   onGrappleOut: () => void;
   onAttack: () => void;
   hasBow: boolean;
+  arrows: number;
 }
 
 interface Rect {
@@ -101,6 +102,7 @@ export default function Controls({
   onGrappleOut,
   onAttack,
   hasBow,
+  arrows,
 }: Props) {
   const leftRef = useRef<View>(null);
   const rightRef = useRef<View>(null);
@@ -240,7 +242,7 @@ export default function Controls({
       </View>
       <View style={styles.actionPad}>
         <View ref={attackRef} onLayout={() => measure(attackRef, 'attack')}>
-          <ButtonFace label="➤" role="attack" scale={attackScale} disabled={!hasBow} />
+          <ButtonFace label="➤" role="attack" scale={attackScale} disabled={!hasBow || arrows <= 0} />
         </View>
         <View ref={grappleRef} onLayout={() => measure(grappleRef, 'grapple')}>
           <ButtonFace label="◎" role="grapple" scale={grappleScale} />
