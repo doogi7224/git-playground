@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Image, StyleSheet, View } from 'react-native';
 import { palette } from '../theme';
+
+const CHECKPOINT_SOURCE = require('../../assets/sprites/checkpoint_shrine_v4.png');
 
 // A small banner marking a checkpoint. Lit (brass/gold) once the player has
 // crossed it — death respawns here instead of always at the level start —
@@ -9,7 +11,7 @@ import { palette } from '../theme';
 // "you're safe now" actually registers instead of the pennant just silently
 // re-coloring (CLAUDE.md 19.16 — 환경 이펙트: 체크포인트).
 export default function CheckpointView({ x, groundY, reached }: { x: number; groundY: number; reached: boolean }) {
-  const height = 50;
+  const height = 68;
   const top = groundY - height;
 
   const activate = useRef(new Animated.Value(0)).current;
@@ -48,8 +50,8 @@ export default function CheckpointView({ x, groundY, reached }: { x: number; gro
           ]}
         />
       ))}
-      <View style={[styles.pole, { backgroundColor: reached ? palette.uiPrimaryDark : '#8a8a8a' }]} />
-      <View style={[styles.pennant, { backgroundColor: reached ? palette.uiPrimary : '#b0b0b0', borderColor: reached ? palette.uiPrimaryDark : '#8a8a8a' }]} />
+      {reached && <View pointerEvents="none" style={styles.activeAura} />}
+      <Image source={CHECKPOINT_SOURCE} resizeMode="contain" style={[styles.sprite, { opacity: reached ? 1 : 0.68 }]} />
     </View>
   );
 }
@@ -57,26 +59,11 @@ export default function CheckpointView({ x, groundY, reached }: { x: number; gro
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    width: 6,
+    width: 44,
     alignItems: 'center',
   },
-  pole: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 4,
-    borderRadius: 2,
-  },
-  pennant: {
-    position: 'absolute',
-    top: 2,
-    left: 4,
-    width: 20,
-    height: 14,
-    borderTopRightRadius: 3,
-    borderBottomRightRadius: 3,
-    borderWidth: 1,
-  },
+  sprite: { position: 'absolute', left: -18, bottom: -1, width: 64, height: 76 },
+  activeAura: { position: 'absolute', left: -10, bottom: 8, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255, 213, 74, 0.22)' },
   ring: {
     position: 'absolute',
     left: -10,
