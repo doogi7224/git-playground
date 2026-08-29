@@ -44,6 +44,15 @@ const GAME_ASPECT = 16 / 9;
 // or hitbox constants. The extra logical space above is scenery only.
 const DESIGN_VIEW_HEIGHT_MULTIPLIER = 1.65;
 const WORLD_BOTTOM_BREATHING_ROOM = 40;
+const FIXED_STEP = 1 / 60;
+const MAX_FRAME_TIME = 0.1;
+const MAX_STEPS_PER_FRAME = 4;
+// Keep one generous screen of overscan so fast dashes never reveal objects
+// mounting at the edge. Everything farther away only wastes layout/animation
+// work and is invisible behind stageClip.
+const CULL_OVERSCAN_SCREENS = 1;
+
+type HorizontalBounds = { x: number; width?: number };
 
 export default function GameScreen({ onExit }: { onExit: () => void }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -72,11 +81,13 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
   });
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const accumulatorRef = useRef(0);
 
   useEffect(() => {
     const loop = (now: number) => {
       if (lastTimeRef.current != null) {
-        const dt = Math.min((now - lastTimeRef.current) / 1000, 0.05);
+        const frameTime = Math.min((now - lastTimeRef.current) / 1000, MAX_FRAME_TIME);
+        accumulatorRef.current += frameTime;
         const input: InputState = {
           left: inputRef.current.left,
           right: inputRef.current.right,
@@ -85,10 +96,35 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
           grappleHeld: inputRef.current.grappleHeld,
           attackPressed: inputRef.current.attackPressed,
         };
-        inputRef.current.jumpPressed = false;
-        inputRef.current.dashPressed = false;
-        inputRef.current.attackPressed = false;
-        setGameState((prev) => stepGame(prev, input, level, dt));
+        const stepCount = Math.min(
+          Math.floor(accumulatorRef.current / FIXED_STEP),
+          MAX_STEPS_PER_FRAME,
+        );
+        if (stepCount > 0) {
+          accumulatorRef.current -= stepCount * FIXED_STEP;
+          if (stepCount === MAX_STEPS_PER_FRAME) {
+            // Drop a runaway backlog after a long pause instead of spending
+            // several frames visibly fast-forwarding the player.
+            accumulatorRef.current = Math.min(accumulatorRef.current, FIXED_STEP);
+          }
+          inputRef.current.jumpPressed = false;
+          inputRef.current.dashPressed = false;
+          inputRef.current.attackPressed = false;
+          setGameState((prev) => {
+            let next = prev;
+            for (let i = 0; i < stepCount; i += 1) {
+              next = stepGame(
+                next,
+                i === 0
+                  ? input
+                  : { ...input, jumpPressed: false, dashPressed: false, attackPressed: false },
+                level,
+                FIXED_STEP,
+              );
+            }
+            return next;
+          });
+        }
       }
       lastTimeRef.current = now;
       rafRef.current = requestAnimationFrame(loop);
@@ -104,6 +140,10 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
   }, [level]);
 
   const cameraX = computeCameraX(gameState.player.x, viewportWidth, level.worldWidth);
+  const cullPadding = viewportWidth * CULL_OVERSCAN_SCREENS;
+  const cullMinX = cameraX - cullPadding;
+  const cullMaxX = cameraX + viewportWidth + cullPadding;
+  const isVisible = ({ x, width = 0 }: HorizontalBounds) => x + width >= cullMinX && x <= cullMaxX;
 
   return (
     <View style={styles.outer}>
@@ -117,54 +157,54 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         >
           <Background cameraX={cameraX} worldWidth={level.worldWidth} viewportWidth={viewportWidth} viewportHeight={logicalStageHeight} />
           <View style={[styles.world, { top: worldOffsetY, width: level.worldWidth, transform: [{ translateX: -cameraX }] }]}>
-            {level.platforms.map((p) => (
+            {level.platforms.filter(isVisible).map((p) => (
               <PlatformView key={p.id} platform={p} />
             ))}
-            {level.rootPoints.map((r) => (
+            {level.rootPoints.filter(isVisible).map((r) => (
               <RootPointView key={r.id} point={r} />
             ))}
-            {gameState.cogPickups.map((c) => (
+            {gameState.cogPickups.filter(isVisible).map((c) => (
               <CogPickupView key={c.id} cog={c} />
             ))}
             <BowPickupView pickup={gameState.bowPickup} />
-            {level.checkpoints.slice(1).map((c, i) => (
-              <CheckpointView key={i} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= i + 1} />
+            {level.checkpoints.slice(1).map((c, i) => ({ ...c, checkpointIndex: i + 1 })).filter(isVisible).map((c) => (
+              <CheckpointView key={c.checkpointIndex} x={c.x} groundY={level.groundY} reached={gameState.checkpointIndex >= c.checkpointIndex} />
             ))}
-            {gameState.pressurePistons.map((p) => (
+            {gameState.pressurePistons.filter(isVisible).map((p) => (
               <PressurePistonView key={p.id} piston={p} />
             ))}
             <FlagView flag={level.flag} />
             <PortalView portal={level.portal} />
             <BossView boss={gameState.boss} />
-            {gameState.coins.map((c) => (
+            {gameState.coins.filter((c) => !c.collected && isVisible(c)).map((c) => (
               <CoinView key={c.id} coin={c} />
             ))}
-            {gameState.enemies.map((e) => (
+            {gameState.enemies.filter(isVisible).map((e) => (
               <EnemyView key={e.id} enemy={e} />
             ))}
-            {gameState.chestnutRollers.map((r) => (
+            {gameState.chestnutRollers.filter(isVisible).map((r) => (
               <ChestnutRollerView key={r.id} roller={r} />
             ))}
-            {gameState.treasureCaches.map((c) => <TreasureCacheView key={c.id} cache={c} />)}
-            {gameState.bioCoils.map((c) => (
+            {gameState.treasureCaches.filter(isVisible).map((c) => <TreasureCacheView key={c.id} cache={c} />)}
+            {gameState.bioCoils.filter(isVisible).map((c) => (
               <BioCoilView key={c.id} coil={c} />
             ))}
-            {gameState.steamBlowers.map((b) => (
+            {gameState.steamBlowers.filter(isVisible).map((b) => (
               <SteamBlowerView key={b.id} blower={b} />
             ))}
-            {gameState.sporeSprites.map((s) => (
+            {gameState.sporeSprites.filter(isVisible).map((s) => (
               <SporeSpriteView key={s.id} sprite={s} />
             ))}
-            {gameState.jumpers.map((j) => (
+            {gameState.jumpers.filter(isVisible).map((j) => (
               <JumperView key={j.id} jumper={j} />
             ))}
-            {gameState.turrets.map((t) => (
+            {gameState.turrets.filter(isVisible).map((t) => (
               <TurretView key={t.id} turret={t} />
             ))}
-            {gameState.seeds.map((s) => (
+            {gameState.seeds.filter(isVisible).map((s) => (
               <SeedProjectileView key={s.id} seed={s} />
             ))}
-            {gameState.arrows.map((a) => (
+            {gameState.arrows.filter(isVisible).map((a) => (
               <ArrowView key={a.id} arrow={a} />
             ))}
             <RopeView player={gameState.player} />

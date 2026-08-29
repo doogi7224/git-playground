@@ -301,14 +301,11 @@ function makeChestnutRollers(): ChestnutRoller[] {
   }));
 }
 
-// Treasure Cache: the 5 existing "bonus" platforms (see `bonusPlatforms`
-// above) are already the level's optional, backtrack-worthy high routes --
-// per (35)'s coin-placement notes they're skill rewards that never block the
-// required path, exactly what the design brief asks for. Reusing them means
-// no new coordinates to verify for overlap. 3 Root Cache (dash-only) then 2
-// Relic Pod (arrow-only, both well after the Relic Bow pickup at x=250).
-// cache-root3 (x=2650) carries the arrowBundle reward -- per the arrow-economy
-// brief, one must sit on a selectable route before the first Relic Pod
+// Three Root Caches are compact overhead mystery blocks on safe stretches of
+// the main route. Their underside sits 72px above the ground: a normal jump
+// reaches them, while the 28px block leaves clear running space underneath.
+// Two Relic Pods remain on optional high platforms after the bow pickup.
+// cache-root3 carries the arrowBundle reward before the first Relic Pod
 // (cache-pod1, x=4450) so running low on ammo never blocks required progress.
 function makeTreasureCaches(): TreasureCache[] {
   const defs: [string, TreasureCacheKind, TreasureReward][] = [
@@ -318,14 +315,16 @@ function makeTreasureCaches(): TreasureCache[] {
     ['cache-pod1', 'relicPod', 'lifeBloom'],
     ['cache-pod2', 'relicPod', 'sunseedBurst'],
   ];
+  const mysteryBlockXs = [1120, 2150, 3650];
   return defs.map(([id, kind, reward], i) => {
     const platform = bonusPlatforms[i];
+    const isMysteryBlock = kind === 'rootCache';
     return {
       id,
       kind,
       reward,
-      x: platform.x + (platform.width - TREASURE_CACHE_WIDTH) / 2,
-      y: platform.y - TREASURE_CACHE_HEIGHT,
+      x: isMysteryBlock ? mysteryBlockXs[i] : platform.x + (platform.width - TREASURE_CACHE_WIDTH) / 2,
+      y: isMysteryBlock ? GROUND_Y - 100 : platform.y - TREASURE_CACHE_HEIGHT,
       width: TREASURE_CACHE_WIDTH,
       height: TREASURE_CACHE_HEIGHT,
       opened: false,
@@ -461,12 +460,21 @@ function makeCheckpoints(): { x: number; y: number }[] {
 }
 
 export function createLevel(): Level {
+  const treasureCaches = makeTreasureCaches();
   return {
     worldWidth: 7800,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
-    platforms: [...makeGroundPlatforms(), ...floatingPlatforms, ...bonusPlatforms],
+    platforms: [
+      ...makeGroundPlatforms(),
+      ...floatingPlatforms,
+      ...bonusPlatforms,
+      // Mystery blocks remain solid after use, matching their spent visual.
+      ...treasureCaches
+        .filter((cache) => cache.kind === 'rootCache')
+        .map(({ x, y, width, height, id }) => ({ id: `${id}-solid`, x, y, width, height })),
+    ],
     enemies: makeEnemies(),
     coins: makeCoins(),
     // Decorative now — reaching it no longer wins on its own, since the boss
@@ -485,6 +493,6 @@ export function createLevel(): Level {
     jumpers: makeJumpers(),
     turrets: makeTurrets(),
     chestnutRollers: makeChestnutRollers(),
-    treasureCaches: makeTreasureCaches(),
+    treasureCaches,
   };
 }

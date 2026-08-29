@@ -18,7 +18,7 @@
 - 작업: **상용 품질 비주얼 리빌드 1차.** 사용자가 승인한 16:9 전체 게임 프레임(월드가 전 화면을 쓰고 HUD/조작부가 오버레이되는 구성)을 기준으로 배경·지형·주인공·적·HUD를 하나의 페인터리 숲 모험 아트 세트로 교체한다.
 - 소유 파일: `assets/*`, `src/components/*`, `src/theme.ts`, `src/screens/GameScreen.tsx`의 레이아웃·프레젠테이션 범위.
 - 순서: (1) 16:9 전체 월드 프레임·새 원경 아트 적용, (2) 지형/수집품/상호작용 오브젝트 재질 통일, (3) 주인공·적 스프라이트 시트와 행동별 모션 교체, (4) HUD/컨트롤 축소·고급화, (5) 실제 APK 화면 QA.
-- 현재: 실제 Android 화면 검수에서 확인된 프레젠테이션 결함을 우선 수정 중이다. 주인공/일반 적의 가짜 상하 흔들기·회전 애니메이션을 제거하고, 주인공 스프라이트를 AABB 바닥에 다시 고정했다. 다음은 이 수정이 포함된 APK 실기기 재검수다.
+- 현재: 사용자 실기기 피드백(심한 렉, 부자연스러운 움직임, 몬스터 외형 불연속)을 반영했다. 화면 밖 월드 오브젝트 컬링·고정 60Hz 물리 스텝·비가시 대형 배경 제거, 주인공/Brambleling/Chestnut Roller 4프레임 보행, 동일 외형 Acorn Hopper 상태 포즈, Bio-Coil 왜곡 축소를 적용했다. 사용자 추가 승인으로 Root Cache는 작고 고정된 `?` 상자로 재설계해 주 동선 3곳으로 옮기고 아래에서 점프 타격 시 보상이 나오도록 변경했다. Relic Pod의 화살 개봉은 유지한다.
 - 렌더링: 게임 규칙과 AABB 물리는 유지한다. 성능·애니메이션 품질이 필요한 월드 프레젠테이션은 Skia 캔버스 전환을 적용한다.
 - 금지: `src/game/*` 규칙 변경, 수치 임의 변경, 새 게임 시스템/레벨 구간 추가.
 
@@ -71,6 +71,8 @@
 - S3: 동시 입력(점프+대시) 및 그래플 스윙 중 대시 입력이 조용히 소실됨 — 위 REVIEW REQUESTS 참고, 사용자 승인 대기(수정 안 함).
 
 ## HANDOFF
+
+- 최근 완료(Codex): 실기기 렉/모션 피드백 대응. `GameScreen.tsx`에 한 화면 overscan 컬링과 1/60초 고정 스텝(프레임당 최대 4회)을 적용하고, `Background.tsx`는 투명도 0인 대형 장면 레이어를 마운트하지 않게 했다. 주인공/Brambleling/Chestnut Roller는 이동 거리 기반 4프레임 보행으로 교체했고, Acorn Hopper는 대기·웅크림·상승·하강 모두 동일한 초록 네발 캐릭터로 통일했다. Bio-Coil의 세로 왜곡 범위는 0.82~1.12로 제한했다. 추가 사용자 지시에 따라 Root Cache 3개를 주 동선의 x=1120/2150/3650, y=GROUND_Y-100으로 옮겨 28px 고체 `?` 상자로 만들고, 아래에서 점프해 머리로 칠 때 기존 고정 보상이 나오며 사용 후 블록이 남도록 했다. Relic Pod 2개는 기존 화살 개봉/보너스 루트를 유지한다. `npx tsc --noEmit`, `npx expo export --platform web` 통과, 시작→게임 화면 웹 런타임 오류 0.
 
 - 최근 완료(Claude, 이번 세션): Chestnut Roller → 탐험 보상 캐시 → 활 탄약 경제를 연달아 구현했다(Codex가 세션 도중 추가 REVIEW REQUEST를 계속 올려서 순서대로 처리).
   - **Chestnut Roller**: `types.ts`에 `ChestnutRoller`/`ChestnutRollerPhase` 추가, `constants.ts`에 `CHESTNUT_ROLLER_*` 8개 상수(요청하신 수치 그대로), `level.ts`에 기존 지상 엔티티 전부를 스캔해 계산한 완전히 빈 두 구간(2720-2880, 6260-6760)에 `makeChestnutRollers()`로 배치, `physics.ts`에 `stepChestnutRollers`(walk→windup→rolling→recover→walk 사이클, 같은 높이+280px 감지, 경계 도달 시 조기 recover)와 화살/스톰프 무효화(rolling 중)+접촉 피해(항상) 해석 로직을 추가했다. pure-logic 시뮬레이션 45종 PASS. 상세는 개발로그 (47).

@@ -224,7 +224,7 @@ export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'flo
 
 // An optional-route pickup with a fixed (never randomized, never empty)
 // reward, opened by a specific committed action rather than a touch: a
-// Root Cache only yields to a dash hit, a Relic Pod only to an arrow hit.
+// Root Cache is struck from below by a jump, a Relic Pod by an arrow hit.
 // No inventory or loot table -- `reward` is baked into level data and
 // applied immediately the frame it opens.
 export interface TreasureCache extends Rect {

@@ -81,9 +81,9 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
       <LinearGradient colors={[palette.skyTop, palette.skyBottom]} style={styles.fill} />
 
       <View style={[styles.parallaxLayer, { width: farLayerWidth, transform: [{ translateX: farOffset }] }]}>
-        <SceneTiles source={SCENE_WILD_SOURCE} opacity={meadowOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
-        <SceneTiles source={SCENE_WATERFALL_SOURCE} opacity={waterfallOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
-        <SceneTiles source={SCENE_RUINS_SOURCE} opacity={ruinsBlend} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />
+        {meadowOpacity > 0 && <SceneTiles source={SCENE_WILD_SOURCE} opacity={meadowOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
+        {waterfallOpacity > 0 && <SceneTiles source={SCENE_WATERFALL_SOURCE} opacity={waterfallOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
+        {ruinsBlend > 0 && <SceneTiles source={SCENE_RUINS_SOURCE} opacity={ruinsBlend} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
       </View>
     </View>
   );

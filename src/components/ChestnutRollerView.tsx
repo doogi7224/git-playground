@@ -1,6 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { ChestnutRoller } from '../game/types';
+
+const WALK_FRAME_DISTANCE = 16;
+const WALK_FRAMES = [
+  require('../../assets/sprites/chestnut_roller_v2_walk/chestnut_walk_0.png'),
+  require('../../assets/sprites/chestnut_roller_v2_walk/chestnut_walk_1.png'),
+  require('../../assets/sprites/chestnut_roller_v2_walk/chestnut_walk_2.png'),
+  require('../../assets/sprites/chestnut_roller_v2_walk/chestnut_walk_3.png'),
+] satisfies ImageSourcePropType[];
 
 // Presentation only: the physics state decides vulnerability and speed. This
 // component turns that state into an obvious silhouette -- limbs visible when
@@ -33,16 +41,19 @@ export default function ChestnutRollerView({ roller }: { roller: ChestnutRoller 
   const rotation = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const scaleX = windup ? 1.13 : recover ? 0.92 : 1;
   const scaleY = windup ? 0.74 : recover ? 0.78 : 1;
+  const walkFrame = WALK_FRAMES[
+    Math.floor(Math.abs(roller.x) / WALK_FRAME_DISTANCE) % WALK_FRAMES.length
+  ];
 
   return (
     <View style={[styles.wrap, { left: roller.x + roller.width / 2 - size / 2, top: roller.y + roller.height - size, width: size, height: size }]}>
       {rolling && <View pointerEvents="none" style={styles.rollAura} />}
       {windup && <View pointerEvents="none" style={styles.warnRing} />}
-      <Animated.View style={[styles.spriteWrap, { transform: [{ scaleX }, { scaleY }, ...(rolling ? [{ rotate: rotation }] : [])] }]}>
+      <Animated.View style={[styles.spriteWrap, { transform: [{ scaleX: scaleX * roller.facing }, { scaleY }, ...(rolling ? [{ rotate: rotation }] : [])] }]}>
         <Image
           source={rolling
             ? require('../../assets/sprites/chestnut_roller_v1/chestnut_roller_roll.png')
-            : require('../../assets/sprites/chestnut_roller_v1/chestnut_roller_walk.png')}
+            : walkFrame}
           resizeMode="contain"
           style={styles.sprite}
         />

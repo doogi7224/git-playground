@@ -11,8 +11,10 @@ const RUN_FRAME_MS = 90;
 const SCOUT_FRAMES = {
   idle: require('../../assets/sprites/scout_v3/scout_idle_0.png'),
   run: [
-    require('../../assets/sprites/scout_v3/scout_run_0.png'),
-    require('../../assets/sprites/scout_v3/scout_run_1.png'),
+    require('../../assets/sprites/scout_v5_run/scout_run_0.png'),
+    require('../../assets/sprites/scout_v5_run/scout_run_1.png'),
+    require('../../assets/sprites/scout_v5_run/scout_run_2.png'),
+    require('../../assets/sprites/scout_v5_run/scout_run_3.png'),
   ],
   jump: require('../../assets/sprites/scout_v4_jump.png'),
   fall: require('../../assets/sprites/scout_v4_fall.png'),
@@ -36,7 +38,7 @@ export default function PlayerView({ player }: { player: Player }) {
   } else if (!player.onGround) {
     spriteSource = player.vy < 30 ? SCOUT_FRAMES.jump : SCOUT_FRAMES.fall;
   } else if (isRunning || player.dashTimer > 0) {
-    // A real two-frame run cycle selected from travelled distance. Unlike a
+    // A real four-pose run cycle selected from travelled distance. Unlike a
     // timed bob/tilt, stationary characters do not animate or consume work.
     const index = Math.floor(Math.abs(player.x) / (MOVE_SPEED * (RUN_FRAME_MS / 1000))) % SCOUT_FRAMES.run.length;
     spriteSource = SCOUT_FRAMES.run[index];

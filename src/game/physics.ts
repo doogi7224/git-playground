@@ -1178,20 +1178,24 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return { ...c, collected: true };
   });
 
-  // Treasure Cache: opened by a specific committed action, not a touch --
-  // Root Cache only to a dash hit (same "dashTimer > 0" check the Spore
-  // Sprite kill uses below), Relic Pod only to an arrow hit (findArrowHit,
-  // same as every other arrow target this frame). No inventory/loot table:
-  // `reward` is fixed in level data and applied the instant it opens.
+  // Treasure Cache: a Root Cache is a solid mystery block and opens when the
+  // player's rising head reaches its underside. The platform pass above has
+  // already snapped player.y to that underside and stopped upward velocity.
+  // Relic Pods retain their arrow-only interaction.
   let lootRevealSeq = prev.lootRevealSeq;
   const newLootReveals: LootReveal[] = [];
   const resolvedTreasureCaches: TreasureCache[] = prev.treasureCaches.map((cache) => {
-    if (cache.opened) return cache;
-
     let opened = false;
     if (cache.kind === 'rootCache') {
-      opened = player.dashTimer > 0 && rectIntersect(player, cache);
+      const cacheBottom = cache.y + cache.height;
+      const horizontalOverlap = player.x + player.width > cache.x && player.x < cache.x + cache.width;
+      const hitFromBelow = prev.player.vy < 0
+        && prev.player.y >= cacheBottom - 1
+        && player.y <= cacheBottom + 1
+        && horizontalOverlap;
+      opened = !cache.opened && hitFromBelow;
     } else {
+      if (cache.opened) return cache;
       const hitArrow = findArrowHit(cache);
       if (hitArrow) {
         consumedArrowIds.add(hitArrow.id);

@@ -8,8 +8,10 @@ import { palette } from '../theme';
 const VISUAL_SIZE = 46;
 const WALK_FRAME_DISTANCE = 18;
 const BRAMBLING_FRAMES = [
-  require('../../assets/sprites/brambleling_v1/brambleling_0.png'),
-  require('../../assets/sprites/brambleling_v1/brambleling_1.png'),
+  require('../../assets/sprites/brambleling_v2_walk/brambleling_walk_0.png'),
+  require('../../assets/sprites/brambleling_v2_walk/brambleling_walk_1.png'),
+  require('../../assets/sprites/brambleling_v2_walk/brambleling_walk_2.png'),
+  require('../../assets/sprites/brambleling_v2_walk/brambleling_walk_3.png'),
 ] satisfies ImageSourcePropType[];
 
 export default function EnemyView({ enemy }: { enemy: Enemy }) {
@@ -17,15 +19,22 @@ export default function EnemyView({ enemy }: { enemy: Enemy }) {
 
   const charging = enemy.chargeDir !== 0;
   const facing = enemy.vx >= 0 ? 1 : -1;
-  const frame = charging
-    ? BRAMBLING_FRAMES[0]
-    : BRAMBLING_FRAMES[Math.floor(Math.abs(enemy.x) / WALK_FRAME_DISTANCE) % BRAMBLING_FRAMES.length];
+  const frame = BRAMBLING_FRAMES[
+    Math.floor(Math.abs(enemy.x) / WALK_FRAME_DISTANCE) % BRAMBLING_FRAMES.length
+  ];
   const left = enemy.x + enemy.width / 2 - VISUAL_SIZE / 2;
   const top = enemy.y + enemy.height - VISUAL_SIZE;
 
   return (
     <View style={[styles.wrap, { left, top }]}>
-      <Image source={frame} resizeMode="contain" style={[styles.sprite, { transform: [{ scaleX: facing }] }]} />
+      <Image
+        source={frame}
+        resizeMode="contain"
+        style={[
+          styles.sprite,
+          { transform: [{ scaleX: facing * (charging ? 1.06 : 1) }, { scaleY: charging ? 0.94 : 1 }] },
+        ]}
+      />
       {charging && <View style={styles.alertDot} />}
     </View>
   );
