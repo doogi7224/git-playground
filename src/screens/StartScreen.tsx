@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useRef, useState } from 'react';
-import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { palette } from '../theme';
 
 export default function StartScreen({ onStart }: { onStart: () => void }) {
@@ -12,7 +12,7 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
 
   if (guideOpen) {
     return (
-      <ImageBackground source={require('../../assets/backgrounds/menu_forest_expedition_v1.png')} resizeMode="cover" style={styles.container}>
+      <ImageBackground source={require('../../assets/backgrounds/menu_forest_expedition_clean_v2.png')} resizeMode="cover" style={styles.container}>
         <LinearGradient colors={['rgba(16,35,32,0.25)', 'rgba(18,28,24,0.78)']} style={StyleSheet.absoluteFill} />
         <View style={styles.guidePanel}>
           <Text style={styles.guideEyebrow}>WILDROOT FIELD GUIDE</Text>
@@ -45,7 +45,7 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
   }
 
   return (
-    <ImageBackground source={require('../../assets/backgrounds/menu_forest_expedition_v1.png')} resizeMode="cover" style={styles.container}>
+    <ImageBackground source={require('../../assets/backgrounds/menu_forest_expedition_clean_v2.png')} resizeMode="cover" style={styles.container}>
       <LinearGradient
         colors={['rgba(9,24,22,0.14)', 'rgba(11,27,24,0.18)', 'rgba(9,20,18,0.72)']}
         style={StyleSheet.absoluteFill}
@@ -59,29 +59,7 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
         <View style={[styles.rivetCorner, styles.rivetBL]} />
         <View style={[styles.rivetCorner, styles.rivetBR]} />
 
-        <Text style={styles.eyebrow}>A BRIGHT FOREST EXPEDITION</Text>
         <Text style={styles.title}>GEARWOOD</Text>
-        <View style={styles.titleRule}>
-          <View style={styles.ruleLine} />
-          <View style={styles.ruleLeaf}><View style={styles.ruleLeafCore} /></View>
-          <View style={styles.ruleLine} />
-        </View>
-        <Text style={styles.tagline}>THE SUNSEED TRAIL · 태양씨앗의 길</Text>
-
-        <View style={styles.heroRow}>
-          <Image
-            source={require('../../assets/sprites/scout_v3/scout_idle_0.png')}
-            resizeMode="contain"
-            style={styles.hero}
-          />
-          <View style={styles.storyBlock}>
-            <Text style={styles.storyTitle}>숲의 흐름을 이어가라</Text>
-            <Text style={styles.subtitle}>
-              달리고, 뛰고, 대시하고, 루트훅을 이어 숲의 길을 완주하세요.
-            </Text>
-            <Text style={styles.featureLine}>DASH  ·  ROOT-HOOK  ·  RELIC BOW</Text>
-          </View>
-        </View>
 
         <Pressable onPressIn={pressIn} onPressOut={pressOut} onPress={onStart}>
           <Animated.View style={[styles.startButtonShadow, { transform: [{ scale }] }]}>
@@ -111,10 +89,6 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
           </View>
         ) : null}
 
-        <View style={styles.controlStrip}>
-          <Text style={styles.hint}>◀▶ 이동　▲ 점프　» 대시　◎ 루트훅　➤ 활</Text>
-          <Text style={styles.hintSub}>활은 초반 유물 획득 후 사용 · 적은 밟거나 화살로 대응</Text>
-        </View>
       </View>
     </ImageBackground>
   );

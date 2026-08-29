@@ -23,6 +23,10 @@
       },
       "predictiveBackGestureEnabled": false
     },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "barStyle": "light-content"
+    },
     "web": {
       "favicon": "./assets/app-icon/gearwood_app_icon_v1.png"
     },
