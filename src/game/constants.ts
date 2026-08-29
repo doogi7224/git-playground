@@ -16,13 +16,13 @@ export const PLAYER_HEIGHT = 40;
 
 export const ENEMY_WIDTH = 34;
 export const ENEMY_HEIGHT = 30;
-export const ENEMY_SPEED = 60; // px/s
+export const ENEMY_SPEED = 68; // px/s; Stage 1 patrol pressure, still readable
 // Cogmite detection/charge, per the monster design doc: it detects the player
 // and switches to a straight-line 120px/s charge (no cliff avoidance — the
 // doc calls luring it into a pit a valid strategy; this prototype keeps
 // charges within the existing patrol bounds instead of adding fall physics
 // for enemies, ending the charge at a bound rather than running off it).
-export const ENEMY_CHARGE_SPEED = 120;
+export const ENEMY_CHARGE_SPEED = 135;
 export const ENEMY_DETECT_RANGE = 160; // px; not given a number in the doc, a judgment call
 
 export const COIN_SIZE = 22;
@@ -59,7 +59,7 @@ export const PISTON_CYCLE =
 
 export const BIOCOIL_WIDTH = 26;
 export const BIOCOIL_HEIGHT = 30;
-export const BIOCOIL_RANGE = 170; // px, distance that triggers a leap from 'coiled'
+export const BIOCOIL_RANGE = 185; // px, distance that triggers a leap from 'coiled'
 export const BIOCOIL_WINDUP_WILD = 0.4; // seconds; mechanical state skips windup entirely
 export const BIOCOIL_LANDED_DURATION = 0.6; // defenseless window after landing
 export const BIOCOIL_LEAP_VX_WILD = 200;
@@ -102,7 +102,7 @@ export const PORTAL_HEIGHT = 70;
 // rather than being a walk-through hazard, matching how a boss arena reads.
 export const BOSS_WIDTH = 90;
 export const BOSS_HEIGHT = 110;
-export const BOSS_HP = 6;
+export const BOSS_HP = 8;
 // A full turn remains readable, but shorter downtime prevents repeated free
 // stomp windows while preserving a deliberate one-hit vulnerability phase.
 export const BOSS_IDLE_DURATION = 1.05;
@@ -149,7 +149,7 @@ export const RELIC_BOW_MAX_ARROWS = 5;
 // before it happens.
 export const JUMPER_WIDTH = 28;
 export const JUMPER_HEIGHT = 26;
-export const JUMPER_INTERVAL = 1.8; // seconds grounded before the next windup starts
+export const JUMPER_INTERVAL = 1.6; // seconds grounded before the next windup starts
 export const JUMPER_WINDUP_DURATION = 0.4; // telegraph before launch
 export const JUMPER_LAUNCH_VY = -480;
 export const JUMPER_LAUNCH_VX = 150; // px/s; travels visibly across its widened safe platform
@@ -158,7 +158,7 @@ export const JUMPER_LAUNCH_VX = 150; // px/s; travels visibly across its widened
 // current side at the moment the cycle fires (locked in then, not homing).
 export const TURRET_WIDTH = 30;
 export const TURRET_HEIGHT = 30;
-export const TURRET_FIRE_INTERVAL = 2.5; // seconds between shots (also acts as its own per-turret cooldown)
+export const TURRET_FIRE_INTERVAL = 2.2; // seconds between shots (also acts as its own per-turret cooldown)
 export const TURRET_CHARGE_DURATION = 0.5; // telegraph window right before firing, exposed via isTurretCharging()
 export const TURRET_MAX_SEEDS = 6; // global concurrent cap, a backstop alongside the per-turret interval
 
@@ -180,7 +180,25 @@ export const CHESTNUT_ROLLER_WINDUP_DURATION = 0.45; // telegraph before the rol
 export const CHESTNUT_ROLLER_ROLL_SPEED = 250; // px/s while rolling (invincible to arrow/stomp)
 export const CHESTNUT_ROLLER_ROLL_DURATION = 1.15; // max roll length; cut short by a patrol-bound hit
 export const CHESTNUT_ROLLER_RECOVER_DURATION = 0.65; // defenseless pause after a roll ends
-export const CHESTNUT_ROLLER_COOLDOWN = 2.6; // seconds after recovering before it can roll again
+export const CHESTNUT_ROLLER_COOLDOWN = 2.25; // seconds after recovering before it can roll again
+
+// Stage 2 — Sunken Gearworks
+export const THORN_SLINGER_WIDTH = 32;
+export const THORN_SLINGER_HEIGHT = 34;
+export const THORN_SLINGER_DETECT_RANGE = 300;
+export const THORN_SLINGER_TELEGRAPH_DURATION = 0.65;
+export const THORN_SLINGER_SHOT_INTERVAL = 0.18;
+export const THORN_SLINGER_COOLDOWN = 1.65;
+export const THORN_SLINGER_SEED_SPEED = 285;
+
+export const GEAR_GLIDER_WIDTH = 38;
+export const GEAR_GLIDER_HEIGHT = 30;
+export const GEAR_GLIDER_PATROL_SPEED = 95;
+export const GEAR_GLIDER_SINE_AMPLITUDE = 18;
+export const GEAR_GLIDER_SINE_PERIOD = 2.1;
+export const GEAR_GLIDER_DROP_TELEGRAPH_DURATION = 0.45;
+export const GEAR_GLIDER_DROP_SPEED = 470;
+export const GEAR_GLIDER_RECOVER_DURATION = 0.7;
 
 // Treasure Cache: Root Cache is a mystery block that rolls one of five
 // rewards; Relic Pods retain their authored rewards on optional routes.

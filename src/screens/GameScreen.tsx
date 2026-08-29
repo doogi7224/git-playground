@@ -13,6 +13,7 @@ import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
 import EffectsView from '../components/EffectsView';
 import EnemyView from '../components/EnemyView';
+import GearGliderView from '../components/GearGliderView';
 import FlagView from '../components/FlagView';
 import Hud from '../components/Hud';
 import JumperView from '../components/JumperView';
@@ -25,6 +26,7 @@ import RopeView from '../components/RopeView';
 import SeedProjectileView from '../components/SeedProjectileView';
 import SporeSpriteView from '../components/SporeSpriteView';
 import TurretView from '../components/TurretView';
+import ThornSlingerView from '../components/ThornSlingerView';
 import TreasureCacheView from '../components/TreasureCacheView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
@@ -190,6 +192,12 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             ))}
             {gameState.turrets.filter(isVisible).map((t) => (
               <TurretView key={t.id} turret={t} />
+            ))}
+            {gameState.thornSlingers.filter(isVisible).map((s) => (
+              <ThornSlingerView key={s.id} slinger={s} />
+            ))}
+            {gameState.gearGliders.filter(isVisible).map((g) => (
+              <GearGliderView key={g.id} glider={g} />
             ))}
             {gameState.seeds.filter(isVisible).map((s) => (
               <SeedProjectileView key={s.id} seed={s} />

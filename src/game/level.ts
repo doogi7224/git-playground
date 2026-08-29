@@ -16,6 +16,8 @@ import {
   JUMPER_HEIGHT,
   JUMPER_LAUNCH_VX,
   JUMPER_WIDTH,
+  GEAR_GLIDER_HEIGHT,
+  GEAR_GLIDER_WIDTH,
   PISTON_HEIGHT,
   PISTON_WIDTH,
   PORTAL_HEIGHT,
@@ -27,6 +29,8 @@ import {
   TREASURE_CACHE_WIDTH,
   TURRET_HEIGHT,
   TURRET_WIDTH,
+  THORN_SLINGER_HEIGHT,
+  THORN_SLINGER_WIDTH,
   VIEWPORT_HEIGHT,
 } from './constants';
 import {
@@ -36,6 +40,7 @@ import {
   ChestnutRoller,
   Coin,
   Enemy,
+  GearGlider,
   Jumper,
   Level,
   Platform,
@@ -46,6 +51,7 @@ import {
   TreasureCache,
   TreasureCacheKind,
   TreasureReward,
+  ThornSlinger,
   Turret,
 } from './types';
 
@@ -67,6 +73,12 @@ const groundSegments: [number, number][] = [
   // Boss arena: one flat, pit-free room reached through the portal at the end
   // of area 3. No jump challenges here — the boss itself is the obstacle.
   [6800, 7700],
+  // Stage 2 — Sunken Gearworks. Required pits stay at or below 150px.
+  [7700, 8420],
+  [8560, 9180],
+  [9320, 9950],
+  [10080, 10760],
+  [10900, 11520],
 ];
 
 function makeGroundPlatforms(): Platform[] {
@@ -106,6 +118,10 @@ const floatingPlatforms: Platform[] = [
   { id: 'p22', x: 5850, y: GROUND_Y - 90, width: 100, height: 20 },
   { id: 'p23', x: 6140, y: GROUND_Y - 70, width: 90, height: 20 }, // bridges the final pit, alongside root3
   { id: 'p24', x: 6740, y: GROUND_Y - 60, width: 60, height: 20 },
+  { id: 'g1', x: 8290, y: GROUND_Y - 78, width: 100, height: 20 },
+  { id: 'g2', x: 9120, y: GROUND_Y - 110, width: 120, height: 20 },
+  { id: 'g3', x: 9840, y: GROUND_Y - 72, width: 95, height: 20 },
+  { id: 'g4', x: 10670, y: GROUND_Y - 108, width: 110, height: 20 },
 ];
 
 // A few high routes remain as permanent optional shortcuts. They reward a
@@ -341,6 +357,8 @@ function makeCoins(): Coin[] {
     [3200, GROUND_Y - 45], [3355, GROUND_Y - 45], [4035, GROUND_Y - 45],
     [4755, GROUND_Y - 45], [5455, GROUND_Y - 45], [6225, GROUND_Y - 45],
     [6765, GROUND_Y - 45],
+    [7720, GROUND_Y - 45], [8580, GROUND_Y - 45], [9340, GROUND_Y - 45],
+    [10100, GROUND_Y - 45], [10920, GROUND_Y - 45],
   ];
   const occupiedPlatformIds = new Set(['p6', 'p9', 'p15', 'p22']);
   const platformCoins: [number, number][] = floatingPlatforms
@@ -389,6 +407,33 @@ function makeBoss(): Boss {
   };
 }
 
+function makeThornSlingers(): ThornSlinger[] {
+  const defs: [string, number][] = [
+    ['slinger1', 8040], ['slinger2', 8840], ['slinger3', 9560],
+    ['slinger4', 10410], ['slinger5', 11130],
+  ];
+  return defs.map(([id, x], index) => ({
+    id, x, y: GROUND_Y - THORN_SLINGER_HEIGHT,
+    width: THORN_SLINGER_WIDTH, height: THORN_SLINGER_HEIGHT,
+    phase: 'idle', timer: 0, cooldown: index * 0.25, facing: -1, alive: true,
+  }));
+}
+
+function makeGearGliders(): GearGlider[] {
+  const defs: [string, number, number, number][] = [
+    ['glider1', 7820, 8260, GROUND_Y - 120], ['glider2', 8660, 9100, GROUND_Y - 138],
+    ['glider3', 9440, 9880, GROUND_Y - 122], ['glider4', 10180, 10610, GROUND_Y - 142],
+    ['glider5', 10950, 11370, GROUND_Y - 126],
+  ];
+  return defs.map(([id, minX, maxX, baseY], index) => ({
+    id, x: minX + (maxX - minX) / 2, y: baseY,
+    width: GEAR_GLIDER_WIDTH, height: GEAR_GLIDER_HEIGHT,
+    minX, maxX, baseY, groundY: GROUND_Y - GEAR_GLIDER_HEIGHT,
+    phase: 'patrol', timer: 0, pathPhase: index * (Math.PI / 2),
+    vx: index % 2 === 0 ? 95 : -95, vy: 0, facing: index % 2 === 0 ? 1 : -1, alive: true,
+  }));
+}
+
 // Respawn points, one near the start of each later ground segment (well clear
 // of pit edges). [0] matches spawn — death respawns at the highest one the
 // player has already crossed, not always the level start; with the level now
@@ -405,13 +450,16 @@ function makeCheckpoints(): { x: number; y: number }[] {
     { x: 4750, y: GROUND_Y - 100 },
     { x: 5600, y: GROUND_Y - 100 },
     { x: 6830, y: GROUND_Y - 100 }, // just past the portal, so dying mid-boss-fight doesn't send the player all the way back
+    { x: 7820, y: GROUND_Y - 100 },
+    { x: 9250, y: GROUND_Y - 100 },
+    { x: 10250, y: GROUND_Y - 100 },
   ];
 }
 
 export function createLevel(): Level {
   const treasureCaches = makeTreasureCaches();
   return {
-    worldWidth: 7800,
+    worldWidth: 11520,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
@@ -426,10 +474,9 @@ export function createLevel(): Level {
     ],
     enemies: makeEnemies(),
     coins: makeCoins(),
-    // Decorative now — reaching it no longer wins on its own, since the boss
-    // physically blocks the path there while alive (see stepGame). Defeating
-    // the boss is what actually triggers the win.
-    flag: { x: 7650, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
+    // The Rootwarden guards the Stage 2 entrance. The far Gearworks banner is
+    // the only completion trigger.
+    flag: { x: 11455, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),
@@ -440,6 +487,8 @@ export function createLevel(): Level {
     jumpers: makeJumpers(),
     turrets: makeTurrets(),
     chestnutRollers: makeChestnutRollers(),
+    thornSlingers: makeThornSlingers(),
+    gearGliders: makeGearGliders(),
     treasureCaches,
   };
 }

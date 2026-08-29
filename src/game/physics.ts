@@ -43,6 +43,12 @@ import {
   ENEMY_DETECT_RANGE,
   ENEMY_SPEED,
   FRICTION,
+  GEAR_GLIDER_DROP_SPEED,
+  GEAR_GLIDER_DROP_TELEGRAPH_DURATION,
+  GEAR_GLIDER_PATROL_SPEED,
+  GEAR_GLIDER_RECOVER_DURATION,
+  GEAR_GLIDER_SINE_AMPLITUDE,
+  GEAR_GLIDER_SINE_PERIOD,
   GRAVITY,
   INVULNERABLE_TIME,
   JUMP_VELOCITY,
@@ -82,6 +88,11 @@ import {
   TURRET_CHARGE_DURATION,
   TURRET_FIRE_INTERVAL,
   TURRET_MAX_SEEDS,
+  THORN_SLINGER_COOLDOWN,
+  THORN_SLINGER_DETECT_RANGE,
+  THORN_SLINGER_SEED_SPEED,
+  THORN_SLINGER_SHOT_INTERVAL,
+  THORN_SLINGER_TELEGRAPH_DURATION,
   WALL_SLIDE_FALL_MULT,
   WALLJUMP_VX,
 } from './constants';
@@ -92,6 +103,7 @@ import {
   ChestnutRoller,
   EffectEvent,
   EffectKind,
+  GearGlider,
   GamePhase,
   GameState,
   InputState,
@@ -106,6 +118,7 @@ import {
   SporeSprite,
   TreasureCache,
   TreasureReward,
+  ThornSlinger,
   Turret,
 } from './types';
 
@@ -172,6 +185,8 @@ export function createInitialState(level: Level): GameState {
     jumpers: level.jumpers.map((j) => ({ ...j })),
     turrets: level.turrets.map((t) => ({ ...t })),
     chestnutRollers: level.chestnutRollers.map((r) => ({ ...r })),
+    thornSlingers: level.thornSlingers.map((s) => ({ ...s })),
+    gearGliders: level.gearGliders.map((g) => ({ ...g })),
     treasureCaches: level.treasureCaches.map((t) => ({ ...t })),
     lootReveals: [],
     lootRevealSeq: 0,
@@ -414,6 +429,90 @@ function stepTurrets(
     return { ...t, timer: 0 };
   });
   return { turrets, newSeeds, nextSeedSeq: seedSeq };
+}
+
+// Thorn Slingers only engage a player on roughly the same elevation. This
+// prevents off-screen vertical sniping while still making their 300px lane a
+// deliberate timing challenge: a 0.65s warning, then two low seeds 0.18s
+// apart. Aim is locked at the warning, never adjusted in flight.
+function stepThornSlingers(
+  prev: ThornSlinger[], player: Rect, dt: number, startSeedSeq: number,
+): { slingers: ThornSlinger[]; newSeeds: SeedProjectile[]; nextSeedSeq: number } {
+  let seedSeq = startSeedSeq;
+  const newSeeds: SeedProjectile[] = [];
+  const slingers = prev.map<ThornSlinger>((s) => {
+    if (!s.alive) return s;
+    if (s.phase === 'idle') {
+      const cooldown = Math.max(0, s.cooldown - dt);
+      const sx = s.x + s.width / 2;
+      const sy = s.y + s.height / 2;
+      const px = player.x + player.width / 2;
+      const py = player.y + player.height / 2;
+      const sameHeight = Math.abs(py - sy) <= 54;
+      if (cooldown <= 0 && sameHeight && Math.abs(px - sx) <= THORN_SLINGER_DETECT_RANGE) {
+        return { ...s, phase: 'telegraph', timer: 0, facing: px < sx ? -1 : 1, cooldown: 0 };
+      }
+      return { ...s, cooldown };
+    }
+    if (s.phase === 'telegraph') {
+      const timer = s.timer + dt;
+      if (timer < THORN_SLINGER_TELEGRAPH_DURATION) return { ...s, timer };
+      newSeeds.push({
+        id: `seed-${s.id}-${seedSeq++}`,
+        x: s.facing > 0 ? s.x + s.width - 4 : s.x - SEED_WIDTH + 4,
+        y: s.y + s.height * 0.66 - SEED_HEIGHT / 2,
+        width: SEED_WIDTH, height: SEED_HEIGHT, vx: s.facing * THORN_SLINGER_SEED_SPEED,
+        vy: 0, age: 0, source: 'slinger',
+      });
+      return { ...s, phase: 'betweenShots', timer: 0 };
+    }
+    const timer = s.timer + dt;
+    if (timer < THORN_SLINGER_SHOT_INTERVAL) return { ...s, timer };
+    newSeeds.push({
+      id: `seed-${s.id}-${seedSeq++}`,
+      x: s.facing > 0 ? s.x + s.width - 4 : s.x - SEED_WIDTH + 4,
+      y: s.y + s.height * 0.66 - SEED_HEIGHT / 2,
+      width: SEED_WIDTH, height: SEED_HEIGHT, vx: s.facing * THORN_SLINGER_SEED_SPEED,
+      vy: 0, age: 0, source: 'slinger',
+    });
+    return { ...s, phase: 'idle', timer: 0, cooldown: THORN_SLINGER_COOLDOWN };
+  });
+  return { slingers, newSeeds, nextSeedSeq: seedSeq };
+}
+
+function stepGearGliders(prev: GearGlider[], player: Rect, dt: number): GearGlider[] {
+  return prev.map((g) => {
+    if (!g.alive) return g;
+    if (g.phase === 'patrol') {
+      let x = g.x + g.vx * dt;
+      let vx = g.vx;
+      let facing = g.facing;
+      if (x < g.minX) { x = g.minX; vx = Math.abs(vx); facing = 1; }
+      else if (x + g.width > g.maxX) { x = g.maxX - g.width; vx = -Math.abs(vx); facing = -1; }
+      const pathPhase = g.pathPhase + (dt * 2 * Math.PI) / GEAR_GLIDER_SINE_PERIOD;
+      const y = g.baseY + Math.sin(pathPhase) * GEAR_GLIDER_SINE_AMPLITUDE;
+      const playerCenterX = player.x + player.width / 2;
+      const gliderCenterX = x + g.width / 2;
+      const playerBelow = player.y >= y + g.height - 4 && player.y - (y + g.height) <= 125;
+      if (playerBelow && Math.abs(playerCenterX - gliderCenterX) <= 62) {
+        return { ...g, x, y, vx, facing, pathPhase, phase: 'telegraph', timer: 0 };
+      }
+      return { ...g, x, y, vx, facing, pathPhase };
+    }
+    if (g.phase === 'telegraph') {
+      const timer = g.timer + dt;
+      if (timer < GEAR_GLIDER_DROP_TELEGRAPH_DURATION) return { ...g, timer };
+      return { ...g, phase: 'drop', timer: 0, vy: GEAR_GLIDER_DROP_SPEED };
+    }
+    if (g.phase === 'drop') {
+      const y = g.y + g.vy * dt;
+      if (y >= g.groundY) return { ...g, y: g.groundY, vy: 0, phase: 'recover', timer: 0 };
+      return { ...g, y };
+    }
+    const timer = g.timer + dt;
+    if (timer < GEAR_GLIDER_RECOVER_DURATION) return { ...g, timer };
+    return { ...g, phase: 'patrol', timer: 0, y: g.baseY, vy: 0 };
+  });
 }
 
 // Chestnut Roller: walk (patrol, vulnerable) -> windup (telegraph, locked
@@ -911,9 +1010,62 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return r;
   });
 
+  // Stage 2 enemies are stepped before projectile movement so a completed
+  // Slinger warning adds its first visible shot to this frame's seed list.
+  const slingerStep = stepThornSlingers(prev.thornSlingers, player, dt, prev.seedSeq);
+  let seedSeq = slingerStep.nextSeedSeq;
+  const resolvedThornSlingers = slingerStep.slingers.map((s) => {
+    if (!s.alive) return s;
+    const hitArrow = findArrowHit(s);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      score += 125;
+      pushEffect('impact', s.x + s.width / 2, s.y);
+      return { ...s, alive: false };
+    }
+    if (!rectIntersect(player, s)) return s;
+    const isStomp = wasFalling && prevBottom <= s.y + STOMP_TOLERANCE;
+    if (isStomp) {
+      player.vy = STOMP_BOUNCE;
+      score += 125;
+      pushEffect('impact', s.x + s.width / 2, s.y);
+      return { ...s, alive: false };
+    }
+    if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+      lives = applyHit(player, lives, respawnPoint);
+    }
+    return s;
+  });
+
+  const gearGlidersStepped = stepGearGliders(prev.gearGliders, player, dt);
+  const resolvedGearGliders = gearGlidersStepped.map((g) => {
+    if (!g.alive) return g;
+    const hitArrow = findArrowHit(g);
+    if (hitArrow) {
+      consumedArrowIds.add(hitArrow.id);
+      score += 150;
+      pushEffect('impact', g.x + g.width / 2, g.y);
+      return { ...g, alive: false };
+    }
+    if (!rectIntersect(player, g)) return g;
+    const isStomp = wasFalling && prevBottom <= g.y + STOMP_TOLERANCE;
+    if (isStomp) {
+      player.vy = STOMP_BOUNCE;
+      score += 150;
+      pushEffect('impact', g.x + g.width / 2, g.y);
+      return { ...g, alive: false };
+    }
+    if (player.invulnerableFor <= 0) {
+      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+      lives = applyHit(player, lives, respawnPoint);
+    }
+    return g;
+  });
+
   // Seeds: move existing ones, drop any that hit a wall/left the world/expired
   // -- same treatment as arrows above, just aimed the other way.
-  let seeds = prev.seeds
+  let seeds = [...prev.seeds, ...slingerStep.newSeeds]
     .map((s) => ({ ...s, x: s.x + s.vx * dt, y: s.y + s.vy * dt, age: s.age + dt }))
     .filter((s) => {
       const lifetime = s.source === 'bossWave' ? BOSS_ROOT_WAVE_LIFETIME : s.source === 'boss' ? BOSS_VOLLEY_LIFETIME : SEED_LIFETIME;
@@ -955,7 +1107,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // pre-new-shots) against TURRET_MAX_SEEDS as the concurrency backstop.
   const turretStep = stepTurrets(prev.turrets, player, dt, seeds.length, prev.seedSeq);
   seeds = [...seeds, ...turretStep.newSeeds];
-  let seedSeq = turretStep.nextSeedSeq;
+  seedSeq = turretStep.nextSeedSeq;
   const resolvedTurrets = turretStep.turrets.map((t) => {
     if (!t.alive) return t;
 
@@ -1216,10 +1368,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   if (lives <= 0) {
     phase = 'gameover';
-  } else if (!boss.alive) {
-    // Defeating the boss is the only way to win — it physically blocks the
-    // path to the (now purely decorative) flag while alive, so there's no
-    // separate flag-touch win path to keep in sync with this.
+  } else if (rectIntersect(player, level.flag)) {
+    // Rootwarden opens the route, but the far Stage 2 banner completes it.
     phase = 'win';
   }
 
@@ -1257,6 +1407,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     jumpers: resolvedJumpers,
     turrets: resolvedTurrets,
     chestnutRollers: resolvedChestnutRollers,
+    thornSlingers: resolvedThornSlingers,
+    gearGliders: resolvedGearGliders,
     treasureCaches: resolvedTreasureCaches,
     lootReveals,
     lootRevealSeq,

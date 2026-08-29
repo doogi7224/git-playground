@@ -24,8 +24,10 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
               ['Root Turret', '충전 후 플레이어가 있던 방향으로 씨앗 탄환을 쏩니다.'],
               ['Chestnut Roller', '걷다가 빠르게 구릅니다. 구르는 동안은 화살과 스톰프가 통하지 않습니다.'],
               ['Bio-Coil', '웅크린 뒤 크게 도약하는 식물형 적입니다. 착지 뒤에는 빈틈이 생깁니다.'],
+              ['Thorn Slinger', '같은 높이에서 0.65초 경고 뒤 낮은 가시 탄환을 두 발 쏩니다. 점프 또는 화살로 대응하세요.'],
+              ['Gear Glider', '공중을 순찰하다 아래의 플레이어를 노리고 급강하합니다. 경고를 본 뒤 옆으로 피하세요.'],
               ['Spore Sprite · Piston', '포자는 가까이 가면 느려지고, 피스톤은 점화 구간에 닿으면 위험합니다.'],
-              ['Rootwarden', '보스의 공격 예고를 피하고 빈틈이 열렸을 때 공격하세요.'],
+              ['Rootwarden', '보스를 쓰러뜨리면 Sunken Gearworks가 이어집니다. 끝의 원정 배너까지 도달하세요.'],
             ]} />
             <GuideSection title="아이템 · 보상" entries={[
               ['Sunseed', '점수용 수집품입니다. 길과 발판의 안전한 진행 방향을 알려줍니다.'],

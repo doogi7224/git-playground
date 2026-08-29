@@ -107,6 +107,13 @@
 
 ## 사용자 부재 중 작업 종료 기준
 
+## 2026-08-29 — Stage 2 Sunken Gearworks (Claude)
+
+- 사용자 승인에 따라 `src/game/*`의 Stage 2 연속 구간(x=7700~11520), 최종 배너 승리 규칙, 체크포인트(7820/9250/10250), Thorn Slinger·Gear Glider 상태/물리를 구현했다. Rootwarden 처치는 통과만 열며 즉시 승리하지 않는다.
+- Stage 2 필수 피트는 140/140/130/140px으로 기본 점프 범위 안에 두었다. Slinger는 같은 높이·300px 이내에서 0.65초 예고 뒤 0.18초 간격 2발을 고정 방향으로 발사한다. Glider는 공중 왕복·사인 흔들기, 아래 근접 시 0.45초 예고 낙하, 0.7초 회복을 쓴다.
+- Codex 소유 프레젠테이션은 `scene_mechanical_v2` 배경 전환, 신규 적 View/아트 마운트, 도감 항목으로 연결했다. 새 자산은 `assets/sprites/thorn_slinger_v1/thorn_slinger.png`, `assets/sprites/gear_glider_v1/gear_glider.png`이다.
+- Stage 1은 생명·체크포인트·예고를 건드리지 않고 Brambleling 이동/돌진, Bio-Coil 감지, Hopper 주기, Turret 주기, Roller 쿨다운만 소폭 상향했다.
+
 - Claude: 타입 검사·기존 회귀·활/신규 적 로직 검증을 마치고, 밸런스 수치를 바꿨다면 근거와 전후 값을 `개발로그.md`에 기록한다.
 - Codex: 실제 화면 캡처 기준으로 모바일 스테이지/컨트롤, 착지, 사격, 그래플, 배너가 읽히는지 확인하고 S0~S2 발견 항목만 수정한다.
 - 공통: 각자 소유 파일만 커밋·푸시하고, 완료/미완료/검증 결과를 HANDOFF에 남긴다. 사용자의 새 승인 없이는 범위를 넓히지 않는다.

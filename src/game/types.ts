@@ -182,7 +182,39 @@ export interface SeedProjectile extends Rect {
   /** Zero for turrets/root waves; shallow fan for the three boss seeds. */
   vy: number;
   age: number;
-  source: 'turret' | 'boss' | 'bossWave';
+  source: 'turret' | 'boss' | 'bossWave' | 'slinger';
+}
+
+export type ThornSlingerPhase = 'idle' | 'telegraph' | 'betweenShots';
+
+/** A stationary Stage 2 plant artillery enemy. It locks its aim during the
+ * warning, then fires a low, readable two-seed burst. */
+export interface ThornSlinger extends Rect {
+  id: string;
+  phase: ThornSlingerPhase;
+  timer: number;
+  cooldown: number;
+  facing: 1 | -1;
+  alive: boolean;
+}
+
+export type GearGliderPhase = 'patrol' | 'telegraph' | 'drop' | 'recover';
+
+/** An aerial Stage 2 enemy. It glides across a fixed span, dives only after
+ * its target has been clearly warned, then remains vulnerable on landing. */
+export interface GearGlider extends Rect {
+  id: string;
+  minX: number;
+  maxX: number;
+  baseY: number;
+  groundY: number;
+  phase: GearGliderPhase;
+  timer: number;
+  pathPhase: number;
+  vx: number;
+  vy: number;
+  facing: 1 | -1;
+  alive: boolean;
 }
 
 export type ChestnutRollerPhase = 'walk' | 'windup' | 'rolling' | 'recover';
@@ -252,6 +284,8 @@ export interface Level {
   jumpers: Jumper[];
   turrets: Turret[];
   chestnutRollers: ChestnutRoller[];
+  thornSlingers: ThornSlinger[];
+  gearGliders: GearGlider[];
   treasureCaches: TreasureCache[];
 }
 
@@ -314,6 +348,8 @@ export interface GameState {
   jumpers: Jumper[];
   turrets: Turret[];
   chestnutRollers: ChestnutRoller[];
+  thornSlingers: ThornSlinger[];
+  gearGliders: GearGlider[];
   treasureCaches: TreasureCache[];
   lootReveals: LootReveal[];
   /** Monotonic counter used only to mint unique LootReveal ids, same pattern as effectSeq. */

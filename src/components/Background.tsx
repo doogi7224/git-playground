@@ -21,6 +21,7 @@ const FAR_FACTOR = 0.15;
 const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_alpine_valley_v4.png');
 const SCENE_WATERFALL_SOURCE = require('../../assets/backgrounds/scene_forest_waterfall_v3.png');
 const SCENE_RUINS_SOURCE = require('../../assets/backgrounds/scene_forest_ruins_v3.png');
+const SCENE_GEARWORKS_SOURCE = require('../../assets/backgrounds/scene_mechanical_v2.png');
 
 // Memoized so this large tiled image subtree is skipped on the 60fps camera
 // updates; it only changes when the viewport changes.
@@ -60,8 +61,10 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
   // forward. Generous overlap prevents a hard scene cut during a run.
   const waterfallBlend = Math.max(0, Math.min(1, (cameraX - 2350) / 500));
   const ruinsBlend = Math.max(0, Math.min(1, (cameraX - 5000) / 500));
+  const gearworksBlend = Math.max(0, Math.min(1, (cameraX - 7450) / 500));
   const meadowOpacity = 1 - waterfallBlend;
   const waterfallOpacity = waterfallBlend * (1 - ruinsBlend);
+  const ruinsOpacity = ruinsBlend * (1 - gearworksBlend);
 
   // Each tile is a full viewport-width crop of the scene painting (via
   // resizeMode="cover"), not the image's own natural aspect width — sizing
@@ -83,7 +86,8 @@ export default function Background({ cameraX, worldWidth, viewportWidth, viewpor
       <View style={[styles.parallaxLayer, { width: farLayerWidth, transform: [{ translateX: farOffset }] }]}>
         {meadowOpacity > 0 && <SceneTiles source={SCENE_WILD_SOURCE} opacity={meadowOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
         {waterfallOpacity > 0 && <SceneTiles source={SCENE_WATERFALL_SOURCE} opacity={waterfallOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
-        {ruinsBlend > 0 && <SceneTiles source={SCENE_RUINS_SOURCE} opacity={ruinsBlend} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
+        {ruinsOpacity > 0 && <SceneTiles source={SCENE_RUINS_SOURCE} opacity={ruinsOpacity} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
+        {gearworksBlend > 0 && <SceneTiles source={SCENE_GEARWORKS_SOURCE} opacity={gearworksBlend} tileWidth={tileWidth} tileCount={tileCount} height={viewportHeight} />}
       </View>
     </View>
   );
