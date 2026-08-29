@@ -21,7 +21,7 @@ const FAR_FACTOR = 0.15;
 const SCENE_WILD_SOURCE = require('../../assets/backgrounds/scene_alpine_valley_v4.png');
 const SCENE_WATERFALL_SOURCE = require('../../assets/backgrounds/scene_forest_waterfall_v3.png');
 const SCENE_RUINS_SOURCE = require('../../assets/backgrounds/scene_forest_ruins_v3.png');
-const SCENE_GEARWORKS_SOURCE = require('../../assets/backgrounds/scene_mechanical_v2.png');
+const SCENE_GEARWORKS_SOURCE = require('../../assets/backgrounds/scene_mechanical_v3.png');
 
 // Memoized so this large tiled image subtree is skipped on the 60fps camera
 // updates; it only changes when the viewport changes.
