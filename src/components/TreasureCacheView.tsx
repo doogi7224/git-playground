@@ -28,7 +28,7 @@ export default function TreasureCacheView({ cache }: { cache: TreasureCache }) {
       ) : (
         <>
           <View pointerEvents="none" style={styles.podGlow} />
-          <Image source={require('../../assets/sprites/treasure_cache_v1/relic_pod.png')} resizeMode="contain" style={styles.sprite} />
+          <Image source={require('../../assets/sprites/treasure_cache_v1/relic_target_v1.png')} resizeMode="contain" style={styles.sprite} />
         </>
       )}
     </Animated.View>

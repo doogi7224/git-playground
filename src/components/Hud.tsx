@@ -1,7 +1,7 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { COG_COLORS } from './CogPickupView';
-import { STARTING_LIVES } from '../game/constants';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { COG_SOURCES } from './CogPickupView';
+import { COG_MAGNET_WARNING_DURATION, STARTING_LIVES } from '../game/constants';
 import { CogType } from '../game/types';
 import { palette } from '../theme';
 
@@ -26,6 +26,7 @@ export default function Hud({
   lives,
   equippedCogs,
   shieldCharges,
+  magnetFor,
   arrows,
   maxArrows,
 }: {
@@ -33,10 +34,30 @@ export default function Hud({
   lives: number;
   equippedCogs: (CogType | null)[];
   shieldCharges: number;
+  magnetFor: number;
   arrows: number;
   maxArrows: number;
 }) {
-  const equipped = equippedCogs.filter((c): c is CogType => c != null);
+  const magnetWarning = equippedCogs.includes('magnet') && magnetFor > 0 && magnetFor <= COG_MAGNET_WARNING_DURATION;
+  const magnetOpacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    magnetOpacity.stopAnimation();
+    magnetOpacity.setValue(1);
+    if (!magnetWarning) return undefined;
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(magnetOpacity, { toValue: 0.25, duration: 300, useNativeDriver: true }),
+      Animated.timing(magnetOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [magnetOpacity, magnetWarning]);
+
+  const allStatusCogs: { type: CogType; label: string }[] = [
+    { type: 'spring', label: 'SPRING' },
+    { type: 'magnet', label: `MAGNET ${Math.ceil(magnetFor)}s` },
+    { type: 'mirror', label: 'MIRROR' },
+  ];
+  const statusCogs = allStatusCogs.filter(({ type }) => equippedCogs.includes(type));
   return (
     <View style={styles.container} pointerEvents="none">
       <View style={styles.topRow}>
@@ -51,10 +72,13 @@ export default function Hud({
       </View>
       {shieldCharges > 0 && <View style={styles.shieldBadge}><Text style={styles.badgeCaption}>SHIELD</Text><Text style={styles.shieldIcon}>✦</Text></View>}
       {maxArrows > 0 && <View style={styles.ammoBadge}><Text style={styles.badgeCaption}>ARROWS</Text><Text style={styles.ammoText}>➤ {arrows}/{maxArrows}</Text></View>}
-      {equipped.length > 0 && (
-        <View style={styles.cogRow}>
-          {equipped.map((c) => (
-            <View key={c} style={[styles.cogDot, { backgroundColor: COG_COLORS[c] }]} />
+      {statusCogs.length > 0 && (
+        <View style={styles.cogStatusRow}>
+          {statusCogs.map(({ type, label }) => (
+            <Animated.View key={type} style={[styles.cogStatus, type === 'magnet' && { opacity: magnetOpacity }]}>
+              <Image source={COG_SOURCES[type]} resizeMode="contain" style={styles.cogIcon} />
+              <Text style={styles.cogLabel}>{label}</Text>
+            </Animated.View>
           ))}
         </View>
       )}
@@ -167,16 +191,8 @@ const styles = StyleSheet.create({
   lifePipCoreAlive: {
     backgroundColor: palette.mossTint,
   },
-  cogRow: {
-    flexDirection: 'row',
-    gap: 6,
-    alignSelf: 'center',
-  },
-  cogDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.6)',
-  },
+  cogStatusRow: { position: 'absolute', top: 96, left: 22, flexDirection: 'row', gap: 5, alignItems: 'center' },
+  cogStatus: { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(224,169,79,0.65)', backgroundColor: 'rgba(20,24,22,0.88)', paddingVertical: 3, paddingHorizontal: 5 },
+  cogIcon: { width: 20, height: 20 },
+  cogLabel: { color: '#f4ecd7', fontSize: 7, fontWeight: '900', letterSpacing: 0.45 },
 });

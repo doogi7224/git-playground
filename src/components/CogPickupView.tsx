@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { CogPickup } from '../game/types';
 
-const COG_SOURCES: Record<CogPickup['cogType'], number> = {
+export const COG_SOURCES: Record<CogPickup['cogType'], number> = {
   spring: require('../../assets/sprites/cogs/cog_spring_v1.png'),
   magnet: require('../../assets/sprites/cogs/cog_magnet_v1.png'),
   mirror: require('../../assets/sprites/cogs/cog_mirror_v1.png'),

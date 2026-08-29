@@ -32,8 +32,8 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
               ['Spring Cog', '점프와 벽점프 거리를 강화합니다.'],
               ['Magnet Cog', '30초 동안 가까운 Sunseed를 자동으로 끌어옵니다.'],
               ['Mirror Cog', '일반 피격을 한 번 막아주는 보호막을 충전합니다. 낙사는 막지 않습니다.'],
-              ['? Root Cache', '아래에서 점프로 치면 보상이 나오며, 이후에도 고체 블록으로 남습니다.'],
-              ['Relic Pod', '유물 활의 화살로만 열 수 있는 봉인 보상입니다.'],
+              ['? Root Cache', '아래에서 점프로 치면 Spring·Magnet·Mirror·화살 +1·생명 +1 중 하나가 무작위로 나옵니다. 이후에도 고체 블록으로 남습니다.'],
+              ['Relic Target', '유물 활의 화살로만 맞혀 열 수 있는 숲 과녁 보상입니다.'],
             ]} />
           </ScrollView>
           <Pressable onPress={() => setGuideOpen(false)} style={styles.backButton}>

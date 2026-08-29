@@ -292,14 +292,13 @@ function makeChestnutRollers(): ChestnutRoller[] {
 // Three Root Caches are compact overhead mystery blocks on safe stretches of
 // the main route. Their underside sits 72px above the ground: a normal jump
 // reaches them, while the 28px block leaves clear running space underneath.
-// Two Relic Pods remain on optional high platforms after the bow pickup.
-// cache-root3 carries the arrowBundle reward before the first Relic Pod
-// (cache-pod1, x=4450) so running low on ammo never blocks required progress.
+// Each rolls its reward on opening. Two Relic Pods remain on optional high
+// platforms after the bow pickup with their authored arrow-only rewards.
 function makeTreasureCaches(): TreasureCache[] {
-  const defs: [string, TreasureCacheKind, TreasureReward][] = [
-    ['cache-root1', 'rootCache', 'sunseedBurst'],
-    ['cache-root2', 'rootCache', 'sunseedBurst'],
-    ['cache-root3', 'rootCache', 'arrowBundle'],
+  const defs: [string, TreasureCacheKind, TreasureReward | null][] = [
+    ['cache-root1', 'rootCache', null],
+    ['cache-root2', 'rootCache', null],
+    ['cache-root3', 'rootCache', null],
     ['cache-pod1', 'relicPod', 'lifeBloom'],
     ['cache-pod2', 'relicPod', 'sunseedBurst'],
   ];

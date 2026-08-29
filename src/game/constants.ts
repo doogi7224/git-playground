@@ -80,6 +80,7 @@ export const COG_PICKUP_SIZE = 22;
 export const COG_SPRING_JUMP_MULT = 1.18; // foot slot: +18% jump height (doc also has +25% wall-jump distance; no wall-jump exists)
 export const COG_MAGNET_RADIUS = 70; // body slot: px radius for auto-collecting coins
 export const COG_MAGNET_DURATION = 30; // seconds; temporary collection aid, not a permanent equip
+export const COG_MAGNET_WARNING_DURATION = 5; // HUD flashes during the final five seconds
 
 // Wall-slide/wall-jump: per the GDD's control spec (fall-speed cap is specified
 // numerically; push-off speed is not, so WALLJUMP_VX is a judgment call rather
@@ -170,10 +171,8 @@ export const CHESTNUT_ROLLER_ROLL_DURATION = 1.15; // max roll length; cut short
 export const CHESTNUT_ROLLER_RECOVER_DURATION = 0.65; // defenseless pause after a roll ends
 export const CHESTNUT_ROLLER_COOLDOWN = 2.6; // seconds after recovering before it can roll again
 
-// Treasure Cache: two fixed-reward pickups on optional side routes. Root
-// Cache opens only to a dash hit, Relic Pod only to an arrow hit -- no
-// inventory, no random loot table, no empty reward. Each instance's kind
-// and reward are baked into level.ts.
+// Treasure Cache: Root Cache is a mystery block that rolls one of five
+// rewards; Relic Pods retain their authored rewards on optional routes.
 export const TREASURE_CACHE_WIDTH = 28;
 export const TREASURE_CACHE_HEIGHT = 28;
 export const SUNSEED_BURST_SCORE = 8;

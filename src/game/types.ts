@@ -208,17 +208,15 @@ export interface ChestnutRoller extends Rect {
 }
 
 export type TreasureCacheKind = 'rootCache' | 'relicPod';
-export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom';
+export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'springCog' | 'magnetCog' | 'mirrorCog';
 
-// An optional-route pickup with a fixed (never randomized, never empty)
-// reward, opened by a specific committed action rather than a touch: a
-// Root Cache is struck from below by a jump, a Relic Pod by an arrow hit.
-// No inventory or loot table -- `reward` is baked into level data and
-// applied immediately the frame it opens.
+// An optional-route pickup opened by a specific committed action rather than
+// a touch: a Root Cache is struck from below by a jump and rolls its reward
+// on opening (`null` until then); a Relic Pod uses an authored arrow reward.
 export interface TreasureCache extends Rect {
   id: string;
   kind: TreasureCacheKind;
-  reward: TreasureReward;
+  reward: TreasureReward | null;
   opened: boolean;
 }
 
@@ -323,6 +321,8 @@ export interface GameState {
   lootReveals: LootReveal[];
   /** Monotonic counter used only to mint unique LootReveal ids, same pattern as effectSeq. */
   lootRevealSeq: number;
+  /** Per-run pseudo-random state for mystery-block rewards. */
+  lootRandomSeed: number;
   seeds: SeedProjectile[];
   /** Monotonic counter used only to mint unique Arrow ids, same pattern as effectSeq. */
   arrowSeq: number;

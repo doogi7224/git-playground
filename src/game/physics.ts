@@ -100,6 +100,7 @@ import {
   SeedProjectile,
   SporeSprite,
   TreasureCache,
+  TreasureReward,
   Turret,
 } from './types';
 
@@ -109,6 +110,15 @@ export function rectIntersect(a: Rect, b: Rect): boolean {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+const ROOT_CACHE_REWARDS: TreasureReward[] = ['springCog', 'magnetCog', 'mirrorCog', 'arrowBundle', 'lifeBloom'];
+
+function rollRootCacheReward(seed: number): { seed: number; reward: TreasureReward } {
+  // Keep the result in GameState instead of calling Math.random during a
+  // physics step, so one opening has one stable outcome through React reruns.
+  const nextSeed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+  return { seed: nextSeed, reward: ROOT_CACHE_REWARDS[nextSeed % ROOT_CACHE_REWARDS.length] };
 }
 
 export function createInitialState(level: Level): GameState {
@@ -162,6 +172,7 @@ export function createInitialState(level: Level): GameState {
     treasureCaches: level.treasureCaches.map((t) => ({ ...t })),
     lootReveals: [],
     lootRevealSeq: 0,
+    lootRandomSeed: Math.floor(Math.random() * 0x100000000) >>> 0,
     seeds: [],
     arrowSeq: 0,
     seedSeq: 0,
@@ -1053,6 +1064,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // already snapped player.y to that underside and stopped upward velocity.
   // Relic Pods retain their arrow-only interaction.
   let lootRevealSeq = prev.lootRevealSeq;
+  let lootRandomSeed = prev.lootRandomSeed;
   const newLootReveals: LootReveal[] = [];
   const resolvedTreasureCaches: TreasureCache[] = prev.treasureCaches.map((cache) => {
     let opened = false;
@@ -1074,17 +1086,32 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
     if (!opened) return cache;
 
-    if (cache.reward === 'sunseedBurst') {
+    let reward = cache.reward;
+    if (reward == null) {
+      const rolled = rollRootCacheReward(lootRandomSeed);
+      lootRandomSeed = rolled.seed;
+      reward = rolled.reward;
+    }
+
+    if (reward === 'sunseedBurst') {
       score += SUNSEED_BURST_SCORE;
-    } else if (cache.reward === 'arrowBundle') {
+    } else if (reward === 'arrowBundle') {
       player.arrows = Math.min(player.maxArrows, player.arrows + ARROW_BUNDLE_ARROWS);
-    } else if (cache.reward === 'lifeBloom') {
+    } else if (reward === 'lifeBloom') {
       lives = Math.min(STARTING_LIVES, lives + LIFE_BLOOM_LIVES);
+    } else if (reward === 'springCog') {
+      player.equippedFoot = 'spring';
+    } else if (reward === 'magnetCog') {
+      player.equippedBody = 'magnet';
+      player.magnetFor = COG_MAGNET_DURATION;
+    } else if (reward === 'mirrorCog') {
+      player.equippedHead = 'mirror';
+      player.shieldCharges = 1;
     }
     pushEffect('pickup', cache.x + cache.width / 2, cache.y + cache.height / 2);
-    newLootReveals.push({ id: `loot-${lootRevealSeq}`, reward: cache.reward, x: cache.x + cache.width / 2, y: cache.y, timeLeft: LOOT_REVEAL_DURATION });
+    newLootReveals.push({ id: `loot-${lootRevealSeq}`, reward, x: cache.x + cache.width / 2, y: cache.y, timeLeft: LOOT_REVEAL_DURATION });
     lootRevealSeq++;
-    return { ...cache, opened: true };
+    return { ...cache, reward, opened: true };
   });
   const lootReveals = [
     ...prev.lootReveals.map((l) => ({ ...l, timeLeft: l.timeLeft - dt })).filter((l) => l.timeLeft > 0),
@@ -1161,6 +1188,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     treasureCaches: resolvedTreasureCaches,
     lootReveals,
     lootRevealSeq,
+    lootRandomSeed,
     seeds: resolvedSeeds,
     arrowSeq,
     seedSeq,
