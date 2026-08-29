@@ -215,6 +215,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
         score={gameState.score}
         lives={gameState.lives}
         equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody, gameState.player.equippedFoot]}
+        shieldCharges={gameState.player.shieldCharges}
         arrows={gameState.player.arrows}
         maxArrows={gameState.player.maxArrows}
       />

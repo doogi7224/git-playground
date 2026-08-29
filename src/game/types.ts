@@ -116,7 +116,7 @@ export interface RootPoint extends Rect {
 // already there. Only the head slot has one cog implemented (Mirror) —
 // Photosyn is design-doc only since it depends on Overgrowth Blocks, which
 // don't exist in this prototype.
-export type CogType = 'spring' | 'magnet' | 'steamBoost' | 'rootHookCog' | 'mirror';
+export type CogType = 'spring' | 'magnet' | 'mirror';
 export type CogSlot = 'head' | 'body' | 'foot';
 
 export interface CogPickup extends Rect {
@@ -284,10 +284,10 @@ export interface Player extends Rect {
   equippedHead: CogType | null;
   equippedBody: CogType | null;
   equippedFoot: CogType | null;
-  /** Extra fixed-velocity coast after a dash ends, granted by the Steam Boost cog. */
-  steamBoostTimer: number;
-  /** Rolling position history (only maintained while Mirror is equipped) used as an alternate respawn point. */
-  mirrorTrail: { x: number; y: number; age: number }[];
+  /** Seconds remaining on the temporary Magnet Cog auto-collection effect. */
+  magnetFor: number;
+  /** One-hit protection supplied by the Mirror Cog. It is consumed instead of a life on the next ordinary hit. */
+  shieldCharges: number;
   /** While airborne and pressed against a wall (wall-slide), the direction a wall-jump would push (away from the wall); 0 = not touching one. Consumed by a wall-jump. */
   touchingWall: -1 | 0 | 1;
   /** True once the Relic Bow pickup has been collected; gates whether an attack input fires an arrow. */

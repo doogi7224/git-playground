@@ -1,12 +1,48 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef } from 'react';
-import { Animated, Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { palette } from '../theme';
 
 export default function StartScreen({ onStart }: { onStart: () => void }) {
   const scale = useRef(new Animated.Value(1)).current;
+  const [guideOpen, setGuideOpen] = useState(false);
   const pressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 30 }).start();
   const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
+
+  if (guideOpen) {
+    return (
+      <ImageBackground source={require('../../assets/backgrounds/scene_alpine_valley_v4.png')} resizeMode="cover" style={styles.container}>
+        <LinearGradient colors={['rgba(16,35,32,0.25)', 'rgba(18,28,24,0.78)']} style={StyleSheet.absoluteFill} />
+        <View style={styles.guidePanel}>
+          <Text style={styles.guideEyebrow}>WILDROOT FIELD GUIDE</Text>
+          <Text style={styles.guideTitle}>적 · 아이템 도감</Text>
+          <ScrollView style={styles.guideScroll} contentContainerStyle={styles.guideContent} showsVerticalScrollIndicator={false}>
+            <GuideSection title="몬스터 · 위험 요소" entries={[
+              ['Brambleling', '순찰하다 가까이 오면 짧게 돌진합니다. 밟거나 화살로 처치하세요.'],
+              ['Acorn Hopper', '웅크린 뒤 전방으로 점프합니다. 발판 끝에서는 방향을 바꿉니다.'],
+              ['Root Turret', '충전 후 플레이어가 있던 방향으로 씨앗 탄환을 쏩니다.'],
+              ['Chestnut Roller', '걷다가 빠르게 구릅니다. 구르는 동안은 화살과 스톰프가 통하지 않습니다.'],
+              ['Bio-Coil', '웅크린 뒤 크게 도약하는 식물형 적입니다. 착지 뒤에는 빈틈이 생깁니다.'],
+              ['Spore Sprite · Piston', '포자는 가까이 가면 느려지고, 피스톤은 점화 구간에 닿으면 위험합니다.'],
+              ['Rootwarden', '보스의 공격 예고를 피하고 빈틈이 열렸을 때 공격하세요.'],
+            ]} />
+            <GuideSection title="아이템 · 보상" entries={[
+              ['Sunseed', '점수용 수집품입니다. 길과 발판의 안전한 진행 방향을 알려줍니다.'],
+              ['Relic Bow', '초반에 획득하면 화살 3발을 얻습니다. 화살은 최대 5발까지 보유합니다.'],
+              ['Spring Cog', '점프와 벽점프 거리를 강화합니다.'],
+              ['Magnet Cog', '30초 동안 가까운 Sunseed를 자동으로 끌어옵니다.'],
+              ['Mirror Cog', '일반 피격을 한 번 막아주는 보호막을 충전합니다. 낙사는 막지 않습니다.'],
+              ['? Root Cache', '아래에서 점프로 치면 보상이 나오며, 이후에도 고체 블록으로 남습니다.'],
+              ['Relic Pod', '유물 활의 화살로만 열 수 있는 봉인 보상입니다.'],
+            ]} />
+          </ScrollView>
+          <Pressable onPress={() => setGuideOpen(false)} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← 시작 화면으로</Text>
+          </Pressable>
+        </View>
+      </ImageBackground>
+    );
+  }
 
   return (
     <ImageBackground source={require('../../assets/backgrounds/scene_alpine_valley_v4.png')} resizeMode="cover" style={styles.container}>
@@ -57,12 +93,30 @@ export default function StartScreen({ onStart }: { onStart: () => void }) {
           </Animated.View>
         </Pressable>
 
+        <Pressable onPress={() => setGuideOpen(true)} style={styles.guideButton}>
+          <Text style={styles.guideButtonText}>적 · 아이템 도감</Text>
+        </Pressable>
+
         <View style={styles.controlStrip}>
           <Text style={styles.hint}>◀▶ 이동　▲ 점프　» 대시　◎ 루트훅　➤ 활</Text>
           <Text style={styles.hintSub}>활은 초반 유물 획득 후 사용 · 적은 밟거나 화살로 대응</Text>
         </View>
       </View>
     </ImageBackground>
+  );
+}
+
+function GuideSection({ title, entries }: { title: string; entries: [string, string][] }) {
+  return (
+    <View style={styles.guideSection}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {entries.map(([name, description]) => (
+        <View key={name} style={styles.guideEntry}>
+          <Text style={styles.entryName}>{name}</Text>
+          <Text style={styles.entryDescription}>{description}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -124,10 +178,24 @@ const styles = StyleSheet.create({
   },
   startKicker: { fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: '#5a3d00' },
   startLabel: { fontSize: 19, lineHeight: 23, fontWeight: '900', color: '#4b3200' },
+  guideButton: { marginTop: 10, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: palette.uiPlateEdge, backgroundColor: 'rgba(22, 30, 25, 0.58)' },
+  guideButtonText: { color: palette.coinShine, fontSize: 12, fontWeight: '900', letterSpacing: 0.5 },
   controlStrip: {
     width: '100%', marginTop: 15, paddingTop: 10, alignItems: 'center', borderTopWidth: 1,
     borderColor: palette.uiPlateEdge,
   },
   hint: { fontSize: 11, fontWeight: '800', color: '#fff', textAlign: 'center' },
   hintSub: { marginTop: 3, fontSize: 9, color: palette.uiTextMuted, textAlign: 'center' },
+  guidePanel: { width: '100%', maxWidth: 600, maxHeight: '88%', borderRadius: 20, padding: 20, backgroundColor: 'rgba(24, 33, 28, 0.94)', borderWidth: 2, borderColor: palette.uiPlateEdge },
+  guideEyebrow: { color: palette.mossTint, fontSize: 9, fontWeight: '900', letterSpacing: 1.6, textAlign: 'center' },
+  guideTitle: { marginTop: 3, color: palette.coinShine, fontSize: 26, fontWeight: '900', textAlign: 'center' },
+  guideScroll: { marginTop: 13 },
+  guideContent: { gap: 13, paddingBottom: 4 },
+  guideSection: { gap: 7 },
+  sectionTitle: { color: palette.uiPrimary, fontSize: 14, fontWeight: '900', letterSpacing: 0.4 },
+  guideEntry: { padding: 10, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  entryName: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  entryDescription: { marginTop: 3, color: palette.uiTextMuted, fontSize: 11, lineHeight: 16 },
+  backButton: { marginTop: 14, alignItems: 'center', borderRadius: 10, borderWidth: 1, borderColor: palette.uiPlateEdge, paddingVertical: 10, backgroundColor: palette.uiPlate },
+  backButtonText: { color: palette.coinShine, fontSize: 13, fontWeight: '900' },
 });

@@ -9,9 +9,7 @@ const COG_SOURCE = require('../../assets/sprites/relic_cog_v4.png');
 export const COG_COLORS: Record<CogPickup['cogType'], string> = {
   spring: '#e0a94f', // foot: jump boost
   magnet: '#7a9188', // body: coin pull
-  steamBoost: '#b1502e', // foot: dash coast
-  rootHookCog: '#3c7a56', // body: grapple range
-  mirror: '#6fa8dc', // head: respawn rewind
+  mirror: '#6fa8dc', // head: one-hit shield
 };
 
 export default function CogPickupView({ cog }: { cog: CogPickup }) {

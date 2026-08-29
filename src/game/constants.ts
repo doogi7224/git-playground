@@ -79,10 +79,7 @@ export const ROOTHOOK_MAX_ANGULAR_VEL = 6; // rad/s, clamp to prevent runaway sp
 export const COG_PICKUP_SIZE = 22;
 export const COG_SPRING_JUMP_MULT = 1.18; // foot slot: +18% jump height (doc also has +25% wall-jump distance; no wall-jump exists)
 export const COG_MAGNET_RADIUS = 70; // body slot: px radius for auto-collecting coins
-export const COG_STEAMBOOST_EXTRA_DURATION = 0.2; // foot slot: extra seconds of dash-speed coast after a dash ends
-export const COG_ROOTHOOK_RANGE_MULT = 1.3; // body slot: +30% Root-Hook attach range
-export const COG_MIRROR_TRAIL_SECONDS = 4; // head slot: how far back the respawn-rewind trail reaches
-export const COG_CANNON_JUMP_MULT = 1.3; // "Cannon Jump" synergy (Root-Hook Cog + Spring): extra boost on a mid-swing release-jump
+export const COG_MAGNET_DURATION = 30; // seconds; temporary collection aid, not a permanent equip
 
 // Wall-slide/wall-jump: per the GDD's control spec (fall-speed cap is specified
 // numerically; push-off speed is not, so WALLJUMP_VX is a judgment call rather

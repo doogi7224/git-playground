@@ -25,12 +25,14 @@ export default function Hud({
   score,
   lives,
   equippedCogs,
+  shieldCharges,
   arrows,
   maxArrows,
 }: {
   score: number;
   lives: number;
   equippedCogs: (CogType | null)[];
+  shieldCharges: number;
   arrows: number;
   maxArrows: number;
 }) {
@@ -47,6 +49,7 @@ export default function Hud({
         </View>
         <LifePips lives={lives} />
       </View>
+      {shieldCharges > 0 && <View style={styles.shieldBadge}><Text style={styles.badgeCaption}>SHIELD</Text><Text style={styles.shieldIcon}>✦</Text></View>}
       {maxArrows > 0 && <View style={styles.ammoBadge}><Text style={styles.badgeCaption}>ARROWS</Text><Text style={styles.ammoText}>➤ {arrows}/{maxArrows}</Text></View>}
       {equipped.length > 0 && (
         <View style={styles.cogRow}>
@@ -74,6 +77,8 @@ const styles = StyleSheet.create({
   },
   ammoBadge: { position: 'absolute', top: 58, left: 22, flexDirection: 'row', gap: 7, alignItems: 'center', backgroundColor: palette.uiPlate, borderRadius: 10, borderWidth: 1.5, borderColor: palette.uiPlateEdge, paddingHorizontal: 10, paddingVertical: 5 },
   ammoText: { color: '#8fe4d2', fontSize: 14, fontWeight: '900' },
+  shieldBadge: { position: 'absolute', top: 58, right: 22, flexDirection: 'row', gap: 6, alignItems: 'center', backgroundColor: 'rgba(65, 119, 164, 0.86)', borderRadius: 10, borderWidth: 1.5, borderColor: '#a7d5ff', paddingHorizontal: 10, paddingVertical: 5 },
+  shieldIcon: { color: '#e8f6ff', fontSize: 14, fontWeight: '900' },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',

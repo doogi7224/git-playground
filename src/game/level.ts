@@ -187,9 +187,7 @@ function makeRootPoints(): RootPoint[] {
 function makeCogPickups(): CogPickup[] {
   const defs: [string, CogType, number, number][] = [
     ['cog-spring', 'spring', 350, GROUND_Y - 160],
-    ['cog-roothook', 'rootHookCog', 830, GROUND_Y - 190],
     ['cog-magnet', 'magnet', 1300, GROUND_Y - 150],
-    ['cog-steamboost', 'steamBoost', 3550, GROUND_Y - 180],
     ['cog-mirror', 'mirror', 4150, GROUND_Y - 160],
   ];
   return defs.map(([id, cogType, x, y]) => ({
@@ -349,58 +347,28 @@ function makeEnemies(): Enemy[] {
 }
 
 function makeCoins(): Coin[] {
-  const coinDefs: [number, number][] = [
-    [340, GROUND_Y - 130],
-    [400, GROUND_Y - 130],
-    [780, GROUND_Y - 100],
-    [1010, GROUND_Y - 150],
-    [1280, GROUND_Y - 110],
-    [1470, GROUND_Y - 100],
-    [1690, GROUND_Y - 160],
-    [1720, GROUND_Y - 160],
-    [1930, GROUND_Y - 110],
-    [2290, GROUND_Y - 100],
-    [2540, GROUND_Y - 150],
-    [2570, GROUND_Y - 150],
-    [2830, GROUND_Y - 110],
-    [3000, GROUND_Y - 60],
-    [1930, GROUND_Y - 180],
-    [1965, GROUND_Y - 180],
-    [490, GROUND_Y - 180],
-    [520, GROUND_Y - 180],
-    [2670, GROUND_Y - 170],
-    [2700, GROUND_Y - 170],
-    [3250, GROUND_Y - 100],
-    [3480, GROUND_Y - 140],
-    [3510, GROUND_Y - 140],
-    [3730, GROUND_Y - 100],
-    [4130, GROUND_Y - 130],
-    [4160, GROUND_Y - 130],
-    [4470, GROUND_Y - 170],
-    [4500, GROUND_Y - 170],
-    [4550, GROUND_Y - 90],
-    // Area 3.
-    [4700, GROUND_Y - 100],
-    [4730, GROUND_Y - 100],
-    [4920, GROUND_Y - 90],
-    [4950, GROUND_Y - 90],
-    [5170, GROUND_Y - 140],
-    [5400, GROUND_Y - 100],
-    [5620, GROUND_Y - 90],
-    [5650, GROUND_Y - 90],
-    [5870, GROUND_Y - 150],
-    [6200, GROUND_Y - 100],
-    [6760, GROUND_Y - 90],
-    // Route Gate foundation: reachable only while the matching gate is
-    // active, since nothing else at these heights is solid over the gap.
-    [100, GROUND_Y - 65],
-    [145, GROUND_Y - 80],
-    [187, GROUND_Y - 65],
-    [150, GROUND_Y - 105],
-    [170, GROUND_Y - 130],
-    [195, GROUND_Y - 145],
-    [205, GROUND_Y - 135],
+  // A low entry marker welcomes each safe ground segment. Platform coins are
+  // centered on stable, unoccupied platforms so their placement teaches the
+  // route instead of forming arbitrary floating clusters.
+  const entryCoins: [number, number][] = [
+    [130, GROUND_Y - 45], [680, GROUND_Y - 45], [875, GROUND_Y - 45],
+    [1400, GROUND_Y - 45], [1525, GROUND_Y - 45], [2355, GROUND_Y - 45],
+    [3200, GROUND_Y - 45], [3355, GROUND_Y - 45], [4035, GROUND_Y - 45],
+    [4755, GROUND_Y - 45], [5455, GROUND_Y - 45], [6225, GROUND_Y - 45],
+    [6765, GROUND_Y - 45],
   ];
+  const occupiedPlatformIds = new Set(['p6', 'p9', 'p15', 'p22']);
+  const platformCoins: [number, number][] = floatingPlatforms
+    .filter((platform) => !occupiedPlatformIds.has(platform.id))
+    .map((platform) => [
+      platform.x + (platform.width - COIN_SIZE) / 2,
+      platform.y - COIN_SIZE - 6,
+    ]);
+  const bonusCoins: [number, number][] = bonusPlatforms.slice(0, 3).flatMap((platform) => [
+    [platform.x + 12, platform.y - COIN_SIZE - 6],
+    [platform.x + platform.width - COIN_SIZE - 12, platform.y - COIN_SIZE - 6],
+  ]);
+  const coinDefs = [...entryCoins, ...platformCoins, ...bonusCoins];
   return coinDefs.map(([x, y], i) => ({
     id: `coin-${i}`,
     x,

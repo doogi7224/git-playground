@@ -24,12 +24,9 @@ import {
   CHESTNUT_ROLLER_ROLL_SPEED,
   CHESTNUT_ROLLER_WALK_DURATION,
   CHESTNUT_ROLLER_WINDUP_DURATION,
-  COG_CANNON_JUMP_MULT,
   COG_MAGNET_RADIUS,
-  COG_MIRROR_TRAIL_SECONDS,
-  COG_ROOTHOOK_RANGE_MULT,
+  COG_MAGNET_DURATION,
   COG_SPRING_JUMP_MULT,
-  COG_STEAMBOOST_EXTRA_DURATION,
   COG_WALLJUMP_HORIZ_MULT,
   DASH_COOLDOWN,
   DASH_DURATION,
@@ -140,8 +137,8 @@ export function createInitialState(level: Level): GameState {
       equippedHead: null,
       equippedBody: null,
       equippedFoot: null,
-      steamBoostTimer: 0,
-      mirrorTrail: [],
+      magnetFor: 0,
+      shieldCharges: 0,
       touchingWall: 0,
       hasBow: false,
       arrowCooldown: 0,
@@ -180,11 +177,15 @@ function rectCenter(r: Rect): { x: number; y: number } {
   return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
 }
 
-// Shared by every damage source (enemies, Bio-Coil, Pressure
-// Piston, falling into a pit): mutates `player` in place and returns the new
-// life count. Callers decide *whether* a hit applies (most gate it behind
-// invulnerableFor <= 0; a pit fall doesn't), this just applies one uniformly.
-function applyHit(player: Player, lives: number, respawnPoint: { x: number; y: number }): number {
+// Shared by every damage source: a Mirror shield prevents the next ordinary
+// hit, while a pit always consumes a life so a fall cannot leave the player
+// trapped below the level.
+function applyHit(player: Player, lives: number, respawnPoint: { x: number; y: number }, canUseShield = true): number {
+  if (canUseShield && player.shieldCharges > 0) {
+    player.shieldCharges -= 1;
+    player.invulnerableFor = INVULNERABLE_TIME;
+    return lives;
+  }
   lives -= 1;
   player.invulnerableFor = INVULNERABLE_TIME;
   if (lives > 0) {
@@ -192,9 +193,6 @@ function applyHit(player: Player, lives: number, respawnPoint: { x: number; y: n
     player.y = respawnPoint.y;
     player.vx = 0;
     player.vy = 0;
-    // Fresh trail after any respawn, so a second hit within COG_MIRROR_TRAIL_SECONDS
-    // can't rewind to a stale pre-respawn position.
-    player.mirrorTrail = [];
   }
   return lives;
 }
@@ -442,21 +440,20 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   const player = { ...prev.player };
 
+  player.magnetFor = Math.max(0, prev.player.magnetFor - dt);
+  if (player.equippedBody === 'magnet' && player.magnetFor <= 0) {
+    player.equippedBody = null;
+  }
+
   // Decided from the pre-frame checkpoint index, consistent with the rest of
   // this function's "pre-frame state decides this frame's behavior" pattern:
   // every respawn-on-death site below sends the player here, not always the
-  // absolute level start. Mirror Cog overrides this with the oldest point in
-  // its rolling trail, when one is available.
-  const respawnPoint =
-    prev.player.equippedHead === 'mirror' && prev.player.mirrorTrail.length > 0
-      ? prev.player.mirrorTrail[0]
-      : level.checkpoints[prev.checkpointIndex];
+  // absolute level start.
+  const respawnPoint = level.checkpoints[prev.checkpointIndex];
 
   // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
   // this frame's move speed matches what's shown (no one-frame mismatch).
-  // Spring Cog (foot slot) boosts jump height; hoisted above the Root-Hook
-  // block so a Cannon Jump release (Root-Hook Cog + Spring) can reuse the
-  // same boosted value.
+  // Spring Cog (foot slot) boosts jump height.
   const moveSpeed = prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED;
   const jumpVelocity =
     JUMP_VELOCITY * (prev.player.equippedFoot === 'spring' ? COG_SPRING_JUMP_MULT : 1);
@@ -487,10 +484,9 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // next frame — "관성이 그대로 점프에 가산된다" from the GDD's control spec.
   if (!player.grappling && input.grappleHeld) {
     const pc = rectCenter(player);
-    const attachRange = player.equippedBody === 'rootHookCog' ? ROOTHOOK_RANGE * COG_ROOTHOOK_RANGE_MULT : ROOTHOOK_RANGE;
     const anchor = level.rootPoints.find((r) => {
       const rc = rectCenter(r);
-      return Math.hypot(rc.x - pc.x, rc.y - pc.y) <= attachRange;
+      return Math.hypot(rc.x - pc.x, rc.y - pc.y) <= ROOTHOOK_RANGE;
     });
     if (anchor) {
       const rc = rectCenter(anchor);
@@ -534,14 +530,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (!input.grappleHeld) {
       player.grappling = false; // released; vx/vy already hold last frame's tangential velocity
       resolveEmbeddedOverlap();
-    } else if (input.jumpPressed && player.equippedBody === 'rootHookCog') {
-      // Cannon Jump synergy (Root-Hook Cog + Spring Cog): a mid-swing jump
-      // detaches early, keeps the swing's tangential vx, and fires a fresh
-      // boosted upward jump instead of just releasing.
-      player.grappling = false;
-      player.vy = jumpVelocity * (player.equippedFoot === 'spring' ? COG_CANNON_JUMP_MULT : 1);
-      player.onGround = false;
-      resolveEmbeddedOverlap();
     } else {
       const pump = input.right ? ROOTHOOK_PUMP_ACCEL : input.left ? -ROOTHOOK_PUMP_ACCEL : 0;
       const angularAccel = -(ROOTHOOK_SWING_GRAVITY / player.grappleRadius) * Math.sin(player.grappleAngle) + pump;
@@ -581,21 +569,9 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.invulnerableFor = Math.max(player.invulnerableFor, DASH_INVULN);
     }
 
-    // Steam Boost Cog (foot slot): extra fixed-velocity coast once the dash
-    // itself ends, decided from the pre-frame timer just like the dash timers
-    // above. Detects the dash-just-ended edge from prev's timer.
-    player.steamBoostTimer = Math.max(0, prev.player.steamBoostTimer - dt);
-    if (prev.player.dashTimer > 0 && player.dashTimer <= 0 && player.equippedFoot === 'steamBoost') {
-      player.steamBoostTimer = COG_STEAMBOOST_EXTRA_DURATION;
-    }
-
     if (player.dashTimer > 0) {
       player.vx = player.facing * DASH_SPEED;
       player.vy = 0;
-    } else if (player.steamBoostTimer > 0) {
-      // Unlike the full dash freeze, gravity keeps acting during the coast tail.
-      player.vx = player.facing * DASH_SPEED;
-      player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
     } else {
       // Air Control: while airborne, horizontal input is scaled down (per the
       // GDD's control spec) rather than granting full ground speed instantly.
@@ -1049,7 +1025,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const resolvedCoins = prev.coins.map((c) => {
     if (c.collected) return c;
     const inMagnetRange =
-      player.equippedBody === 'magnet' && Math.hypot(rectCenter(c).x - playerCenter.x, rectCenter(c).y - playerCenter.y) <= COG_MAGNET_RADIUS;
+      player.equippedBody === 'magnet' && player.magnetFor > 0 && Math.hypot(rectCenter(c).x - playerCenter.x, rectCenter(c).y - playerCenter.y) <= COG_MAGNET_RADIUS;
     if (rectIntersect(player, c) || inMagnetRange) {
       score += 10;
       pushEffect('pickup', c.x + c.width / 2, c.y + c.height / 2);
@@ -1061,12 +1037,14 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const resolvedCogPickups: CogPickup[] = prev.cogPickups.map((c) => {
     if (c.collected) return c;
     if (!rectIntersect(player, c)) return c;
-    if (c.cogType === 'spring' || c.cogType === 'steamBoost') {
+    if (c.cogType === 'spring') {
       player.equippedFoot = c.cogType;
-    } else if (c.cogType === 'magnet' || c.cogType === 'rootHookCog') {
+    } else if (c.cogType === 'magnet') {
       player.equippedBody = c.cogType;
+      player.magnetFor = COG_MAGNET_DURATION;
     } else if (c.cogType === 'mirror') {
       player.equippedHead = c.cogType;
+      player.shieldCharges = 1;
     }
     pushEffect('gearPickup', c.x + c.width / 2, c.y + c.height / 2);
     return { ...c, collected: true };
@@ -1134,21 +1112,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   });
   player.slowFor = nearSporeSprite ? SPORE_SLOW_DURATION : Math.max(0, prev.player.slowFor - dt);
 
-  // Mirror Cog (head slot): maintains a rolling position trail while equipped,
-  // used above as an alternate respawn point. Aged from pre-frame entries so
-  // this frame's own position always starts at age 0.
-  if (player.equippedHead === 'mirror') {
-    const aged = prev.player.mirrorTrail
-      .map((t) => ({ ...t, age: t.age + dt }))
-      .filter((t) => t.age <= COG_MIRROR_TRAIL_SECONDS);
-    aged.push({ x: player.x, y: player.y, age: 0 });
-    player.mirrorTrail = aged;
-  } else {
-    player.mirrorTrail = [];
-  }
-
   if (player.y > DEATH_Y) {
-    lives = applyHit(player, lives, respawnPoint);
+    lives = applyHit(player, lives, respawnPoint, false);
   }
 
   if (lives <= 0) {
