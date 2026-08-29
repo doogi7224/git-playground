@@ -10,6 +10,9 @@ import {
   BOSS_ATTACK_DURATION,
   BOSS_ATTACK_KNOCKBACK,
   BOSS_ATTACK_RANGE,
+  BOSS_VOLLEY_LIFETIME,
+  BOSS_VOLLEY_SPEED,
+  BOSS_VOLLEY_VERTICAL_SPEED,
   BOSS_IDLE_DURATION,
   BOSS_TELEGRAPH_DURATION,
   BOSS_VULNERABLE_DURATION,
@@ -364,7 +367,9 @@ function stepTurrets(
         width: SEED_WIDTH,
         height: SEED_HEIGHT,
         vx: dir * SEED_SPEED,
+        vy: 0,
         age: 0,
+        source: 'turret',
       });
       seedCount++;
       seedSeq++;
@@ -872,10 +877,14 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // Seeds: move existing ones, drop any that hit a wall/left the world/expired
   // -- same treatment as arrows above, just aimed the other way.
   let seeds = prev.seeds
-    .map((s) => ({ ...s, x: s.x + s.vx * dt, age: s.age + dt }))
-    .filter(
-      (s) => s.age < SEED_LIFETIME && s.x + s.width > 0 && s.x < level.worldWidth && !level.platforms.some((p) => rectIntersect(s, p))
-    );
+    .map((s) => ({ ...s, x: s.x + s.vx * dt, y: s.y + s.vy * dt, age: s.age + dt }))
+    .filter((s) => {
+      const lifetime = s.source === 'boss' ? BOSS_VOLLEY_LIFETIME : SEED_LIFETIME;
+      const blocked = level.platforms.some((p) => rectIntersect(s, p));
+      const expired = s.age >= lifetime || s.x + s.width <= 0 || s.x >= level.worldWidth;
+      if (blocked && s.source === 'boss') pushEffect('impact', s.x + s.width / 2, s.y + s.height / 2);
+      return !blocked && !expired;
+    });
 
   const jumpersStepped = stepJumpers(prev.jumpers, dt);
   const resolvedJumpers = jumpersStepped.map((j) => {
@@ -909,7 +918,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // pre-new-shots) against TURRET_MAX_SEEDS as the concurrency backstop.
   const turretStep = stepTurrets(prev.turrets, player, dt, seeds.length, prev.seedSeq);
   seeds = [...seeds, ...turretStep.newSeeds];
-  const seedSeq = turretStep.nextSeedSeq;
+  let seedSeq = turretStep.nextSeedSeq;
   const resolvedTurrets = turretStep.turrets.map((t) => {
     if (!t.alive) return t;
 
@@ -960,12 +969,35 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   // Boss: solid while alive (handled above, in the platform collision list),
   // so touching its sides just stops the player like a wall. The two ways it
-  // actually interacts are the wide attack-phase damage zone and stomping it
-  // from above during its vulnerable phase (detected via landedOnBoss, set
+  // actually interacts are the small attack-phase contact zone plus the
+  // visible seed volley, and stomping it from above during its vulnerable
+  // phase (detected via landedOnBoss, set
   // in the vertical collision loop above, since a solid landing resolves to
   // flush contact rather than overlap).
   let boss = stepBoss(prev.boss, dt);
   if (boss.alive) {
+    // The warning phase locks the direction, then releases a readable three-
+    // seed fan exactly once when it turns into attack.  This is deliberately
+    // not homing: players can dodge based on the warning aura.
+    if (prev.boss.phase === 'telegraph' && boss.phase === 'attack') {
+      const bossCenter = boss.x + boss.width / 2;
+      const playerCenter = player.x + player.width / 2;
+      const dir: 1 | -1 = playerCenter < bossCenter ? -1 : 1;
+      [-1, 0, 1].forEach((fan) => {
+        resolvedSeeds.push({
+          id: `seed-boss-${seedSeq++}`,
+          x: dir > 0 ? boss.x + boss.width - 8 : boss.x - SEED_WIDTH + 8,
+          y: boss.y + boss.height * 0.42 - SEED_HEIGHT / 2,
+          width: SEED_WIDTH,
+          height: SEED_HEIGHT,
+          vx: dir * BOSS_VOLLEY_SPEED,
+          vy: fan * BOSS_VOLLEY_VERTICAL_SPEED,
+          age: 0,
+          source: 'boss',
+        });
+      });
+      pushEffect('impact', bossCenter, boss.y + boss.height * 0.38);
+    }
     // Solid, so an arrow can't pass through it either way -- it's always
     // consumed on contact, but only actually damages during the same
     // vulnerable window a stomp requires (an alternative input, not a way to

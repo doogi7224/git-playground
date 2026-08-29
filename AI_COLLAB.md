@@ -72,6 +72,7 @@
 
 ## HANDOFF
 
+- 최근 완료(협업): **Laplace**가 Rootwarden 전투 물리를 점검해, 기존 공격이 투사체·발사 이펙트 없이 좌우 100px의 보이지 않는 근접 판정뿐임을 확인했다(코드 변경 없음). Codex가 그 결과를 반영해 보스 본체 투명화를 제거하고 경고 오라를 분리했으며, `telegraph → attack` 전환에 플레이어 쪽으로 향하는 가시 씨앗 3발 부채꼴을 추가했다. 보스 씨앗은 바닥/벽에 닿으면 충돌 이펙트와 함께 사라지고, 근접 판정은 42px로 축소했다. `npx tsc --noEmit`, `npx expo export --platform web` 통과.
 - 최근 완료(Codex): 실기기 렉/모션 피드백 대응. `GameScreen.tsx`에 한 화면 overscan 컬링과 1/60초 고정 스텝(프레임당 최대 4회)을 적용하고, `Background.tsx`는 투명도 0인 대형 장면 레이어를 마운트하지 않게 했다. 주인공/Brambleling/Chestnut Roller는 이동 거리 기반 4프레임 보행으로 교체했고, Acorn Hopper는 대기·웅크림·상승·하강 모두 동일한 초록 네발 캐릭터로 통일했다. Bio-Coil의 세로 왜곡 범위는 0.82~1.12로 제한했다. 추가 사용자 지시에 따라 Root Cache 3개를 주 동선의 x=1120/2150/3650, y=GROUND_Y-100으로 옮겨 28px 고체 `?` 상자로 만들고, 아래에서 점프해 머리로 칠 때 기존 고정 보상이 나오며 사용 후 블록이 남도록 했다. Relic Pod 2개는 기존 화살 개봉/보너스 루트를 유지한다. `npx tsc --noEmit`, `npx expo export --platform web` 통과, 시작→게임 화면 웹 런타임 오류 0.
 - 최근 완료(Claude, 이번 세션): 사용자 지시로 위 커밋(`0405549`)의 `src/game/*` 변경분을 검증했다 — 결함 없음, 코드 수정 없음.
   - `?` 상자 판정: 아래에서 머리로 부딪힐 때만 `opened`가 켜지고(`hitFromBelow`: `prev.player.vy<0` + 위치 일치), 옆(대시) 접촉과 위(착지) 접촉으로는 열리지 않음을 확인. 보상은 `opened` 플래그로 1회만 지급되고, 상자는 `level.platforms`에 별도 `${id}-solid` 항목으로 들어가 있어 사용 후에도 계속 고체.

@@ -105,10 +105,13 @@ export const BOSS_HEIGHT = 110;
 export const BOSS_HP = 5;
 export const BOSS_IDLE_DURATION = 1.5; // safe to approach
 export const BOSS_TELEGRAPH_DURATION = 1.0; // clear visual warning before the attack lands (CLAUDE.md 18: 예고 부족 방지)
-export const BOSS_ATTACK_DURATION = 0.6; // damage window
+export const BOSS_ATTACK_DURATION = 0.6; // one visible volley is released at its start
 export const BOSS_VULNERABLE_DURATION = 1.5; // weak point exposed, stompable
-export const BOSS_ATTACK_RANGE = 100; // px, extends this far on both sides of the boss during the attack phase
+export const BOSS_ATTACK_RANGE = 42; // px, a small close-range fallback; the visible volley is the main threat
 export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the boss
+export const BOSS_VOLLEY_SPEED = 300;
+export const BOSS_VOLLEY_VERTICAL_SPEED = 82;
+export const BOSS_VOLLEY_LIFETIME = 1.1;
 
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations

@@ -170,7 +170,10 @@ export interface Turret extends Rect {
 export interface SeedProjectile extends Rect {
   id: string;
   vx: number;
+  /** Vertical velocity is zero for turret seeds and forms a shallow fan for boss volleys. */
+  vy: number;
   age: number;
+  source: 'turret' | 'boss';
 }
 
 export type ChestnutRollerPhase = 'walk' | 'windup' | 'rolling' | 'recover';
