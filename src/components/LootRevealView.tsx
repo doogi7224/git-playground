@@ -6,9 +6,8 @@ const COPY: Record<TreasureReward, { icon: string; label: string; color: string 
   sunseedBurst: { icon: '✦', label: 'SUNSEEDS +8', color: '#ffd55d' },
   arrowBundle: { icon: '➤', label: 'ARROW +1', color: '#8fe4d2' },
   lifeBloom: { icon: '✚', label: 'LIFE BLOOM', color: '#ef8173' },
-  springCog: { icon: '↟', label: 'SPRING COG', color: '#e0a94f' },
-  magnetCog: { icon: '⌁', label: 'MAGNET 30s', color: '#83cfc2' },
-  mirrorCog: { icon: '✦', label: 'MIRROR SHIELD', color: '#9ad2ff' },
+  magnetCog: { icon: '⌁', label: '자석 30초', color: '#83cfc2' },
+  mirrorCog: { icon: '✦', label: '보호막', color: '#9ad2ff' },
 };
 
 export default function LootRevealView({ reveal }: { reveal: LootReveal }) {

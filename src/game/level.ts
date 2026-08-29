@@ -186,7 +186,6 @@ function makeRootPoints(): RootPoint[] {
 
 function makeCogPickups(): CogPickup[] {
   const defs: [string, CogType, number, number][] = [
-    ['cog-spring', 'spring', 350, GROUND_Y - 160],
     ['cog-magnet', 'magnet', 1300, GROUND_Y - 150],
     ['cog-mirror', 'mirror', 4150, GROUND_Y - 160],
   ];
@@ -202,7 +201,7 @@ function makeCogPickups(): CogPickup[] {
 }
 
 // Relic Bow: one permanent pickup early in Area 1, clear of every existing
-// hazard/platform in this stretch (p1 starts at x=300, cog-spring/e1 start
+// hazard/platform in this stretch (p1 starts at x=300 and e1 starts
 // at x=350/400) so grabbing it is never contested by anything else. Placed
 // on the ground so it's easy to walk into.
 function makeBowPickup(): BowPickup {
@@ -263,7 +262,7 @@ function makeTurrets(): Turret[] {
 
 // Chestnut Roller: two wide ground patrol zones, chosen by scanning every
 // other ground-level entity's occupied x-range (existing enemies, pistons,
-// Bio-Coil, the spawn/bow/cog-spring cluster) and picking the
+// Bio-Coil and spawn/bow cluster) and picking the
 // two widest gaps left over (a computed check, not eyeballed -- see
 // 개발로그.md for the exact free-gap list). No new pits, platforms, or
 // level segments were added.

@@ -110,14 +110,8 @@ export interface RootPoint extends Rect {
   id: string;
 }
 
-// Gear Socket, adapted for a single continuous level (no stage-clear/equip
-// screen to reassign cogs between runs): picking one up auto-equips it into
-// its slot for the rest of the current attempt, replacing whatever was
-// already there. Only the head slot has one cog implemented (Mirror) —
-// Photosyn is design-doc only since it depends on Overgrowth Blocks, which
-// don't exist in this prototype.
-export type CogType = 'spring' | 'magnet' | 'mirror';
-export type CogSlot = 'head' | 'body' | 'foot';
+// Gear Socket pickup types retained for the continuous single-level run.
+export type CogType = 'magnet' | 'mirror';
 
 export interface CogPickup extends Rect {
   id: string;
@@ -208,7 +202,7 @@ export interface ChestnutRoller extends Rect {
 }
 
 export type TreasureCacheKind = 'rootCache' | 'relicPod';
-export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'springCog' | 'magnetCog' | 'mirrorCog';
+export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'magnetCog' | 'mirrorCog';
 
 // An optional-route pickup opened by a specific committed action rather than
 // a touch: a Root Cache is struck from below by a jump and rolls its reward
@@ -281,7 +275,6 @@ export interface Player extends Rect {
   /** Currently-equipped cog per slot, or null. Auto-equipped on pickup; lost on a full restart, not on a per-life respawn. */
   equippedHead: CogType | null;
   equippedBody: CogType | null;
-  equippedFoot: CogType | null;
   /** Seconds remaining on the temporary Magnet Cog auto-collection effect. */
   magnetFor: number;
   /** One-hit protection supplied by the Mirror Cog. It is consumed instead of a life on the next ordinary hit. */

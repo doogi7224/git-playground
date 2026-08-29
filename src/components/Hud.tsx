@@ -53,9 +53,8 @@ export default function Hud({
   }, [magnetOpacity, magnetWarning]);
 
   const allStatusCogs: { type: CogType; label: string }[] = [
-    { type: 'spring', label: 'SPRING' },
-    { type: 'magnet', label: `MAGNET ${Math.ceil(magnetFor)}s` },
-    { type: 'mirror', label: 'MIRROR' },
+    { type: 'magnet', label: `자석 ${Math.ceil(magnetFor)}초` },
+    { type: 'mirror', label: '보호막' },
   ];
   const statusCogs = allStatusCogs.filter(({ type }) => equippedCogs.includes(type));
   return (

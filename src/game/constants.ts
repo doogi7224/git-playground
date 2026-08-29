@@ -4,7 +4,7 @@ export const GRAVITY = 1800; // px/s^2
 // Tuned after real mobile play: normal running must leave room to read jumps
 // and enemies. Dash remains the intentionally fast traversal action.
 export const MOVE_SPEED = 160; // px/s
-export const JUMP_VELOCITY = -570; // px/s; ~90px apex, readable but less floaty on mobile
+export const JUMP_VELOCITY = -675; // px/s; former Spring-level jump, now the base jump
 export const STOMP_BOUNCE = -450; // px/s
 export const STOMP_TOLERANCE = 8; // px of slack when checking if the player approached an enemy from above
 export const MAX_FALL_SPEED = 900; // px/s
@@ -77,7 +77,6 @@ export const ROOTHOOK_MAX_ANGULAR_VEL = 6; // rad/s, clamp to prevent runaway sp
 // Gear Socket cogs, adapted as auto-equip-on-pickup passives for the rest of
 // the current run (see the CogType comment in types.ts for the scoping note).
 export const COG_PICKUP_SIZE = 22;
-export const COG_SPRING_JUMP_MULT = 1.18; // foot slot: +18% jump height (doc also has +25% wall-jump distance; no wall-jump exists)
 export const COG_MAGNET_RADIUS = 70; // body slot: px radius for auto-collecting coins
 export const COG_MAGNET_DURATION = 30; // seconds; temporary collection aid, not a permanent equip
 export const COG_MAGNET_WARNING_DURATION = 5; // HUD flashes during the final five seconds
@@ -89,7 +88,6 @@ export const COG_MAGNET_WARNING_DURATION = 5; // HUD flashes during the final fi
 // pit edges and ground/platform sides.
 export const WALL_SLIDE_FALL_MULT = 0.45; // caps fall speed at 45% of MAX_FALL_SPEED while pressed against a wall
 export const WALLJUMP_VX = 260; // px/s horizontal push-off away from the wall
-export const COG_WALLJUMP_HORIZ_MULT = 1.25; // Spring cog: +25% wall-jump horizontal distance (a separate stat from its jump-height boost)
 
 // Portal: purely a level-transition marker into the boss arena, no collision
 // logic of its own — just a rect the player crosses once, which plays a

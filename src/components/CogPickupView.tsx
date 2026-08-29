@@ -3,7 +3,6 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { CogPickup } from '../game/types';
 
 export const COG_SOURCES: Record<CogPickup['cogType'], number> = {
-  spring: require('../../assets/sprites/cogs/cog_spring_v1.png'),
   magnet: require('../../assets/sprites/cogs/cog_magnet_v1.png'),
   mirror: require('../../assets/sprites/cogs/cog_mirror_v1.png'),
 };
@@ -11,7 +10,6 @@ export const COG_SOURCES: Record<CogPickup['cogType'], number> = {
 // The relic itself stays one coherent painted material. Its soft aura carries
 // the slot/type colour so the sprite never turns into a flat tinted icon.
 export const COG_COLORS: Record<CogPickup['cogType'], string> = {
-  spring: '#e0a94f', // foot: jump boost
   magnet: '#7a9188', // body: coin pull
   mirror: '#6fa8dc', // head: one-hit shield
 };

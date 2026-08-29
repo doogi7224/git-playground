@@ -212,7 +212,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
       <Hud
         score={gameState.score}
         lives={gameState.lives}
-        equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody, gameState.player.equippedFoot]}
+        equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody]}
         shieldCharges={gameState.player.shieldCharges}
         magnetFor={gameState.player.magnetFor}
         arrows={gameState.player.arrows}

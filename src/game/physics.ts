@@ -25,8 +25,6 @@ import {
   CHESTNUT_ROLLER_WINDUP_DURATION,
   COG_MAGNET_RADIUS,
   COG_MAGNET_DURATION,
-  COG_SPRING_JUMP_MULT,
-  COG_WALLJUMP_HORIZ_MULT,
   DASH_COOLDOWN,
   DASH_DURATION,
   DASH_INVULN,
@@ -112,7 +110,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-const ROOT_CACHE_REWARDS: TreasureReward[] = ['springCog', 'magnetCog', 'mirrorCog', 'arrowBundle', 'lifeBloom'];
+const ROOT_CACHE_REWARDS: TreasureReward[] = ['magnetCog', 'mirrorCog', 'arrowBundle', 'lifeBloom'];
 
 function rollRootCacheReward(seed: number): { seed: number; reward: TreasureReward } {
   // Keep the result in GameState instead of calling Math.random during a
@@ -145,7 +143,6 @@ export function createInitialState(level: Level): GameState {
       grappleRadius: 0,
       equippedHead: null,
       equippedBody: null,
-      equippedFoot: null,
       magnetFor: 0,
       shieldCharges: 0,
       touchingWall: 0,
@@ -462,10 +459,8 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
 
   // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
   // this frame's move speed matches what's shown (no one-frame mismatch).
-  // Spring Cog (foot slot) boosts jump height.
   const moveSpeed = prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED;
-  const jumpVelocity =
-    JUMP_VELOCITY * (prev.player.equippedFoot === 'spring' ? COG_SPRING_JUMP_MULT : 1);
+  const jumpVelocity = JUMP_VELOCITY;
 
   // The boss (while alive) is solid, unlike every other monster in this file —
   // it physically blocks the path to the arena's far side instead of being a
@@ -604,7 +599,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
         // Wall-jump: uses the pre-frame wall-touch side (set by last frame's
         // horizontal collision below), same "prev state decides this frame"
         // pattern as the grounded jump check just above.
-        player.vx = player.touchingWall * WALLJUMP_VX * (player.equippedFoot === 'spring' ? COG_WALLJUMP_HORIZ_MULT : 1);
+        player.vx = player.touchingWall * WALLJUMP_VX;
         player.vy = jumpVelocity;
         player.facing = player.touchingWall;
         player.touchingWall = 0;
@@ -1046,9 +1041,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   const resolvedCogPickups: CogPickup[] = prev.cogPickups.map((c) => {
     if (c.collected) return c;
     if (!rectIntersect(player, c)) return c;
-    if (c.cogType === 'spring') {
-      player.equippedFoot = c.cogType;
-    } else if (c.cogType === 'magnet') {
+    if (c.cogType === 'magnet') {
       player.equippedBody = c.cogType;
       player.magnetFor = COG_MAGNET_DURATION;
     } else if (c.cogType === 'mirror') {
@@ -1099,8 +1092,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.arrows = Math.min(player.maxArrows, player.arrows + ARROW_BUNDLE_ARROWS);
     } else if (reward === 'lifeBloom') {
       lives = Math.min(STARTING_LIVES, lives + LIFE_BLOOM_LIVES);
-    } else if (reward === 'springCog') {
-      player.equippedFoot = 'spring';
     } else if (reward === 'magnetCog') {
       player.equippedBody = 'magnet';
       player.magnetFor = COG_MAGNET_DURATION;
