@@ -8,7 +8,6 @@ import {
   CHESTNUT_ROLLER_HEIGHT,
   CHESTNUT_ROLLER_PATROL_SPEED,
   CHESTNUT_ROLLER_WIDTH,
-  COG_PICKUP_SIZE,
   COIN_SIZE,
   ENEMY_HEIGHT,
   ENEMY_WIDTH,
@@ -35,8 +34,6 @@ import {
   BowPickup,
   Boss,
   ChestnutRoller,
-  CogPickup,
-  CogType,
   Coin,
   Enemy,
   Jumper,
@@ -182,22 +179,6 @@ function makeRootPoints(): RootPoint[] {
     ['root3', 6110, GROUND_Y - 160], // over the final pit in area 3, alongside the p23 bridge
   ];
   return defs.map(([id, x, y]) => ({ id, x, y, width: ROOTHOOK_SIZE, height: ROOTHOOK_SIZE }));
-}
-
-function makeCogPickups(): CogPickup[] {
-  const defs: [string, CogType, number, number][] = [
-    ['cog-magnet', 'magnet', 1300, GROUND_Y - 150],
-    ['cog-mirror', 'mirror', 4150, GROUND_Y - 160],
-  ];
-  return defs.map(([id, cogType, x, y]) => ({
-    id,
-    cogType,
-    x,
-    y,
-    width: COG_PICKUP_SIZE,
-    height: COG_PICKUP_SIZE,
-    collected: false,
-  }));
 }
 
 // Relic Bow: one permanent pickup early in Area 1, clear of every existing
@@ -444,7 +425,6 @@ export function createLevel(): Level {
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),
     rootPoints: makeRootPoints(),
-    cogPickups: makeCogPickups(),
     portal: makePortal(),
     boss: makeBoss(),
     bowPickup: makeBowPickup(),

@@ -9,7 +9,6 @@ import BowPickupView from '../components/BowPickupView';
 import CheckpointView from '../components/CheckpointView';
 import ChestnutRollerView from '../components/ChestnutRollerView';
 import LootRevealView from '../components/LootRevealView';
-import CogPickupView from '../components/CogPickupView';
 import Controls from '../components/Controls';
 import CoinView from '../components/CoinView';
 import EffectsView from '../components/EffectsView';
@@ -159,9 +158,6 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             ))}
             {level.rootPoints.filter(isVisible).map((r) => (
               <RootPointView key={r.id} point={r} />
-            ))}
-            {gameState.cogPickups.filter(isVisible).map((c) => (
-              <CogPickupView key={c.id} cog={c} />
             ))}
             <BowPickupView pickup={gameState.bowPickup} />
             {level.checkpoints.slice(1).map((c, i) => ({ ...c, checkpointIndex: i + 1 })).filter(isVisible).map((c) => (

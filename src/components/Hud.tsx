@@ -1,9 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
-import { COG_SOURCES } from './CogPickupView';
 import { COG_MAGNET_WARNING_DURATION, STARTING_LIVES } from '../game/constants';
 import { CogType } from '../game/types';
 import { palette } from '../theme';
+
+const COG_SOURCES: Record<CogType, number> = {
+  magnet: require('../../assets/sprites/cogs/cog_magnet_v1.png'),
+  mirror: require('../../assets/sprites/cogs/cog_mirror_v1.png'),
+};
 
 // Life pips: STARTING_LIVES slots always render so a lost life reads as an
 // emptied brass husk rather than the row simply getting shorter.

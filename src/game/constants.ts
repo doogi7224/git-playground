@@ -76,7 +76,6 @@ export const ROOTHOOK_MAX_ANGULAR_VEL = 6; // rad/s, clamp to prevent runaway sp
 
 // Gear Socket cogs, adapted as auto-equip-on-pickup passives for the rest of
 // the current run (see the CogType comment in types.ts for the scoping note).
-export const COG_PICKUP_SIZE = 22;
 export const COG_MAGNET_RADIUS = 70; // body slot: px radius for auto-collecting coins
 export const COG_MAGNET_DURATION = 30; // seconds; temporary collection aid, not a permanent equip
 export const COG_MAGNET_WARNING_DURATION = 5; // HUD flashes during the final five seconds

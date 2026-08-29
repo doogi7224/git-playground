@@ -113,16 +113,10 @@ export interface RootPoint extends Rect {
 // Gear Socket pickup types retained for the continuous single-level run.
 export type CogType = 'magnet' | 'mirror';
 
-export interface CogPickup extends Rect {
-  id: string;
-  cogType: CogType;
-  collected: boolean;
-}
-
 // Relic Bow: a single permanent pickup early in the level. Before it's
 // collected the player plays the existing jump/dash/stomp kit only; after,
-// an attack input fires a straight-line arrow. Modeled after CogPickup
-// (single flag flip on contact) rather than a separate GameState boolean,
+// an attack input fires a straight-line arrow. Modeled as a single contact
+// flag rather than a separate GameState boolean,
 // since there's exactly one and its own `collected` field is the source of
 // truth for whether `Player.hasBow` should already be true.
 export interface BowPickup extends Rect {
@@ -240,7 +234,6 @@ export interface Level {
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
   rootPoints: RootPoint[];
-  cogPickups: CogPickup[];
   portal: Portal;
   boss: Boss;
   bowPickup: BowPickup;
@@ -303,7 +296,6 @@ export interface GameState {
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
-  cogPickups: CogPickup[];
   boss: Boss;
   bowPickup: BowPickup;
   arrows: Arrow[];

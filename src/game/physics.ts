@@ -82,7 +82,6 @@ import {
   BioCoil,
   Boss,
   ChestnutRoller,
-  CogPickup,
   EffectEvent,
   EffectKind,
   GamePhase,
@@ -159,7 +158,6 @@ export function createInitialState(level: Level): GameState {
     sporeSprites: level.sporeSprites.map((s) => ({ ...s })),
     pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
-    cogPickups: level.cogPickups.map((c) => ({ ...c })),
     boss: { ...level.boss },
     bowPickup: { ...level.bowPickup },
     arrows: [],
@@ -674,8 +672,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     );
 
   // A single permanent pickup (see level.ts) -- contact grants it immediately,
-  // matching CogPickup's "auto-equip on touch" pattern. No re-collection
-  // possible once `collected`.
+  // No re-collection is possible once this permanent pickup is collected.
   let bowPickup = prev.bowPickup;
   if (!bowPickup.collected && rectIntersect(player, bowPickup)) {
     bowPickup = { ...bowPickup, collected: true };
@@ -1038,20 +1035,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     return c;
   });
 
-  const resolvedCogPickups: CogPickup[] = prev.cogPickups.map((c) => {
-    if (c.collected) return c;
-    if (!rectIntersect(player, c)) return c;
-    if (c.cogType === 'magnet') {
-      player.equippedBody = c.cogType;
-      player.magnetFor = COG_MAGNET_DURATION;
-    } else if (c.cogType === 'mirror') {
-      player.equippedHead = c.cogType;
-      player.shieldCharges = 1;
-    }
-    pushEffect('gearPickup', c.x + c.width / 2, c.y + c.height / 2);
-    return { ...c, collected: true };
-  });
-
   // Treasure Cache: a Root Cache is a solid mystery block and opens when the
   // player's rising head reaches its underside. The platform pass above has
   // already snapped player.y to that underside and stopped upward velocity.
@@ -1169,7 +1152,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     sporeSprites: resolvedSporeSprites,
     pressurePistons,
     bioCoils: resolvedBioCoils,
-    cogPickups: resolvedCogPickups,
     boss,
     bowPickup,
     arrows: arrows.filter((a) => !consumedArrowIds.has(a.id)),
