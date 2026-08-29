@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Gearwood",
-    "slug": "gearwood-broken-spring",
+    "slug": "dyd1514",
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/app-icon/gearwood_app_icon_v1.png",
@@ -32,8 +32,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "a80bca6c-9a28-4b56-87fc-e02436933d73"
+        "projectId": "cc0938ab-1b17-43b5-bf54-28831ca45cd8"
       }
-    }
+    },
+    "owner": "ydy1252s-team"
   }
 }
