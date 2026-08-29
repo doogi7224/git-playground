@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 커밋 `dd41aff`(코그 상자 랜덤 보상 5종)를 사용자 지시로 검증했고 결함을 찾지 못해 `src/game/*` 수정 없이 종료했다.
+- (완료) 사용자 지시로 Stage 2(Sunken Gearworks) 입구에 **훅 필수 협곡**과 **벽점프 필수 구간**을 구현했다. `src/game/level.ts`만 변경했고 `src/game/physics.ts`는 건드리지 않았다(기존 그래플/벽점프 로직을 그대로 재사용). 작업 도중 Codex가 같은 파일(`level.ts`)의 `makeRootPoints`(root1/root2 제거)와 `makeTreasureCaches`(cache-pod2 보상 변경)를 `c1f1c82`까지 먼저 푸시해, `git stash`로 로컬 변경분을 보관하고 `c1f1c82`로 리셋한 뒤 재적용해 병합했다 — 자동 병합 성공, 충돌 없음. 병합 후 pure-logic 검증을 전부 재실행해 root1/2 제거가 이번 신규 구간(root4/root5)에 영향 없음을 재확인했다. 상세는 개발로그 (87) 참고.
 
 ## CODEX ACTIVE
 
@@ -72,6 +72,15 @@
 - S3: 동시 입력(점프+대시) 및 그래플 스윙 중 대시 입력이 조용히 소실됨 — 위 REVIEW REQUESTS 참고, 사용자 승인 대기(수정 안 함).
 
 ## HANDOFF
+
+- 최근 완료(Claude, 이번 세션, **미커밋**): 사용자 지시로 Stage 2 입구에 이동 메커니즘을 실제로 응용해야 통과 가능한 두 관문을 추가했다. `src/game/level.ts`만 수정(`physics.ts` 무변경).
+  - **훅 필수 협곡** (x=8000-8280, 280px): 점프+대시만으로 도달 가능한 최대 거리를 pure-logic으로 직접 측정한 결과 ~247px(대시를 착지 직전까지 최대한 늦게 써도 그 이상 못 감)였고, 280px는 이보다 33px 더 넓어 점프/대시로는 못 건넌다. 새 앵커 `root4`(x=8090)/`root5`(x=8190, 중간 지점 세이프티넷)를 `GROUND_Y-150`에 배치했다. 단일 스윙(펌프 후 첫 정점 근처 릴리즈)만으로도 280px를 여유 있게 건널 수 있음을 확인했다(성공 릴리즈 타이밍 폭이 약 9프레임/150ms로 널널함).
+  - **벽점프 필수 구간** (x=8450-8790): 바닥이 없는 구간에 작은 단(`wall-step`, 60px 높이)과 마주보는 두 벽(`wall-left`/`wall-right`, 안쪽 폭 50px)을 배치했다. 단에서 걸어 나가면 벽 사이 틈으로 떨어지고, 벽점프 1회만으로 반대쪽 벽을 차고 올라 단과 같은 높이의 출구 발판(`wall-exit`)에 도달한다. 벽점프를 전혀 안 쓰는 봇은 반드시 추락사하고(확인함), 벽 접촉 시 반대 방향으로 점프하는 봇은 1회 바운스로 성공한다(확인함). 접근 방향에서 안쪽 틈으로 곧장 진입하도록 설계해, 바깥쪽 면에 먼저 부딪혀 뒤로 튕기는(진행 방향과 반대인) 시행착오 끝에 이 구조로 정착했다 — 자세한 이유는 개발로그 (87) 참고.
+  - 두 관문 모두 그 사이 구간(7700-8850)에 Thorn Slinger/Gear Glider를 배치하지 않아, 순수하게 이동 메커니즘만 시험한다. 각 관문 앞뒤에 체크포인트(7750/8320/8850)를 둬서 실패해도 관문 하나만 다시 도전하면 된다.
+  - 이후 기존 Stage 2 몬스터 가젯릿(Thorn Slinger 5기, Gear Glider 5기, 지면 4구간, floating platform g1-g4, 체크포인트 9250/10250, flag, worldWidth)을 전부 x+1150 만큼 균일하게 이동시켰다 — 내부 상대 배치·간격은 손대지 않아 이전 세션이 검증해둔 안전성이 그대로 유지된다.
+  - 검증: `npx tsc --noEmit` 통과, `npx expo export --platform web` 재빌드 성공(361모듈). pure-logic 13개 항목(플랫폼 겹침 없음/worldWidth 충분/보스 위치·아레나 불변/훅 협곡 점프대시 실패·훅 성공/벽구간 무대응 추락·벽점프 성공/체크포인트 순서·존재/입구 구간 몬스터 없음/전체 플레이스루 NaN 없음) 전부 PASS.
+  - **미완료**: 요청하신 `assets/backgrounds/scene_mechanical_v3.png` 배경 연결은 하지 않았다 — 저장소에 해당 파일이 아직 없다(`scene_mechanical.png`/`_v2.png`만 존재). 새 배경 이미지를 만드는 건 아트 방향 판단이 필요해 Codex 영역이라고 보고 직접 생성하지 않았다. 사용자가 원하면 이미지를 준비해 `src/components/Background.tsx`의 `SCENE_GEARWORKS_SOURCE` require 경로만 바꾸면 된다(한 줄).
+  - **병합**: 작업 도중 Codex가 같은 파일에 root1/root2 앵커 제거(`cd5524f`/`27b917c`/`c1f1c82`)와 cache-pod2 보상 변경(`d4c72c3`)을 먼저 푸시했다. `git stash` → `git reset --hard origin/...`(`c1f1c82`) → `git stash pop`으로 자동 병합했고 충돌은 없었다. 병합 후 `npx tsc --noEmit`/`npx expo export --platform web`/pure-logic 10개 항목을 전부 재실행해 통과를 재확인했다(root1/2 제거가 새 root4/5에 영향 없음도 확인).
 
 - 최근 완료(Claude, 이번 세션): 사용자 지시로 커밋 `dd41aff`("Add random mystery rewards and cog HUD")의 `src/game/*` 변경분을 검증했다 — 결함 없음, 코드 수정 없음.
   - Root Cache가 열릴 때 Spring/Magnet/Mirror/화살+1/생명+1 5종 중 하나를 `rollRootCacheReward`(LCG 시드, `GameState.lootRandomSeed`)로 무작위 지급하는 것을 확인. 400회 시행 분포가 5종 모두 고르게(68~86회) 나와 편향 없음.

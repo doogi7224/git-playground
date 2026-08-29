@@ -73,13 +73,59 @@ const groundSegments: [number, number][] = [
   // Boss arena: one flat, pit-free room reached through the portal at the end
   // of area 3. No jump challenges here — the boss itself is the obstacle.
   [6800, 7700],
-  // Stage 2 — Sunken Gearworks. Required pits stay at or below 150px.
-  [7700, 8420],
-  [8560, 9180],
-  [9320, 9950],
-  [10080, 10760],
-  [10900, 11520],
+  // Stage 2 — Sunken Gearworks entrance gate (see CLAUDE.md decision log).
+  // Unlike the rest of the level, these two obstacles are not clearable by
+  // jump/dash alone: the measured jump+dash ceiling (perfectly-timed dash)
+  // tops out at ~247px, so both gaps below are sized past that with margin.
+  [7700, 8000], // entry ledge (checkpoint at 7750)
+  // 8000-8280 (280px, Root-Hook only): root4 (x=8090) and root5 (x=8190)
+  // hang above this pit. A single well-timed swing off root4 alone already
+  // clears it with room to spare; root5 exists as a mid-pit second chance
+  // for a shorter/earlier release. Verified via pure-logic bot simulation
+  // (jump+dash-only bot falls in every time; a swing-and-release bot lands
+  // clean).
+  [8280, 8450], // landing platform (checkpoint at 8320)
+  // 8450-8790: intentionally no ground. makeWallJumpSection() places a
+  // short step, two facing walls, and an exit ledge here — the only solid
+  // objects in this stretch. Falling anywhere in this gap is an ordinary
+  // pit death (checkpoint respawn), same as every other pit; it is not an
+  // unavoidable/instant trap since the geometry is fully visible and only
+  // one wall-jump bounce is needed to clear it (verified via simulation: a
+  // bot that never reacts to touchingWall falls in every time; a bot that
+  // wall-jumps once off the facing wall lands clean on the exit ledge).
+  [8850, 9570], // Stage 2 gauntlet resumes here (shifted +1150 from its
+  [9710, 10330], // original authoring so the entrance gate above fits
+  [10470, 11100], // before it; internal spacing/pit widths are unchanged).
+  [11230, 11910],
+  [12050, 12670],
 ];
+
+// Sunken Gearworks entrance gate, part two: a short, unmissable wall-slide +
+// wall-jump climb. A player who jumps from the ledge onto the step, then off
+// the step into the gap between wallL/wallR without ever wall-jumping, falls
+// straight through and dies -- confirmed by simulation. One wall-jump off
+// either inner face is enough height to clear both walls and reach the exit
+// ledge, which sits at the same height as the step (no further climbing
+// needed once you're up).
+function makeWallJumpSection(): Platform[] {
+  const STEP_X0 = 8470;
+  const STEP_WIDTH = 60;
+  const STEP_TOP_Y = GROUND_Y - 60;
+  const WALL_TOP_Y = GROUND_Y - 30; // lower than the step, so stepping off it drops you past the wall tops into the shaft
+  const WALL_BOTTOM_Y = GROUND_Y + 400; // extends well past DEATH_Y so a miss is a clean pit death, not a clipping edge case
+  const WALL_WIDTH = 20;
+  const WALL_L_X = STEP_X0 + STEP_WIDTH + 10;
+  const GAP = 50; // inner shaft width; wide enough for the player, narrow enough that a single wall-jump crosses it
+  const WALL_R_X = WALL_L_X + WALL_WIDTH + GAP;
+  const EXIT_X = WALL_R_X + WALL_WIDTH + 10;
+  const EXIT_WIDTH = 150;
+  return [
+    { id: 'wall-step', x: STEP_X0, y: STEP_TOP_Y, width: STEP_WIDTH, height: GROUND_Y + 400 - STEP_TOP_Y },
+    { id: 'wall-left', x: WALL_L_X, y: WALL_TOP_Y, width: WALL_WIDTH, height: WALL_BOTTOM_Y - WALL_TOP_Y },
+    { id: 'wall-right', x: WALL_R_X, y: WALL_TOP_Y, width: WALL_WIDTH, height: WALL_BOTTOM_Y - WALL_TOP_Y },
+    { id: 'wall-exit', x: EXIT_X, y: STEP_TOP_Y, width: EXIT_WIDTH, height: GROUND_Y + 400 - STEP_TOP_Y },
+  ];
+}
 
 function makeGroundPlatforms(): Platform[] {
   return groundSegments.map(([x1, x2], i) => ({
@@ -118,10 +164,12 @@ const floatingPlatforms: Platform[] = [
   { id: 'p22', x: 5850, y: GROUND_Y - 90, width: 100, height: 20 },
   { id: 'p23', x: 6140, y: GROUND_Y - 70, width: 90, height: 20 }, // bridges the final pit, alongside root3
   { id: 'p24', x: 6740, y: GROUND_Y - 60, width: 60, height: 20 },
-  { id: 'g1', x: 8290, y: GROUND_Y - 78, width: 100, height: 20 },
-  { id: 'g2', x: 9120, y: GROUND_Y - 110, width: 120, height: 20 },
-  { id: 'g3', x: 9840, y: GROUND_Y - 72, width: 95, height: 20 },
-  { id: 'g4', x: 10670, y: GROUND_Y - 108, width: 110, height: 20 },
+  // Shifted +1150 along with the rest of the Stage 2 gauntlet -- see the
+  // entrance-gate comment on groundSegments.
+  { id: 'g1', x: 9440, y: GROUND_Y - 78, width: 100, height: 20 },
+  { id: 'g2', x: 10270, y: GROUND_Y - 110, width: 120, height: 20 },
+  { id: 'g3', x: 10990, y: GROUND_Y - 72, width: 95, height: 20 },
+  { id: 'g4', x: 11820, y: GROUND_Y - 108, width: 110, height: 20 },
 ];
 
 // A few high routes remain as permanent optional shortcuts. They reward a
@@ -196,6 +244,11 @@ function makeRootPoints(): RootPoint[] {
     // The first two optional anchors were visual clutter; only the late-game
     // traversal anchor remains.
     ['root3', 6110, GROUND_Y - 160], // over the final pit in area 3, alongside the p23 bridge
+    // Stage 2 entrance gate: this pit (8000-8280) is not jump/dash-crossable
+    // (see groundSegments). root4 alone clears it with a single good swing;
+    // root5 sits mid-pit as a second-chance anchor for a shorter release.
+    ['root4', 8090, GROUND_Y - 150],
+    ['root5', 8190, GROUND_Y - 150],
   ];
   return defs.map(([id, x, y]) => ({ id, x, y, width: ROOTHOOK_SIZE, height: ROOTHOOK_SIZE }));
 }
@@ -359,8 +412,8 @@ function makeCoins(): Coin[] {
     [3200, GROUND_Y - 45], [3355, GROUND_Y - 45], [4035, GROUND_Y - 45],
     [4755, GROUND_Y - 45], [5455, GROUND_Y - 45], [6225, GROUND_Y - 45],
     [6765, GROUND_Y - 45],
-    [7720, GROUND_Y - 45], [8580, GROUND_Y - 45], [9340, GROUND_Y - 45],
-    [10100, GROUND_Y - 45], [10920, GROUND_Y - 45],
+    [7720, GROUND_Y - 45], [8870, GROUND_Y - 45], [9730, GROUND_Y - 45],
+    [10490, GROUND_Y - 45], [11250, GROUND_Y - 45], [12070, GROUND_Y - 45],
   ];
   const occupiedPlatformIds = new Set(['p6', 'p9', 'p15', 'p22']);
   const platformCoins: [number, number][] = floatingPlatforms
@@ -410,9 +463,13 @@ function makeBoss(): Boss {
 }
 
 function makeThornSlingers(): ThornSlinger[] {
+  // Shifted +1150 along with the rest of the gauntlet -- see the entrance-gate
+  // comment on groundSegments. None sit inside the new entrance-gate span
+  // (7700-8850), so the gate stays purely a Root-Hook/wall-jump check with
+  // no monster threat layered on top of it.
   const defs: [string, number][] = [
-    ['slinger1', 8040], ['slinger2', 8840], ['slinger3', 9560],
-    ['slinger4', 10410], ['slinger5', 11130],
+    ['slinger1', 9190], ['slinger2', 9990], ['slinger3', 10710],
+    ['slinger4', 11560], ['slinger5', 12280],
   ];
   return defs.map(([id, x], index) => ({
     id, x, y: GROUND_Y - THORN_SLINGER_HEIGHT,
@@ -422,10 +479,11 @@ function makeThornSlingers(): ThornSlinger[] {
 }
 
 function makeGearGliders(): GearGlider[] {
+  // Shifted +1150, same reasoning as makeThornSlingers above.
   const defs: [string, number, number, number][] = [
-    ['glider1', 7820, 8260, GROUND_Y - 120], ['glider2', 8660, 9100, GROUND_Y - 138],
-    ['glider3', 9440, 9880, GROUND_Y - 122], ['glider4', 10180, 10610, GROUND_Y - 142],
-    ['glider5', 10950, 11370, GROUND_Y - 126],
+    ['glider1', 8970, 9410, GROUND_Y - 120], ['glider2', 9810, 10250, GROUND_Y - 138],
+    ['glider3', 10590, 11030, GROUND_Y - 122], ['glider4', 11330, 11760, GROUND_Y - 142],
+    ['glider5', 12100, 12520, GROUND_Y - 126],
   ];
   return defs.map(([id, minX, maxX, baseY], index) => ({
     id, x: minX + (maxX - minX) / 2, y: baseY,
@@ -452,16 +510,20 @@ function makeCheckpoints(): { x: number; y: number }[] {
     { x: 4750, y: GROUND_Y - 100 },
     { x: 5600, y: GROUND_Y - 100 },
     { x: 6830, y: GROUND_Y - 100 }, // just past the portal, so dying mid-boss-fight doesn't send the player all the way back
-    { x: 7820, y: GROUND_Y - 100 },
-    { x: 9250, y: GROUND_Y - 100 },
-    { x: 10250, y: GROUND_Y - 100 },
+    // Stage 2 entrance gate: one checkpoint on each side of both mandatory
+    // obstacles, so a death mid-swing or mid-climb never costs the whole gate.
+    { x: 7750, y: GROUND_Y - 100 }, // Stage 2 start, before the hook chasm
+    { x: 8320, y: GROUND_Y - 100 }, // past the hook chasm
+    { x: 8850, y: GROUND_Y - 100 }, // past the wall-jump climb; gauntlet resumes here
+    { x: 10400, y: GROUND_Y - 100 }, // shifted +1150 from its original 9250
+    { x: 11400, y: GROUND_Y - 100 }, // shifted +1150 from its original 10250
   ];
 }
 
 export function createLevel(): Level {
   const treasureCaches = makeTreasureCaches();
   return {
-    worldWidth: 11520,
+    worldWidth: 12670,
     groundY: GROUND_Y,
     spawn: { x: 40, y: GROUND_Y - 100 },
     checkpoints: makeCheckpoints(),
@@ -469,6 +531,7 @@ export function createLevel(): Level {
       ...makeGroundPlatforms(),
       ...floatingPlatforms,
       ...bonusPlatforms,
+      ...makeWallJumpSection(),
       // Mystery blocks remain solid after use, matching their spent visual.
       ...treasureCaches
         .filter((cache) => cache.kind === 'rootCache')
@@ -478,7 +541,7 @@ export function createLevel(): Level {
     coins: makeCoins(),
     // The Rootwarden guards the Stage 2 entrance. The far Gearworks banner is
     // the only completion trigger.
-    flag: { x: 11455, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
+    flag: { x: 12605, y: GROUND_Y - FLAG_HEIGHT, width: FLAG_WIDTH, height: FLAG_HEIGHT },
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),
