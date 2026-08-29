@@ -22,7 +22,6 @@ import {
   CHESTNUT_ROLLER_RECOVER_DURATION,
   CHESTNUT_ROLLER_ROLL_DURATION,
   CHESTNUT_ROLLER_ROLL_SPEED,
-  CHESTNUT_ROLLER_WALK_DURATION,
   CHESTNUT_ROLLER_WINDUP_DURATION,
   COG_MAGNET_RADIUS,
   COG_MAGNET_DURATION,
@@ -371,9 +370,8 @@ function stepTurrets(
 // Chestnut Roller: walk (patrol, vulnerable) -> windup (telegraph, locked
 // facing, stationary) -> rolling (fast, arrow/stomp-immune, ends early on
 // hitting its own patrol bound) -> recover (defenseless pause) -> walk with
-// a cooldown before it can roll again. It rolls toward a nearby same-height
-// player, or commits to its current patrol direction after a short walk so it
-// visibly advances even when the player has not yet entered detection range.
+// a cooldown before it can roll again. It only rolls toward a nearby,
+// same-height player; otherwise it keeps patrolling.
 function stepChestnutRollers(prev: ChestnutRoller[], player: Rect, dt: number): ChestnutRoller[] {
   return prev.map((r) => {
     if (!r.alive) return r;
@@ -385,8 +383,8 @@ function stepChestnutRollers(prev: ChestnutRoller[], player: Rect, dt: number): 
       const playerCenterX = player.x + player.width / 2;
       const sameHeight = player.y < r.y + r.height && player.y + player.height > r.y;
       const inRange = Math.abs(playerCenterX - rCenterX) <= CHESTNUT_ROLLER_DETECT_RANGE;
-      if (cooldown <= 0 && (sameHeight && inRange || timer >= CHESTNUT_ROLLER_WALK_DURATION)) {
-        const facing: 1 | -1 = sameHeight && inRange ? (playerCenterX < rCenterX ? -1 : 1) : r.facing;
+      if (cooldown <= 0 && sameHeight && inRange) {
+        const facing: 1 | -1 = playerCenterX < rCenterX ? -1 : 1;
         return { ...r, vx: 0, facing, phase: 'windup', timer: 0, cooldown };
       }
 

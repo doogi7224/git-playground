@@ -164,7 +164,6 @@ export const CHESTNUT_ROLLER_WIDTH = 32;
 export const CHESTNUT_ROLLER_HEIGHT = 30;
 export const CHESTNUT_ROLLER_PATROL_SPEED = 55; // px/s while walking
 export const CHESTNUT_ROLLER_DETECT_RANGE = 280; // px, combined with a same-height check
-export const CHESTNUT_ROLLER_WALK_DURATION = 1.4; // patrol time before an autonomous forward roll
 export const CHESTNUT_ROLLER_WINDUP_DURATION = 0.45; // telegraph before the roll starts
 export const CHESTNUT_ROLLER_ROLL_SPEED = 250; // px/s while rolling (invincible to arrow/stomp)
 export const CHESTNUT_ROLLER_ROLL_DURATION = 1.15; // max roll length; cut short by a patrol-bound hit
