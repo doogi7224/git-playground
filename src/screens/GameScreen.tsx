@@ -25,7 +25,6 @@ import RootPointView from '../components/RootPointView';
 import RopeView from '../components/RopeView';
 import SeedProjectileView from '../components/SeedProjectileView';
 import SporeSpriteView from '../components/SporeSpriteView';
-import SteamBlowerView from '../components/SteamBlowerView';
 import TurretView from '../components/TurretView';
 import TreasureCacheView from '../components/TreasureCacheView';
 import { VIEWPORT_HEIGHT } from '../game/constants';
@@ -189,9 +188,6 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             {gameState.bioCoils.filter(isVisible).map((c) => (
               <BioCoilView key={c.id} coil={c} />
             ))}
-            {gameState.steamBlowers.filter(isVisible).map((b) => (
-              <SteamBlowerView key={b.id} blower={b} />
-            ))}
             {gameState.sporeSprites.filter(isVisible).map((s) => (
               <SporeSpriteView key={s.id} sprite={s} />
             ))}
@@ -218,8 +214,6 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
       <Hud
         score={gameState.score}
         lives={gameState.lives}
-        overdriveGauge={gameState.player.overdriveGauge}
-        overdriveActive={gameState.player.overdriveTimer > 0}
         equippedCogs={[gameState.player.equippedHead, gameState.player.equippedBody, gameState.player.equippedFoot]}
         arrows={gameState.player.arrows}
         maxArrows={gameState.player.maxArrows}

@@ -4,7 +4,7 @@ export const GRAVITY = 1800; // px/s^2
 // Tuned after real mobile play: normal running must leave room to read jumps
 // and enemies. Dash remains the intentionally fast traversal action.
 export const MOVE_SPEED = 160; // px/s
-export const JUMP_VELOCITY = -650; // px/s
+export const JUMP_VELOCITY = -570; // px/s; ~90px apex, readable but less floaty on mobile
 export const STOMP_BOUNCE = -450; // px/s
 export const STOMP_TOLERANCE = 8; // px of slack when checking if the player approached an enemy from above
 export const MAX_FALL_SPEED = 900; // px/s
@@ -40,16 +40,6 @@ export const DASH_DURATION = 0.18; // seconds movement is locked to the dash bur
 export const DASH_INVULN = 0.15; // seconds of invincibility granted by a dash (per the GDD's control spec)
 export const DASH_COOLDOWN = 0.3; // seconds before another dash can start, to prevent spamming for near-permanent invulnerability
 
-// Overdrive: a combo gauge built from stomp/dash chains (the GDD's full list also includes
-// wall-jump and grind, which don't exist in this prototype yet).
-export const OVERDRIVE_MAX = 100;
-export const OVERDRIVE_STOMP_GAIN = 15;
-export const OVERDRIVE_DASH_GAIN = 10;
-export const OVERDRIVE_COMBO_BREAK_TIME = 1.5; // seconds without a stomp/dash before the chain (and gauge) resets
-export const OVERDRIVE_DURATION = 8; // seconds the boost lasts once the gauge fills
-export const OVERDRIVE_SPEED_MULT = 1.15; // applied to MOVE_SPEED and JUMP_VELOCITY while active
-export const OVERDRIVE_COIN_MULT = 2; // coin value multiplier while active
-
 
 export const SPORE_SPRITE_WIDTH = 28;
 export const SPORE_SPRITE_HEIGHT = 32;
@@ -74,23 +64,6 @@ export const BIOCOIL_WINDUP_WILD = 0.4; // seconds; mechanical state skips windu
 export const BIOCOIL_LANDED_DURATION = 0.6; // defenseless window after landing
 export const BIOCOIL_LEAP_VX_WILD = 180;
 export const BIOCOIL_LAUNCH_VY_WILD = -520; // big, telegraphed arc
-
-export const STEAMBLOWER_WIDTH = 48;
-export const STEAMBLOWER_HEIGHT = 54;
-export const STEAMBLOWER_HP = 3;
-
-export const STEAM_GUST_CYCLE = 3;
-export const STEAM_GUST_CHARGE = 0.4;
-export const STEAM_GUST_ACTIVE = 0.5; // knockback window
-export const STEAM_GUST_RANGE = 90; // px, extends this far on both sides of the blower
-export const STEAM_GUST_KNOCKBACK = 380; // px/s horizontal push, away from the blower
-
-// Named FLAME_LOB (not SPORE_*) to avoid confusion with the unrelated Spore
-// Sprite monster — this is the Steam Blower's "flame spore" ranged attack.
-export const FLAME_LOB_CYCLE = 5;
-export const FLAME_LOB_CHARGE = 0.5;
-export const FLAME_LOB_ACTIVE = 0.4; // damage window
-export const FLAME_LOB_RANGE = 110; // px, wider than the steam gust since it's a ranged lob
 
 export const ROOTHOOK_RANGE = 90; // px, distance from a root point within which the grapple can attach
 export const ROOTHOOK_SIZE = 18;
@@ -119,11 +92,6 @@ export const COG_CANNON_JUMP_MULT = 1.3; // "Cannon Jump" synergy (Root-Hook Cog
 export const WALL_SLIDE_FALL_MULT = 0.45; // caps fall speed at 45% of MAX_FALL_SPEED while pressed against a wall
 export const WALLJUMP_VX = 260; // px/s horizontal push-off away from the wall
 export const COG_WALLJUMP_HORIZ_MULT = 1.25; // Spring cog: +25% wall-jump horizontal distance (a separate stat from its jump-height boost)
-export const OVERDRIVE_WALLJUMP_GAIN = 10; // GDD lists wall-jump alongside dash/stomp/grind in the Overdrive combo chain
-
-// Post-defeat corpse platforms: per the monster design doc, Cogmite, Bio-Coil,
-// and Steam Blower all leave a temporary solid platform for a few seconds
-// after being defeated.
 
 // Portal: purely a level-transition marker into the boss arena, no collision
 // logic of its own — just a rect the player crosses once, which plays a
@@ -133,8 +101,7 @@ export const PORTAL_HEIGHT = 70;
 
 // Boss (Area 3 finale): new content, not part of the original 5-monster
 // roster, so these numbers have no prior established value to preserve —
-// sized noticeably larger than Steam Blower (the previous largest monster)
-// for a "final fight" feel. While alive, the boss is added to the solid
+// sized for a clear "final fight" silhouette. While alive, the boss is added to the solid
 // collision platform list (see stepGame) so it physically blocks the path
 // rather than being a walk-through hazard, matching how a boss arena reads.
 export const BOSS_WIDTH = 90;
@@ -216,5 +183,4 @@ export const TREASURE_CACHE_HEIGHT = 28;
 export const SUNSEED_BURST_SCORE = 8;
 export const ARROW_BUNDLE_ARROWS = 1; // capped at RELIC_BOW_MAX_ARROWS on pickup
 export const LIFE_BLOOM_LIVES = 1; // capped at STARTING_LIVES on pickup
-export const FLOW_SPARK_GAUGE = 30; // added to the Overdrive gauge, clamped like any other gaugeGain source
 export const LOOT_REVEAL_DURATION = 1; // seconds a LootReveal stays around for a reward popup

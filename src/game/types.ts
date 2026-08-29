@@ -29,7 +29,7 @@ export interface Flag extends Rect {}
 // A floating hazard that hovers on a fixed sine-wave path and slows the
 // player on approach instead of dealing direct damage. Per the monster
 // design doc, normal contact never defeats it — only dashing through it
-// (the Overdrive dash's invincibility frames) does.
+// (the dash's invincibility frames) does.
 export interface SporeSprite extends Rect {
   id: string;
   baseY: number;
@@ -62,19 +62,6 @@ export interface BioCoil extends Rect {
   vx: number;
   vy: number;
   facing: 1 | -1;
-  alive: boolean;
-}
-
-// Fixed mini-boss with two independently-cycling attacks: a steam gust
-// (knockback only, no damage — the risk is being pushed into a pit) and a
-// flame-spore lob (direct damage). While mechanical its cap is closed, so
-// stomping bounces the player off with no effect; while wild the cap is
-// open and stompable, needing HP hits to defeat.
-export interface SteamBlower extends Rect {
-  id: string;
-  steamTimer: number;
-  sporeTimer: number;
-  hp: number;
   alive: boolean;
 }
 
@@ -221,7 +208,7 @@ export interface ChestnutRoller extends Rect {
 }
 
 export type TreasureCacheKind = 'rootCache' | 'relicPod';
-export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom' | 'flowSpark';
+export type TreasureReward = 'sunseedBurst' | 'arrowBundle' | 'lifeBloom';
 
 // An optional-route pickup with a fixed (never randomized, never empty)
 // reward, opened by a specific committed action rather than a touch: a
@@ -260,7 +247,6 @@ export interface Level {
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
-  steamBlowers: SteamBlower[];
   rootPoints: RootPoint[];
   cogPickups: CogPickup[];
   portal: Portal;
@@ -286,12 +272,6 @@ export interface Player extends Rect {
   dashCooldown: number;
   /** Consumed by dashing while airborne; refills on landing. Grounded dashes don't spend it. */
   airDashAvailable: boolean;
-  /** 0-OVERDRIVE_MAX combo meter, filled by stomps/dashes; resets if the chain goes idle too long. */
-  overdriveGauge: number;
-  /** Seconds since the last stomp/dash; a full reset of this (and the gauge) means the combo broke. */
-  comboIdleFor: number;
-  /** Seconds remaining on an active Overdrive boost (speed/jump/coin bonus). */
-  overdriveTimer: number;
   /** True while attached to a Root-Hook point; normal movement/gravity are suspended in favor of pendulum physics. */
   grappling: boolean;
   grappleAnchorX: number;
@@ -332,7 +312,6 @@ export interface GameState {
   sporeSprites: SporeSprite[];
   pressurePistons: PressurePiston[];
   bioCoils: BioCoil[];
-  steamBlowers: SteamBlower[];
   cogPickups: CogPickup[];
   boss: Boss;
   bowPickup: BowPickup;

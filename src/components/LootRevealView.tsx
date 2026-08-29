@@ -6,7 +6,6 @@ const COPY: Record<TreasureReward, { icon: string; label: string; color: string 
   sunseedBurst: { icon: '✦', label: 'SUNSEEDS +8', color: '#ffd55d' },
   arrowBundle: { icon: '➤', label: 'ARROW +1', color: '#8fe4d2' },
   lifeBloom: { icon: '✚', label: 'LIFE BLOOM', color: '#ef8173' },
-  flowSpark: { icon: '⚡', label: 'FLOW +30', color: '#f3b35a' },
 };
 
 export default function LootRevealView({ reveal }: { reveal: LootReveal }) {

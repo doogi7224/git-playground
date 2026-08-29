@@ -40,11 +40,6 @@ import {
   ENEMY_CHARGE_SPEED,
   ENEMY_DETECT_RANGE,
   ENEMY_SPEED,
-  FLAME_LOB_ACTIVE,
-  FLAME_LOB_CHARGE,
-  FLAME_LOB_CYCLE,
-  FLAME_LOB_RANGE,
-  FLOW_SPARK_GAUGE,
   FRICTION,
   GRAVITY,
   INVULNERABLE_TIME,
@@ -59,14 +54,6 @@ import {
   MOVE_SPEED,
   RELIC_BOW_MAX_ARROWS,
   RELIC_BOW_STARTING_ARROWS,
-  OVERDRIVE_COIN_MULT,
-  OVERDRIVE_COMBO_BREAK_TIME,
-  OVERDRIVE_DASH_GAIN,
-  OVERDRIVE_DURATION,
-  OVERDRIVE_MAX,
-  OVERDRIVE_SPEED_MULT,
-  OVERDRIVE_STOMP_GAIN,
-  OVERDRIVE_WALLJUMP_GAIN,
   PISTON_BLAST_DURATION,
   PISTON_CHARGE_DURATION,
   PISTON_CYCLE,
@@ -87,11 +74,6 @@ import {
   SPORE_SLOW_DURATION,
   SPORE_SLOW_FACTOR,
   STARTING_LIVES,
-  STEAM_GUST_ACTIVE,
-  STEAM_GUST_CHARGE,
-  STEAM_GUST_CYCLE,
-  STEAM_GUST_KNOCKBACK,
-  STEAM_GUST_RANGE,
   STOMP_BOUNCE,
   STOMP_TOLERANCE,
   SUNSEED_BURST_SCORE,
@@ -121,7 +103,6 @@ import {
   Rect,
   SeedProjectile,
   SporeSprite,
-  SteamBlower,
   TreasureCache,
   Turret,
 } from './types';
@@ -150,9 +131,6 @@ export function createInitialState(level: Level): GameState {
       dashTimer: 0,
       dashCooldown: 0,
       airDashAvailable: true,
-      overdriveGauge: 0,
-      comboIdleFor: 0,
-      overdriveTimer: 0,
       grappling: false,
       grappleAnchorX: 0,
       grappleAnchorY: 0,
@@ -178,7 +156,6 @@ export function createInitialState(level: Level): GameState {
     sporeSprites: level.sporeSprites.map((s) => ({ ...s })),
     pressurePistons: level.pressurePistons.map((p) => ({ ...p })),
     bioCoils: level.bioCoils.map((c) => ({ ...c })),
-    steamBlowers: level.steamBlowers.map((b) => ({ ...b })),
     cogPickups: level.cogPickups.map((c) => ({ ...c })),
     boss: { ...level.boss },
     bowPickup: { ...level.bowPickup },
@@ -203,7 +180,7 @@ function rectCenter(r: Rect): { x: number; y: number } {
   return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
 }
 
-// Shared by every damage source (enemies, Bio-Coil, Steam Blower, Pressure
+// Shared by every damage source (enemies, Bio-Coil, Pressure
 // Piston, falling into a pit): mutates `player` in place and returns the new
 // life count. Callers decide *whether* a hit applies (most gate it behind
 // invulnerableFor <= 0; a pit fall doesn't), this just applies one uniformly.
@@ -274,28 +251,9 @@ function stepBioCoils(prev: BioCoil[], player: Rect, dt: number): BioCoil[] {
   });
 }
 
-function stepSteamBlowers(prev: SteamBlower[], dt: number): SteamBlower[] {
-  return prev.map((b) => {
-    if (!b.alive) return b;
-    return {
-      ...b,
-      steamTimer: (b.steamTimer + dt) % STEAM_GUST_CYCLE,
-      sporeTimer: (b.sporeTimer + dt) % FLAME_LOB_CYCLE,
-    };
-  });
-}
-
-export function isSteamGustActive(blower: SteamBlower): boolean {
-  return blower.steamTimer >= STEAM_GUST_CHARGE && blower.steamTimer < STEAM_GUST_CHARGE + STEAM_GUST_ACTIVE;
-}
-
-export function isFlameLobActive(blower: SteamBlower): boolean {
-  return blower.sporeTimer >= FLAME_LOB_CHARGE && blower.sporeTimer < FLAME_LOB_CHARGE + FLAME_LOB_ACTIVE;
-}
-
 // Cycles idle -> telegraph -> attack -> vulnerable -> idle on a fixed timer,
 // independent of the player (the fight is a rhythm to learn, not a reaction
-// to player position) — same shape as the Steam Blower's timer-driven phases.
+// to player position).
 const BOSS_PHASE_DURATIONS: Record<Boss['phase'], number> = {
   idle: BOSS_IDLE_DURATION,
   telegraph: BOSS_TELEGRAPH_DURATION,
@@ -494,24 +452,14 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       ? prev.player.mirrorTrail[0]
       : level.checkpoints[prev.checkpointIndex];
 
-  // Overdrive: accumulated across dash/stomp events this frame, applied to the
-  // combo gauge at the end of the function (after every hazard resolution
-  // block below has had a chance to add to it).
-  let gaugeGain = 0;
-
-  // Decided from the pre-frame timer, matching the slow/dash pattern below:
-  // this frame's speed and jump power reflect whether
-  // Overdrive was already active going into it.
-  const overdriveActive = prev.player.overdriveTimer > 0;
-
   // Spore Sprite proximity slow: decided from the pre-frame debuff timer so
   // this frame's move speed matches what's shown (no one-frame mismatch).
   // Spring Cog (foot slot) boosts jump height; hoisted above the Root-Hook
   // block so a Cannon Jump release (Root-Hook Cog + Spring) can reuse the
   // same boosted value.
-  const moveSpeed = (prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED) * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1);
+  const moveSpeed = prev.player.slowFor > 0 ? MOVE_SPEED * SPORE_SLOW_FACTOR : MOVE_SPEED;
   const jumpVelocity =
-    JUMP_VELOCITY * (overdriveActive ? OVERDRIVE_SPEED_MULT : 1) * (prev.player.equippedFoot === 'spring' ? COG_SPRING_JUMP_MULT : 1);
+    JUMP_VELOCITY * (prev.player.equippedFoot === 'spring' ? COG_SPRING_JUMP_MULT : 1);
 
   // The boss (while alive) is solid, unlike every other monster in this file —
   // it physically blocks the path to the arena's far side instead of being a
@@ -631,7 +579,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.dashCooldown = DASH_COOLDOWN;
       if (!player.onGround) player.airDashAvailable = false;
       player.invulnerableFor = Math.max(player.invulnerableFor, DASH_INVULN);
-      gaugeGain += OVERDRIVE_DASH_GAIN;
     }
 
     // Steam Boost Cog (foot slot): extra fixed-velocity coast once the dash
@@ -676,7 +623,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
         player.vy = jumpVelocity;
         player.facing = player.touchingWall;
         player.touchingWall = 0;
-        gaugeGain += OVERDRIVE_WALLJUMP_GAIN;
       }
 
       player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL_SPEED);
@@ -847,7 +793,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (hitArrow) {
       consumedArrowIds.add(hitArrow.id);
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', e.x + e.width / 2, e.y);
       return { ...e, alive: false };
     }
@@ -859,7 +804,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', e.x + e.width / 2, e.y);
       return { ...e, alive: false };
     }
@@ -882,7 +826,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (hitArrow) {
       consumedArrowIds.add(hitArrow.id);
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', c.x + c.width / 2, c.y);
       return { ...c, alive: false };
     }
@@ -894,7 +837,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (c.phase === 'landed' && isStomp) {
       player.vy = STOMP_BOUNCE;
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', c.x + c.width / 2, c.y);
       return { ...c, alive: false };
     }
@@ -925,7 +867,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       if (hitArrow) {
         consumedArrowIds.add(hitArrow.id);
         score += 100;
-        gaugeGain += OVERDRIVE_STOMP_GAIN;
         pushEffect('impact', r.x + r.width / 2, r.y);
         return { ...r, alive: false };
       }
@@ -938,7 +879,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       if (isStomp) {
         player.vy = STOMP_BOUNCE;
         score += 100;
-        gaugeGain += OVERDRIVE_STOMP_GAIN;
         pushEffect('impact', r.x + r.width / 2, r.y);
         return { ...r, alive: false };
       }
@@ -949,66 +889,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       lives = applyHit(player, lives, respawnPoint);
     }
     return r;
-  });
-
-  const resolvedSteamBlowers = stepSteamBlowers(prev.steamBlowers, dt).map((b) => {
-    if (!b.alive) return b;
-
-    const hitArrow = findArrowHit(b);
-    if (hitArrow) {
-      consumedArrowIds.add(hitArrow.id);
-      pushEffect('impact', b.x + b.width / 2, b.y);
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
-      const hp = b.hp - 1;
-      if (hp <= 0) {
-        score += 300;
-        return { ...b, hp: 0, alive: false };
-      }
-      score += 50;
-      return { ...b, hp };
-    }
-
-    // Steam gust: a wide knockback-only zone, active in a short window each 3s cycle.
-    if (isSteamGustActive(b)) {
-      const gustZone: Rect = { x: b.x - STEAM_GUST_RANGE, y: b.y, width: b.width + STEAM_GUST_RANGE * 2, height: b.height };
-      if (rectIntersect(player, gustZone)) {
-        const center = b.x + b.width / 2;
-        const dir = player.x + player.width / 2 < center ? -1 : 1;
-        player.vx = dir * STEAM_GUST_KNOCKBACK;
-      }
-    }
-
-    // Flame spore: a wider damage zone, active in a short window each 5s cycle.
-    if (isFlameLobActive(b)) {
-      const lobZone: Rect = { x: b.x - FLAME_LOB_RANGE, y: b.y - 20, width: b.width + FLAME_LOB_RANGE * 2, height: b.height + 20 };
-      if (rectIntersect(player, lobZone) && player.invulnerableFor <= 0) {
-        pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
-        lives = applyHit(player, lives, respawnPoint);
-      }
-    }
-
-    if (!rectIntersect(player, b)) return b;
-
-    const isStomp = wasFalling && prevBottom <= b.y + STOMP_TOLERANCE;
-
-    if (isStomp) {
-      player.vy = STOMP_BOUNCE;
-      pushEffect('impact', b.x + b.width / 2, b.y);
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
-      const hp = b.hp - 1;
-      if (hp <= 0) {
-        score += 300;
-        return { ...b, hp: 0, alive: false };
-      }
-      score += 50;
-      return { ...b, hp };
-    }
-
-    if (player.invulnerableFor <= 0) {
-      pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
-      lives = applyHit(player, lives, respawnPoint);
-    }
-    return b;
   });
 
   // Seeds: move existing ones, drop any that hit a wall/left the world/expired
@@ -1027,7 +907,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (hitArrow) {
       consumedArrowIds.add(hitArrow.id);
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', j.x + j.width / 2, j.y);
       return { ...j, alive: false };
     }
@@ -1037,7 +916,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', j.x + j.width / 2, j.y);
       return { ...j, alive: false };
     }
@@ -1061,7 +939,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (hitArrow) {
       consumedArrowIds.add(hitArrow.id);
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', t.x + t.width / 2, t.y);
       return { ...t, alive: false };
     }
@@ -1071,7 +948,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     if (isStomp) {
       player.vy = STOMP_BOUNCE;
       score += 100;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', t.x + t.width / 2, t.y);
       return { ...t, alive: false };
     }
@@ -1093,7 +969,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       if (hitArrow) consumedArrowIds.add(hitArrow.id);
       if (isStomp) player.vy = STOMP_BOUNCE;
       score += 50;
-      gaugeGain += OVERDRIVE_STOMP_GAIN;
       pushEffect('impact', seed.x + seed.width / 2, seed.y + seed.height / 2);
       return false;
     }
@@ -1122,7 +997,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       consumedArrowIds.add(hitArrow.id);
       if (isBossVulnerable(boss)) {
         pushEffect('impact', boss.x + boss.width / 2, boss.y);
-        gaugeGain += OVERDRIVE_STOMP_GAIN;
         const hp = boss.hp - 1;
         if (hp <= 0) {
           score += 1000;
@@ -1146,7 +1020,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.vy = STOMP_BOUNCE;
       if (isBossVulnerable(boss)) {
         pushEffect('impact', boss.x + boss.width / 2, boss.y);
-        gaugeGain += OVERDRIVE_STOMP_GAIN;
         const hp = boss.hp - 1;
         if (hp <= 0) {
           score += 1000;
@@ -1178,7 +1051,7 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     const inMagnetRange =
       player.equippedBody === 'magnet' && Math.hypot(rectCenter(c).x - playerCenter.x, rectCenter(c).y - playerCenter.y) <= COG_MAGNET_RADIUS;
     if (rectIntersect(player, c) || inMagnetRange) {
-      score += overdriveActive ? 10 * OVERDRIVE_COIN_MULT : 10;
+      score += 10;
       pushEffect('pickup', c.x + c.width / 2, c.y + c.height / 2);
       return { ...c, collected: true };
     }
@@ -1231,8 +1104,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
       player.arrows = Math.min(player.maxArrows, player.arrows + ARROW_BUNDLE_ARROWS);
     } else if (cache.reward === 'lifeBloom') {
       lives = Math.min(STARTING_LIVES, lives + LIFE_BLOOM_LIVES);
-    } else {
-      gaugeGain += FLOW_SPARK_GAUGE;
     }
     pushEffect('pickup', cache.x + cache.width / 2, cache.y + cache.height / 2);
     newLootReveals.push({ id: `loot-${lootRevealSeq}`, reward: cache.reward, x: cache.x + cache.width / 2, y: cache.y, timeLeft: LOOT_REVEAL_DURATION });
@@ -1276,25 +1147,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     player.mirrorTrail = [];
   }
 
-  // Overdrive gauge: filled by this frame's dash/stomp gains (accumulated
-  // above), reset if the combo chain has gone idle too long, and converted
-  // into an active boost once full.
-  let overdriveGauge = prev.player.overdriveGauge;
-  let comboIdleFor = prev.player.comboIdleFor + dt;
-  if (gaugeGain > 0) {
-    overdriveGauge = Math.min(OVERDRIVE_MAX, overdriveGauge + gaugeGain);
-    comboIdleFor = 0;
-  } else if (comboIdleFor > OVERDRIVE_COMBO_BREAK_TIME) {
-    overdriveGauge = 0;
-  }
-  player.overdriveTimer = Math.max(0, prev.player.overdriveTimer - dt);
-  if (overdriveGauge >= OVERDRIVE_MAX && player.overdriveTimer <= 0) {
-    player.overdriveTimer = OVERDRIVE_DURATION;
-    overdriveGauge = 0;
-  }
-  player.overdriveGauge = overdriveGauge;
-  player.comboIdleFor = comboIdleFor;
-
   if (player.y > DEATH_Y) {
     lives = applyHit(player, lives, respawnPoint);
   }
@@ -1336,7 +1188,6 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     sporeSprites: resolvedSporeSprites,
     pressurePistons,
     bioCoils: resolvedBioCoils,
-    steamBlowers: resolvedSteamBlowers,
     cogPickups: resolvedCogPickups,
     boss,
     bowPickup,

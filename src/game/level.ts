@@ -24,9 +24,6 @@ import {
   ROOTHOOK_SIZE,
   SPORE_SPRITE_HEIGHT,
   SPORE_SPRITE_WIDTH,
-  STEAMBLOWER_HEIGHT,
-  STEAMBLOWER_HP,
-  STEAMBLOWER_WIDTH,
   TREASURE_CACHE_HEIGHT,
   TREASURE_CACHE_WIDTH,
   TURRET_HEIGHT,
@@ -49,7 +46,6 @@ import {
   PressurePiston,
   RootPoint,
   SporeSprite,
-  SteamBlower,
   TreasureCache,
   TreasureCacheKind,
   TreasureReward,
@@ -179,21 +175,6 @@ function makeBioCoils(): BioCoil[] {
   }));
 }
 
-function makeSteamBlowers(): SteamBlower[] {
-  const defs: [string, number][] = [['blower1', 2980]];
-  return defs.map(([id, x]) => ({
-    id,
-    x,
-    y: GROUND_Y - STEAMBLOWER_HEIGHT,
-    width: STEAMBLOWER_WIDTH,
-    height: STEAMBLOWER_HEIGHT,
-    steamTimer: 0,
-    sporeTimer: 0,
-    hp: STEAMBLOWER_HP,
-    alive: true,
-  }));
-}
-
 function makeRootPoints(): RootPoint[] {
   const defs: [string, number, number][] = [
     ['root1', 780, GROUND_Y - 150], // over the first pit, an alternate to the p1/p2 jump route
@@ -284,7 +265,7 @@ function makeTurrets(): Turret[] {
 
 // Chestnut Roller: two wide ground patrol zones, chosen by scanning every
 // other ground-level entity's occupied x-range (existing enemies, pistons,
-// Bio-Coil, Steam Blower, the spawn/bow/cog-spring cluster) and picking the
+// Bio-Coil, the spawn/bow/cog-spring cluster) and picking the
 // two widest gaps left over (a computed check, not eyeballed -- see
 // 개발로그.md for the exact free-gap list). No new pits, platforms, or
 // level segments were added.
@@ -319,7 +300,7 @@ function makeChestnutRollers(): ChestnutRoller[] {
 function makeTreasureCaches(): TreasureCache[] {
   const defs: [string, TreasureCacheKind, TreasureReward][] = [
     ['cache-root1', 'rootCache', 'sunseedBurst'],
-    ['cache-root2', 'rootCache', 'flowSpark'],
+    ['cache-root2', 'rootCache', 'sunseedBurst'],
     ['cache-root3', 'rootCache', 'arrowBundle'],
     ['cache-pod1', 'relicPod', 'lifeBloom'],
     ['cache-pod2', 'relicPod', 'sunseedBurst'],
@@ -493,7 +474,6 @@ export function createLevel(): Level {
     sporeSprites: makeSporeSprites(),
     pressurePistons: makePressurePistons(),
     bioCoils: makeBioCoils(),
-    steamBlowers: makeSteamBlowers(),
     rootPoints: makeRootPoints(),
     cogPickups: makeCogPickups(),
     portal: makePortal(),
