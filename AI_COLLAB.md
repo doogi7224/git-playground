@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 사용자 지시로 그래플/발판 순간이동 버그를 직접 판단해 수정했다(나머지 2건은 조작감 판단이 필요해 승인 대기 유지).
+- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 커밋 `0405549`(점프 상자 + 고정 60Hz 루프)를 사용자 지시로 검증했고 결함을 찾지 못해 `src/game/*` 수정 없이 종료했다(나머지 2건의 입력 소실은 여전히 조작감 판단이 필요해 승인 대기 유지).
 
 ## CODEX ACTIVE
 
@@ -73,6 +73,15 @@
 ## HANDOFF
 
 - 최근 완료(Codex): 실기기 렉/모션 피드백 대응. `GameScreen.tsx`에 한 화면 overscan 컬링과 1/60초 고정 스텝(프레임당 최대 4회)을 적용하고, `Background.tsx`는 투명도 0인 대형 장면 레이어를 마운트하지 않게 했다. 주인공/Brambleling/Chestnut Roller는 이동 거리 기반 4프레임 보행으로 교체했고, Acorn Hopper는 대기·웅크림·상승·하강 모두 동일한 초록 네발 캐릭터로 통일했다. Bio-Coil의 세로 왜곡 범위는 0.82~1.12로 제한했다. 추가 사용자 지시에 따라 Root Cache 3개를 주 동선의 x=1120/2150/3650, y=GROUND_Y-100으로 옮겨 28px 고체 `?` 상자로 만들고, 아래에서 점프해 머리로 칠 때 기존 고정 보상이 나오며 사용 후 블록이 남도록 했다. Relic Pod 2개는 기존 화살 개봉/보너스 루트를 유지한다. `npx tsc --noEmit`, `npx expo export --platform web` 통과, 시작→게임 화면 웹 런타임 오류 0.
+- 최근 완료(Claude, 이번 세션): 사용자 지시로 위 커밋(`0405549`)의 `src/game/*` 변경분을 검증했다 — 결함 없음, 코드 수정 없음.
+  - `?` 상자 판정: 아래에서 머리로 부딪힐 때만 `opened`가 켜지고(`hitFromBelow`: `prev.player.vy<0` + 위치 일치), 옆(대시) 접촉과 위(착지) 접촉으로는 열리지 않음을 확인. 보상은 `opened` 플래그로 1회만 지급되고, 상자는 `level.platforms`에 별도 `${id}-solid` 항목으로 들어가 있어 사용 후에도 계속 고체.
+  - 3개 위치(x=1120/2150/3650) 모두 지면 구간 위(핏 아님)이고, 근처 발판·적 순찰 구간과 y축으로 겹치지 않으며, 점프 정점(≈117px)이 상자 도달에 필요한 상승 거리(≈32px)를 크게 웃돌아 항상 도달 가능함을 확인.
+  - 상자 보상 4종(sunseedBurst +8 / arrowBundle / lifeBloom / flowSpark +30) 모두 기존 클램프 로직을 그대로 타서 오버플로 없음을 확인.
+  - 고정 60Hz 스텝: 프레임당 최대 4스텝 제한 + 남은 백로그 클리핑 로직을 읽고, 점프/대시/공격의 edge-trigger 소비가 프레임의 첫 서브스텝에서만 일어나 여러 스텝이 한 프레임에 몰려도 중복 소비되지 않음을 확인. pure-logic으로 이동/점프/대시 기본 동작 재확인.
+  - 검증 중 상자 근처(x=1120)를 순찰하는 e2를 실수로 밟아 "재개봉"처럼 보이는 점수 증가가 한 번 나왔는데, 원인은 `level.enemies`가 아니라 `GameState.enemies`가 실제 순찰 상태를 들고 있어 테스트에서 레벨만 격리하고 상태의 적 배열은 비우지 않았기 때문이었다 — `state.enemies=[]`로 다시 격리해 상자 로직 자체는 정상임을 확인했다(코드 결함 아님).
+  - `npx tsc --noEmit` 통과, `npx expo export --platform web` 재빌드 성공(357모듈), 로컬 정적 서빙 후 콘솔 에러 0.
+  - 승인 대기 중인 두 항목(동시 점프+대시 소실, 그래플 스윙 중 대시 소실)과 Codex 소유 파일(`GameScreen.tsx` 등)은 지시대로 손대지 않았다. 상세는 개발로그 (63).
+  - **참고**: `CLAUDE.md` 5.1절이 여전히 "Root Cache: 대시로만 부술 수 있는"이라고 적혀 있어 이번 커밋(사용자 승인된 규칙 변경: 대시 개봉 → 점프 머리치기 개봉)과 어긋난다. 문서 갱신은 이번 검증 범위 밖이라 손대지 않았다 — 다음에 `CLAUDE.md`를 여는 담당자가 함께 정정하면 된다.
 
 - 최근 완료(Claude, 이번 세션): Chestnut Roller → 탐험 보상 캐시 → 활 탄약 경제를 연달아 구현했다(Codex가 세션 도중 추가 REVIEW REQUEST를 계속 올려서 순서대로 처리).
   - **Chestnut Roller**: `types.ts`에 `ChestnutRoller`/`ChestnutRollerPhase` 추가, `constants.ts`에 `CHESTNUT_ROLLER_*` 8개 상수(요청하신 수치 그대로), `level.ts`에 기존 지상 엔티티 전부를 스캔해 계산한 완전히 빈 두 구간(2720-2880, 6260-6760)에 `makeChestnutRollers()`로 배치, `physics.ts`에 `stepChestnutRollers`(walk→windup→rolling→recover→walk 사이클, 같은 높이+280px 감지, 경계 도달 시 조기 recover)와 화살/스톰프 무효화(rolling 중)+접촉 피해(항상) 해석 로직을 추가했다. pure-logic 시뮬레이션 45종 PASS. 상세는 개발로그 (47).
