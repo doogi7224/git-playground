@@ -19,7 +19,7 @@ export default function JumperView({ jumper }: { jumper: Jumper }) {
   return (
     <View style={[styles.wrap, { left: jumper.x + jumper.width / 2 - size / 2, top: jumper.y + jumper.height - size, width: size, height: size }]}>
       {windup && <View pointerEvents="none" style={styles.warningRing} />}
-      <Image source={frame} resizeMode="contain" style={styles.sprite} />
+      <Image source={frame} resizeMode="contain" style={[styles.sprite, { transform: [{ scaleX: jumper.facing }] }]} />
     </View>
   );
 }

@@ -15,6 +15,7 @@ import {
   FLAG_HEIGHT,
   FLAG_WIDTH,
   JUMPER_HEIGHT,
+  JUMPER_LAUNCH_VX,
   JUMPER_WIDTH,
   PISTON_HEIGHT,
   PISTON_WIDTH,
@@ -232,27 +233,35 @@ function makeBowPickup(): BowPickup {
 // Jumpers sit on existing wide floating platforms rather than the ground —
 // every current ground-level Cogmite patrols at GROUND_Y, so any floating
 // platform is guaranteed free of hazard overlap without needing to re-check
-// the (already densely packed) ground lanes. Centered on the platform with
-// its own groundY set to that platform's top, so its straight-up hop can
-// never carry it off the edge.
+// the (already densely packed) ground lanes. Their authored x span is the
+// platform's safe interior: each timed hop moves forward and reverses at an
+// edge rather than snapping back to its spawn point.
 function makeJumpers(): Jumper[] {
-  const defs: [string, number, number][] = [
-    ['jumper1', 1650 + 41, 60], // centered on p6 (x=1650, width110)
-    ['jumper2', 4100 + 41, 80], // centered on p15 (x=4100, width110)
+  const defs: [string, number, number, number][] = [
+    ['jumper1', 1650, 1760, 60], // p6 safe interior
+    ['jumper2', 4100, 4210, 80], // p15 safe interior
   ];
-  return defs.map(([id, x, groundY]) => ({
+  return defs.map(([id, minX, platformRight, groundY], index) => {
+    const maxX = platformRight - JUMPER_WIDTH;
+    const x = minX + (maxX - minX) / 2;
+    const facing: 1 | -1 = index % 2 === 0 ? 1 : -1;
+    return {
     id,
     x,
     y: groundY - JUMPER_HEIGHT,
     width: JUMPER_WIDTH,
     height: JUMPER_HEIGHT,
-    homeX: x,
+    minX,
+    maxX,
     groundY: groundY - JUMPER_HEIGHT,
     phase: 'grounded',
     timer: 0,
+    vx: facing * JUMPER_LAUNCH_VX,
     vy: 0,
+    facing,
     alive: true,
-  }));
+  };
+  });
 }
 
 // Turrets, same reasoning as Jumpers -- placed on existing wide floating

@@ -22,6 +22,7 @@ import {
   CHESTNUT_ROLLER_RECOVER_DURATION,
   CHESTNUT_ROLLER_ROLL_DURATION,
   CHESTNUT_ROLLER_ROLL_SPEED,
+  CHESTNUT_ROLLER_WALK_DURATION,
   CHESTNUT_ROLLER_WINDUP_DURATION,
   COG_CANNON_JUMP_MULT,
   COG_MAGNET_RADIUS,
@@ -49,6 +50,7 @@ import {
   INVULNERABLE_TIME,
   JUMP_VELOCITY,
   JUMPER_INTERVAL,
+  JUMPER_LAUNCH_VX,
   JUMPER_LAUNCH_VY,
   JUMPER_WINDUP_DURATION,
   LIFE_BLOOM_LIVES,
@@ -319,9 +321,9 @@ export function isBossVulnerable(boss: Boss): boolean {
   return boss.alive && boss.phase === 'vulnerable';
 }
 
-// Jumper: grounded -> windup (telegraph) -> airborne (straight up from
-// homeX, so it can never leave the platform it's placed on) -> grounded.
-// No player-detection at all, per the design brief -- purely timer-driven.
+// Jumper: grounded -> windup (telegraph) -> airborne (forward arc within its
+// authored platform span) -> grounded. No player-detection at all, per the
+// design brief -- purely timer-driven.
 function stepJumpers(prev: Jumper[], dt: number): Jumper[] {
   return prev.map((j) => {
     if (!j.alive) return j;
@@ -333,15 +335,33 @@ function stepJumpers(prev: Jumper[], dt: number): Jumper[] {
     if (j.phase === 'windup') {
       const timer = j.timer + dt;
       if (timer < JUMPER_WINDUP_DURATION) return { ...j, timer };
-      return { ...j, phase: 'airborne', vy: JUMPER_LAUNCH_VY, timer: 0 };
+      return {
+        ...j,
+        phase: 'airborne',
+        vx: j.facing * JUMPER_LAUNCH_VX,
+        vy: JUMPER_LAUNCH_VY,
+        timer: 0,
+      };
     }
     // 'airborne'
     const vy = j.vy + GRAVITY * dt;
     const y = j.y + vy * dt;
-    if (y >= j.groundY) {
-      return { ...j, x: j.homeX, y: j.groundY, vy: 0, phase: 'grounded', timer: 0 };
+    let x = j.x + j.vx * dt;
+    let vx = j.vx;
+    let facing = j.facing;
+    if (x < j.minX) {
+      x = j.minX;
+      vx = Math.abs(vx);
+      facing = 1;
+    } else if (x > j.maxX) {
+      x = j.maxX;
+      vx = -Math.abs(vx);
+      facing = -1;
     }
-    return { ...j, y, vy };
+    if (y >= j.groundY) {
+      return { ...j, x, y: j.groundY, vx, vy: 0, facing, phase: 'grounded', timer: 0 };
+    }
+    return { ...j, x, vx, y, vy, facing };
   });
 }
 
@@ -395,22 +415,23 @@ function stepTurrets(
 // Chestnut Roller: walk (patrol, vulnerable) -> windup (telegraph, locked
 // facing, stationary) -> rolling (fast, arrow/stomp-immune, ends early on
 // hitting its own patrol bound) -> recover (defenseless pause) -> walk with
-// a cooldown before it can roll again. Detection uses the pre-frame player
-// position (same "prev decides this frame" convention as stepBioCoils) and
-// requires vertical overlap ("same height") in addition to x-range, so a
-// player jumping high overhead doesn't trigger a roll.
+// a cooldown before it can roll again. It rolls toward a nearby same-height
+// player, or commits to its current patrol direction after a short walk so it
+// visibly advances even when the player has not yet entered detection range.
 function stepChestnutRollers(prev: ChestnutRoller[], player: Rect, dt: number): ChestnutRoller[] {
   return prev.map((r) => {
     if (!r.alive) return r;
     const cooldown = Math.max(0, r.cooldown - dt);
 
     if (r.phase === 'walk') {
+      const timer = r.timer + dt;
       const rCenterX = r.x + r.width / 2;
       const playerCenterX = player.x + player.width / 2;
       const sameHeight = player.y < r.y + r.height && player.y + player.height > r.y;
       const inRange = Math.abs(playerCenterX - rCenterX) <= CHESTNUT_ROLLER_DETECT_RANGE;
-      if (cooldown <= 0 && sameHeight && inRange) {
-        return { ...r, vx: 0, facing: playerCenterX < rCenterX ? -1 : 1, phase: 'windup', timer: 0, cooldown };
+      if (cooldown <= 0 && (sameHeight && inRange || timer >= CHESTNUT_ROLLER_WALK_DURATION)) {
+        const facing: 1 | -1 = sameHeight && inRange ? (playerCenterX < rCenterX ? -1 : 1) : r.facing;
+        return { ...r, vx: 0, facing, phase: 'windup', timer: 0, cooldown };
       }
 
       let nx = r.x + r.vx * dt;
@@ -425,7 +446,7 @@ function stepChestnutRollers(prev: ChestnutRoller[], player: Rect, dt: number): 
         vx = -Math.abs(vx);
         facing = -1;
       }
-      return { ...r, x: nx, vx, facing, cooldown };
+      return { ...r, x: nx, vx, facing, timer, cooldown };
     }
 
     if (r.phase === 'windup') {

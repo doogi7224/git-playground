@@ -164,17 +164,18 @@ export interface Arrow extends Rect {
 export type JumperPhase = 'grounded' | 'windup' | 'airborne';
 
 // A timer-driven hopping enemy with no player-detection at all (per the
-// design brief: no chase AI). Hops straight up in place from a fixed homeX,
-// so it can never hop off the edge of the platform it's placed on. The brief
-// 'windup' before launch mirrors Bio-Coil's telegraph pattern so the hop is
-// always readable, never a surprise.
+// design brief: no chase AI). It makes forward hops inside a level-authored
+// platform span, reversing at either edge so it never hops into a pit.
 export interface Jumper extends Rect {
   id: string;
-  homeX: number;
+  minX: number;
+  maxX: number;
   groundY: number;
   phase: JumperPhase;
   timer: number;
+  vx: number;
   vy: number;
+  facing: 1 | -1;
   alive: boolean;
 }
 

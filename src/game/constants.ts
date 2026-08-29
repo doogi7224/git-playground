@@ -167,15 +167,16 @@ export const ARROW_LIFETIME = 1.2; // seconds; safety despawn over open ground w
 export const RELIC_BOW_STARTING_ARROWS = 3;
 export const RELIC_BOW_MAX_ARROWS = 5;
 
-// Jumper: purely timer-driven, no player detection. Hops straight up in
-// place, so it can be placed on any platform without risking hopping off
-// the edge. A brief windup (mirroring Bio-Coil's telegraph) keeps every hop
-// readable before it happens.
+// Jumper: purely timer-driven, no player detection. Each hop carries it
+// forward across its assigned platform, then it turns around at the edge.
+// A brief windup (mirroring Bio-Coil's telegraph) keeps every hop readable
+// before it happens.
 export const JUMPER_WIDTH = 28;
 export const JUMPER_HEIGHT = 26;
 export const JUMPER_INTERVAL = 1.8; // seconds grounded before the next windup starts
 export const JUMPER_WINDUP_DURATION = 0.4; // telegraph before launch
 export const JUMPER_LAUNCH_VY = -480;
+export const JUMPER_LAUNCH_VX = 82; // px/s; about half a platform per hop
 
 // Turret: fixed in place, fires one SeedProjectile toward the player's
 // current side at the moment the cycle fires (locked in then, not homing).
@@ -199,6 +200,7 @@ export const CHESTNUT_ROLLER_WIDTH = 32;
 export const CHESTNUT_ROLLER_HEIGHT = 30;
 export const CHESTNUT_ROLLER_PATROL_SPEED = 55; // px/s while walking
 export const CHESTNUT_ROLLER_DETECT_RANGE = 280; // px, combined with a same-height check
+export const CHESTNUT_ROLLER_WALK_DURATION = 1.4; // patrol time before an autonomous forward roll
 export const CHESTNUT_ROLLER_WINDUP_DURATION = 0.45; // telegraph before the roll starts
 export const CHESTNUT_ROLLER_ROLL_SPEED = 250; // px/s while rolling (invincible to arrow/stomp)
 export const CHESTNUT_ROLLER_ROLL_DURATION = 1.15; // max roll length; cut short by a patrol-bound hit
