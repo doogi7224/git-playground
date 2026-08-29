@@ -33,11 +33,9 @@ import { computeCameraX, createInitialState, stepGame } from '../game/physics';
 import { GameState, InputState } from '../game/types';
 import { palette } from '../theme';
 
-// Gearwood is composed as a full 16:9 game frame: the world fills the frame
-// and HUD/touch controls are overlaid on it. Never reserve a separate top or
-// bottom band — that turns the stage into a thin strip and breaks the visual
-// composition approved for the game.
-const GAME_ASPECT = 16 / 9;
+// The game world must use the complete available device frame.  A fixed 16:9
+// container creates black pillarboxes on wide landscape phones, which reads
+// as a broken background instead of intentional framing.
 // At this zoom a 40px player reads at about 10% of the frame height on a
 // 16:9 phone, matching the approved composition without changing any physics
 // or hitbox constants. The extra logical space above is scenery only.
@@ -55,8 +53,8 @@ type HorizontalBounds = { x: number; width?: number };
 
 export default function GameScreen({ onExit }: { onExit: () => void }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const frameWidth = Math.min(windowWidth, windowHeight * GAME_ASPECT);
-  const frameHeight = frameWidth / GAME_ASPECT;
+  const frameWidth = windowWidth;
+  const frameHeight = windowHeight;
   // The world's Y coordinates (ground, platforms, enemy spawn heights, etc.)
   // are all authored against the fixed VIEWPORT_HEIGHT logical space and must
   // stay untouched — see CLAUDE.md 19 ("그래픽과 실제 충돌 박스를 분리한다").
