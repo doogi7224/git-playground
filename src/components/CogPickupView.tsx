@@ -2,7 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { CogPickup } from '../game/types';
 
-const COG_SOURCE = require('../../assets/sprites/relic_cog_v4.png');
+const COG_SOURCES: Record<CogPickup['cogType'], number> = {
+  spring: require('../../assets/sprites/cogs/cog_spring_v1.png'),
+  magnet: require('../../assets/sprites/cogs/cog_magnet_v1.png'),
+  mirror: require('../../assets/sprites/cogs/cog_mirror_v1.png'),
+};
 
 // The relic itself stays one coherent painted material. Its soft aura carries
 // the slot/type colour so the sprite never turns into a flat tinted icon.
@@ -36,7 +40,7 @@ export default function CogPickupView({ cog }: { cog: CogPickup }) {
       ]}
     >
       <View style={[styles.aura, { backgroundColor: color }]} />
-      <Animated.Image source={COG_SOURCE} resizeMode="contain" style={styles.sprite} />
+      <Animated.Image source={COG_SOURCES[cog.cogType]} resizeMode="contain" style={styles.sprite} />
     </Animated.View>
   );
 }
