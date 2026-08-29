@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { Coin } from '../game/types';
 
-// The collection hitbox remains untouched; this is only the painted Sunseed.
-const VISUAL_SIZE = 20;
+// The collection hitbox remains untouched; this paints the brass cog coin from
+// the control UI rather than the older flower-like Sunseed sprite.
+const VISUAL_SIZE = 24;
+const COG_TEETH = Array.from({ length: 8 }, (_, index) => index);
 
 export default function CoinView({ coin }: { coin: Coin }) {
   const float = useRef(new Animated.Value(0)).current;
@@ -25,16 +27,25 @@ export default function CoinView({ coin }: { coin: Coin }) {
   const opacity = gleam.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.9] });
   return <Animated.View style={[styles.wrap, { left: coin.x + (coin.width - VISUAL_SIZE) / 2, top: coin.y + (coin.height - VISUAL_SIZE) / 2, transform: [{ translateY }] }]}>
     <Animated.View style={[styles.glow, { opacity }]} />
-    <Animated.Image
-      source={require('../../assets/sprites/collectible_sunseed_v4.png')}
-      resizeMode="contain"
-      style={[styles.sunseed, { opacity }]}
-    />
+    <Animated.View style={[styles.cog, { opacity }]}>
+      {COG_TEETH.map((tooth) => <View key={tooth} style={[styles.tooth, { transform: [{ rotate: `${tooth * 45}deg` }, { translateY: -11 }] }]} />)}
+      <View style={styles.rim}>
+        <View style={styles.face}>
+          <View style={styles.hub} />
+          <View style={styles.shine} />
+        </View>
+      </View>
+    </Animated.View>
   </Animated.View>;
 }
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', width: VISUAL_SIZE, height: VISUAL_SIZE, alignItems: 'center', justifyContent: 'center' },
-  glow: { position: 'absolute', width: 27, height: 27, borderRadius: 14, backgroundColor: 'rgba(255,205,71,0.26)' },
-  sunseed: { width: VISUAL_SIZE, height: VISUAL_SIZE },
+  glow: { position: 'absolute', width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,205,71,0.28)' },
+  cog: { width: VISUAL_SIZE, height: VISUAL_SIZE, alignItems: 'center', justifyContent: 'center' },
+  tooth: { position: 'absolute', width: 5, height: 7, borderRadius: 1.5, backgroundColor: '#bc7620', borderWidth: 0.7, borderColor: '#ffe49b' },
+  rim: { width: 19, height: 19, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#b46d1d', borderWidth: 1.5, borderColor: '#ffe6a0' },
+  face: { width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: '#f5bc37', borderWidth: 1, borderColor: '#fff1ac' },
+  hub: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#9a5719', borderWidth: 1, borderColor: '#ffe89a' },
+  shine: { position: 'absolute', top: 1, left: 3, width: 6, height: 3, borderRadius: 3, backgroundColor: 'rgba(255,255,224,0.72)' },
 });

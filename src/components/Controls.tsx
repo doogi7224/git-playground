@@ -1,7 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useRef } from 'react';
 import { Animated, GestureResponderEvent, Platform, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { palette } from '../theme';
 
 // On mobile web, a held touch on an element without these is liable to be
 // interpreted by the browser as a text-selection long-press or a pinch/zoom
@@ -54,7 +53,7 @@ type ButtonRole = 'move' | 'grapple' | 'dash' | 'jump' | 'attack';
 const ROLE_COLORS: Record<ButtonRole, [string, string]> = {
   // Dark jewel-and-metal faces stay readable over bright scenery without
   // looking like flat toy controls.
-  move: ['#56615e', '#202b29'],
+  move: ['rgba(104, 180, 105, 0.58)', 'rgba(23, 91, 51, 0.48)'],
   grapple: ['#3f9b86', '#174b43'],
   dash: ['#b24f37', '#4b1d1b'],
   jump: ['#d5a947', '#624018'],
@@ -65,8 +64,8 @@ function ButtonFace({ label, role, big, scale, disabled }: { label: string; role
   const glowOpacity = scale.interpolate({ inputRange: [0.88, 1], outputRange: [1, 0], extrapolate: 'clamp' });
   const [faceTop, faceBottom] = ROLE_COLORS[role];
   return (
-    <Animated.View style={[styles.buttonShadow, big && styles.bigButton, disabled && styles.disabledButton, { transform: [{ scale }] }]}>
-      <LinearGradient colors={[faceTop, faceBottom]} style={styles.buttonInner}>
+    <Animated.View style={[styles.buttonShadow, role === 'move' && styles.moveButtonShadow, big && styles.bigButton, disabled && styles.disabledButton, { transform: [{ scale }] }]}>
+      <LinearGradient colors={[faceTop, faceBottom]} style={[styles.buttonInner, role === 'move' && styles.moveButtonInner]}>
         {/* bolt rivets — the "작은 볼트" motif from the brass/steampunk frame spec */}
         <View style={[styles.rivet, styles.rivetN]} />
         <View style={[styles.rivet, styles.rivetE]} />
@@ -74,10 +73,10 @@ function ButtonFace({ label, role, big, scale, disabled }: { label: string; role
         <View style={[styles.rivet, styles.rivetW]} />
         <View style={styles.glassHighlight} />
         <Animated.View pointerEvents="none" style={[styles.pressGlow, { opacity: glowOpacity }]} />
-        <Text style={[styles.label, big && styles.bigLabel]}>{label}</Text>
-        <Text style={[styles.roleLabel, big && styles.bigRoleLabel]}>
-          {role === 'move' ? 'MOVE' : role === 'grapple' ? 'HOOK' : role === 'dash' ? 'DASH' : role === 'attack' ? 'ARROW' : 'JUMP'}
-        </Text>
+        <Text style={[styles.label, role === 'move' && styles.moveLabel, big && styles.bigLabel]}>{label}</Text>
+        {role !== 'move' && <Text style={[styles.roleLabel, big && styles.bigRoleLabel]}>
+          {role === 'grapple' ? 'HOOK' : role === 'dash' ? 'DASH' : role === 'attack' ? 'ARROW' : 'JUMP'}
+        </Text>}
       </LinearGradient>
     </Animated.View>
   );
@@ -229,31 +228,27 @@ export default function Controls({
       onResponderTerminate={handleTouches}
     >
       <View style={styles.dpadModule}>
-        <View style={styles.moduleLabelPlate}>
-          <Text style={styles.moduleLabel}>MOVEMENT</Text>
-        </View>
         <View style={styles.dpad}>
         <View ref={leftRef} onLayout={() => measure(leftRef, 'left')}>
-          <ButtonFace label="◀" role="move" scale={leftScale} />
+          <ButtonFace label="←" role="move" scale={leftScale} />
         </View>
-        <View style={styles.dpadBridge} />
         <View ref={rightRef} onLayout={() => measure(rightRef, 'right')}>
-          <ButtonFace label="▶" role="move" scale={rightScale} />
+          <ButtonFace label="→" role="move" scale={rightScale} />
         </View>
         </View>
       </View>
       <View style={styles.actionPad}>
-        <View ref={attackRef} onLayout={() => measure(attackRef, 'attack')}>
-          <ButtonFace label="➤" role="attack" scale={attackScale} disabled={!hasBow || arrows <= 0} />
+        <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
+          <ButtonFace label="▲" role="jump" big scale={jumpScale} />
         </View>
         <View ref={grappleRef} onLayout={() => measure(grappleRef, 'grapple')}>
-          <ButtonFace label="◎" role="grapple" scale={grappleScale} />
+          <ButtonFace label="⚓" role="grapple" scale={grappleScale} />
         </View>
         <View ref={dashRef} onLayout={() => measure(dashRef, 'dash')}>
           <ButtonFace label="»" role="dash" scale={dashScale} />
         </View>
-        <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
-          <ButtonFace label="▲" role="jump" big scale={jumpScale} />
+        <View ref={attackRef} onLayout={() => measure(attackRef, 'attack')}>
+          <ButtonFace label="➜" role="attack" scale={attackScale} disabled={!hasBow || arrows <= 0} />
         </View>
       </View>
     </View>
@@ -273,44 +268,11 @@ const styles = StyleSheet.create({
   },
   dpad: {
     flexDirection: 'row',
-    gap: 5,
+    gap: 12,
     alignItems: 'center',
   },
   dpadModule: {
-    padding: 6,
-    paddingTop: 15,
-    borderRadius: 46,
-    backgroundColor: palette.uiPlateDeep,
-    borderWidth: 1.5,
-    borderColor: palette.uiPlateEdge,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  moduleLabelPlate: {
-    position: 'absolute',
-    top: 2,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  moduleLabel: {
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1.3,
-    color: palette.uiTextMuted,
-  },
-  dpadBridge: {
-    width: 11,
-    height: 28,
-    marginHorizontal: -8,
-    backgroundColor: palette.uiSecondaryDark,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: palette.uiPlateHighlight,
-    zIndex: -1,
+    padding: 0,
   },
   actionPad: {
     flexDirection: 'row',
@@ -327,6 +289,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
   },
+  moveButtonShadow: {
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
   bigButton: {
     width: 90,
     height: 90,
@@ -342,6 +308,12 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255, 239, 187, 0.95)',
     overflow: 'hidden',
   },
+  moveButtonInner: {
+    borderWidth: 2,
+    borderColor: 'rgba(214, 238, 167, 0.72)',
+    backgroundColor: 'rgba(57, 132, 79, 0.48)',
+    overflow: 'hidden',
+  },
   label: {
     marginTop: 5,
     fontSize: 30,
@@ -355,6 +327,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 38,
     color: '#fff3cb',
+  },
+  moveLabel: {
+    marginTop: 0,
+    fontSize: 48,
+    lineHeight: 54,
+    fontWeight: '900',
+    color: '#ffffff',
+    textShadowColor: 'rgba(9, 49, 22, 0.58)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 2,
   },
   disabledButton: { opacity: 0.38 },
   roleLabel: {

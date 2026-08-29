@@ -302,7 +302,9 @@ function makeTreasureCaches(): TreasureCache[] {
     ['cache-root2', 'rootCache', null],
     ['cache-root3', 'rootCache', null],
     ['cache-pod1', 'relicPod', 'lifeBloom'],
-    ['cache-pod2', 'relicPod', 'sunseedBurst'],
+    // Arrow-only targets should pay back a useful consumable, not a score
+    // burst that reads like another floating coin pickup.
+    ['cache-pod2', 'relicPod', 'arrowBundle'],
   ];
   const mysteryBlockXs = [1120, 2150, 3650];
   return defs.map(([id, kind, reward], i) => {
