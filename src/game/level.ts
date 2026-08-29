@@ -193,9 +193,9 @@ function makeBioCoils(): BioCoil[] {
 
 function makeRootPoints(): RootPoint[] {
   const defs: [string, number, number][] = [
-    // The early anchor beside the first mystery box was visual clutter and
-    // did not teach a required route, so it has been removed.
-    ['root2', 3275, GROUND_Y - 160], // over the pit into area 2, alongside the p11 bridge
+    ['root1', 780, GROUND_Y - 150], // over the first pit, an alternate to the p1/p2 jump route
+    // The anchor beside the third mystery box was visual clutter and did not
+    // support a required route, so it has been removed.
     ['root3', 6110, GROUND_Y - 160], // over the final pit in area 3, alongside the p23 bridge
   ];
   return defs.map(([id, x, y]) => ({ id, x, y, width: ROOTHOOK_SIZE, height: ROOTHOOK_SIZE }));
