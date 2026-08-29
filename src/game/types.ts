@@ -54,7 +54,9 @@ export type BioCoilPhase = 'coiled' | 'windup' | 'launch' | 'landed';
 // off and damages them instead of defeating it.
 export interface BioCoil extends Rect {
   id: string;
-  homeX: number;
+  /** Safe x range on one authored ground segment; never snaps back to spawn. */
+  minX: number;
+  maxX: number;
   groundY: number;
   phase: BioCoilPhase;
   /** Countdown for 'windup'/'landed'; unused during 'coiled'/'launch'. */
@@ -73,6 +75,7 @@ export interface Portal extends Rect {
 }
 
 export type BossPhase = 'idle' | 'telegraph' | 'attack' | 'vulnerable';
+export type BossAttackKind = 'volley' | 'rootWave';
 
 // Area 3's finale — new content with no prior established design to match
 // (see CLAUDE.md decision log). Cycles idle (safe to approach) -> telegraph
@@ -82,11 +85,17 @@ export type BossPhase = 'idle' | 'telegraph' | 'attack' | 'vulnerable';
 // the path to the goal instead of being a walk-through hazard.
 export interface Boss extends Rect {
   id: string;
+  /** Authored horizontal patrol limits for the flat boss arena. */
+  minX: number;
+  maxX: number;
   phase: BossPhase;
   timer: number;
   hp: number;
   alive: boolean;
   facing: 1 | -1;
+  /** Alternates each telegraph, so the warning always belongs to a known attack. */
+  attackKind: BossAttackKind;
+  attackCycle: number;
 }
 
 // A short-lived, presentation-only record of "something happened here" —
@@ -170,10 +179,10 @@ export interface Turret extends Rect {
 export interface SeedProjectile extends Rect {
   id: string;
   vx: number;
-  /** Vertical velocity is zero for turret seeds and forms a shallow fan for boss volleys. */
+  /** Zero for turrets/root waves; shallow fan for the three boss seeds. */
   vy: number;
   age: number;
-  source: 'turret' | 'boss';
+  source: 'turret' | 'boss' | 'bossWave';
 }
 
 export type ChestnutRollerPhase = 'walk' | 'windup' | 'rolling' | 'recover';

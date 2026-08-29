@@ -10,6 +10,10 @@ import {
   BOSS_ATTACK_DURATION,
   BOSS_ATTACK_KNOCKBACK,
   BOSS_ATTACK_RANGE,
+  BOSS_IDLE_STANDOFF,
+  BOSS_IDLE_WALK_SPEED,
+  BOSS_ROOT_WAVE_LIFETIME,
+  BOSS_ROOT_WAVE_SPEED,
   BOSS_VOLLEY_LIFETIME,
   BOSS_VOLLEY_SPEED,
   BOSS_VOLLEY_VERTICAL_SPEED,
@@ -226,7 +230,7 @@ function stepBioCoils(prev: BioCoil[], player: Rect, dt: number): BioCoil[] {
     if (!c.alive) return c;
 
     if (c.phase === 'coiled') {
-      const dx = player.x + player.width / 2 - (c.homeX + c.width / 2);
+      const dx = player.x + player.width / 2 - (c.x + c.width / 2);
       if (Math.abs(dx) > BIOCOIL_RANGE) return c;
       // Every leap has a short, readable windup. The player should lose only
       // after missing a cue, never because an invisible mode changed.
@@ -236,25 +240,39 @@ function stepBioCoils(prev: BioCoil[], player: Rect, dt: number): BioCoil[] {
     if (c.phase === 'windup') {
       const timer = c.timer - dt;
       if (timer > 0) return { ...c, timer };
-      const dx = player.x + player.width / 2 - (c.homeX + c.width / 2);
+      const dx = player.x + player.width / 2 - (c.x + c.width / 2);
       const facing: 1 | -1 = dx < 0 ? -1 : 1;
       return { ...c, phase: 'launch', facing, vx: facing * BIOCOIL_LEAP_VX_WILD, vy: BIOCOIL_LAUNCH_VY_WILD, timer: 0 };
     }
 
     if (c.phase === 'launch') {
       const vy = c.vy + GRAVITY * dt;
-      const x = c.x + c.vx * dt;
+      let x = c.x + c.vx * dt;
+      let vx = c.vx;
+      let facing = c.facing;
+      // The leap lane is authored in level.ts, not inferred from nearby
+      // geometry. Reversing at its edge keeps the entire arc on solid ground
+      // and lets the creature continue from its landing point next cycle.
+      if (x < c.minX) {
+        x = c.minX;
+        vx = Math.abs(vx);
+        facing = 1;
+      } else if (x > c.maxX) {
+        x = c.maxX;
+        vx = -Math.abs(vx);
+        facing = -1;
+      }
       const y = c.y + vy * dt;
       if (y >= c.groundY) {
-        return { ...c, x: c.homeX, y: c.groundY, vx: 0, vy: 0, phase: 'landed', timer: BIOCOIL_LANDED_DURATION };
+        return { ...c, x, y: c.groundY, vx: 0, vy: 0, facing, phase: 'landed', timer: BIOCOIL_LANDED_DURATION };
       }
-      return { ...c, x, y, vy };
+      return { ...c, x, y, vx, vy, facing };
     }
 
     // 'landed'
     const timer = c.timer - dt;
     if (timer > 0) return { ...c, timer };
-    return { ...c, phase: 'coiled', timer: 0, x: c.homeX, y: c.groundY };
+    return { ...c, phase: 'coiled', timer: 0, y: c.groundY };
   });
 }
 
@@ -269,12 +287,31 @@ const BOSS_PHASE_DURATIONS: Record<Boss['phase'], number> = {
 };
 const BOSS_PHASE_ORDER: Boss['phase'][] = ['idle', 'telegraph', 'attack', 'vulnerable'];
 
-function stepBoss(boss: Boss, dt: number): Boss {
+function stepBoss(boss: Boss, player: Player, dt: number): Boss {
   if (!boss.alive) return boss;
   const timer = boss.timer + dt;
   const duration = BOSS_PHASE_DURATIONS[boss.phase];
-  if (timer < duration) return { ...boss, timer };
+  if (timer < duration) {
+    // Rootwarden only repositions during the explicitly safe idle phase. It
+    // walks toward the player at a readable pace, then holds a generous gap;
+    // the other phases stay planted so their warning and dodge line are stable.
+    if (boss.phase !== 'idle') return { ...boss, timer };
+    const bossCenter = boss.x + boss.width / 2;
+    const playerCenter = player.x + player.width / 2;
+    const direction: 1 | -1 = playerCenter < bossCenter ? -1 : 1;
+    const separation = Math.abs(playerCenter - bossCenter);
+    const distance = Math.max(0, separation - BOSS_IDLE_STANDOFF);
+    const x = clamp(boss.x + direction * Math.min(distance, BOSS_IDLE_WALK_SPEED * dt), boss.minX, boss.maxX);
+    return { ...boss, x, facing: direction, timer };
+  }
   const nextPhase = BOSS_PHASE_ORDER[(BOSS_PHASE_ORDER.indexOf(boss.phase) + 1) % BOSS_PHASE_ORDER.length];
+  if (nextPhase === 'telegraph') {
+    // Lock both the attack choice and facing at the start of the full warning
+    // window. The player is therefore never punished by a last-frame retarget.
+    const facing: 1 | -1 = player.x + player.width / 2 < boss.x + boss.width / 2 ? -1 : 1;
+    const attackKind = boss.attackCycle % 2 === 0 ? 'volley' : 'rootWave';
+    return { ...boss, phase: nextPhase, timer: 0, facing, attackKind, attackCycle: boss.attackCycle + 1 };
+  }
   return { ...boss, phase: nextPhase, timer: 0 };
 }
 
@@ -879,10 +916,10 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   let seeds = prev.seeds
     .map((s) => ({ ...s, x: s.x + s.vx * dt, y: s.y + s.vy * dt, age: s.age + dt }))
     .filter((s) => {
-      const lifetime = s.source === 'boss' ? BOSS_VOLLEY_LIFETIME : SEED_LIFETIME;
+      const lifetime = s.source === 'bossWave' ? BOSS_ROOT_WAVE_LIFETIME : s.source === 'boss' ? BOSS_VOLLEY_LIFETIME : SEED_LIFETIME;
       const blocked = level.platforms.some((p) => rectIntersect(s, p));
       const expired = s.age >= lifetime || s.x + s.width <= 0 || s.x >= level.worldWidth;
-      if (blocked && s.source === 'boss') pushEffect('impact', s.x + s.width / 2, s.y + s.height / 2);
+      if (blocked && (s.source === 'boss' || s.source === 'bossWave')) pushEffect('impact', s.x + s.width / 2, s.y + s.height / 2);
       return !blocked && !expired;
     });
 
@@ -974,28 +1011,42 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // phase (detected via landedOnBoss, set
   // in the vertical collision loop above, since a solid landing resolves to
   // flush contact rather than overlap).
-  let boss = stepBoss(prev.boss, dt);
+  let boss = stepBoss(prev.boss, player, dt);
   if (boss.alive) {
-    // The warning phase locks the direction, then releases a readable three-
-    // seed fan exactly once when it turns into attack.  This is deliberately
-    // not homing: players can dodge based on the warning aura.
+    // The warning phase locks both direction and pattern. Odd telegraphs
+    // release the established three-seed fan; even telegraphs release one
+    // ground-hugging root wave that an ordinary jump can clear. Neither attack
+    // homes after the warning, so both remain readable and fair.
     if (prev.boss.phase === 'telegraph' && boss.phase === 'attack') {
       const bossCenter = boss.x + boss.width / 2;
-      const playerCenter = player.x + player.width / 2;
-      const dir: 1 | -1 = playerCenter < bossCenter ? -1 : 1;
-      [-1, 0, 1].forEach((fan) => {
+      if (boss.attackKind === 'volley') [-1, 0, 1].forEach((fan) => {
         resolvedSeeds.push({
           id: `seed-boss-${seedSeq++}`,
-          x: dir > 0 ? boss.x + boss.width - 8 : boss.x - SEED_WIDTH + 8,
+          x: boss.facing > 0 ? boss.x + boss.width - 8 : boss.x - SEED_WIDTH + 8,
           y: boss.y + boss.height * 0.42 - SEED_HEIGHT / 2,
           width: SEED_WIDTH,
           height: SEED_HEIGHT,
-          vx: dir * BOSS_VOLLEY_SPEED,
+          vx: boss.facing * BOSS_VOLLEY_SPEED,
           vy: fan * BOSS_VOLLEY_VERTICAL_SPEED,
           age: 0,
           source: 'boss',
         });
       });
+      else {
+        resolvedSeeds.push({
+          id: `seed-boss-wave-${seedSeq++}`,
+          x: boss.facing > 0 ? boss.x + boss.width - 4 : boss.x - SEED_WIDTH + 4,
+          // Its bottom sits exactly on the boss arena ground, so it never
+          // overlaps the ground platform and is not immediately culled.
+          y: boss.y + boss.height - SEED_HEIGHT,
+          width: SEED_WIDTH,
+          height: SEED_HEIGHT,
+          vx: boss.facing * BOSS_ROOT_WAVE_SPEED,
+          vy: 0,
+          age: 0,
+          source: 'bossWave',
+        });
+      }
       pushEffect('impact', bossCenter, boss.y + boss.height * 0.38);
     }
     // Solid, so an arrow can't pass through it either way -- it's always

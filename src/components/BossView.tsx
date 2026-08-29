@@ -41,7 +41,11 @@ export default function BossView({ boss }: { boss: Boss }) {
       {boss.phase === 'telegraph' && (
         <Animated.View
           pointerEvents="none"
-          style={[styles.telegraphAura, { opacity: telegraphOpacity, transform: [{ scale: telegraphScale }] }]}
+          style={[
+            styles.telegraphAura,
+            boss.attackKind === 'rootWave' ? styles.rootWaveAura : styles.volleyAura,
+            { opacity: telegraphOpacity, transform: [{ scale: telegraphScale }] },
+          ]}
         />
       )}
       <View style={styles.hpRow}>
@@ -92,7 +96,13 @@ const styles = StyleSheet.create({
     height: 122,
     borderRadius: 61,
     borderWidth: 4,
+  },
+  volleyAura: {
     borderColor: '#ffb743',
     backgroundColor: 'rgba(255, 105, 41, 0.18)',
+  },
+  rootWaveAura: {
+    borderColor: '#91df5b',
+    backgroundColor: 'rgba(93, 166, 59, 0.2)',
   },
 });

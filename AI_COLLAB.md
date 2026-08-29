@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 커밋 `0405549`(점프 상자 + 고정 60Hz 루프)를 사용자 지시로 검증했고 결함을 찾지 못해 `src/game/*` 수정 없이 종료했다(나머지 2건의 입력 소실은 여전히 조작감 판단이 필요해 승인 대기 유지).
+- Rootwarden 전투 강화 및 일반 적 이동 보정: `src/game/types.ts`, `src/game/constants.ts`, `src/game/level.ts`, `src/game/physics.ts` 및 보스 예고 프레젠테이션을 공동으로 정리한다. idle 중 아레나 범위 내 접근 이동, 예고마다 번갈아 나오는 가시 씨앗 부채꼴/점프 회피형 덩굴 파동, Bio-Coil의 착지 위치 유지, Acorn Hopper의 넓은 안전 발판 전진 도약을 검증한다. 커밋 전 검증 진행 중.
 
 ## CODEX ACTIVE
 

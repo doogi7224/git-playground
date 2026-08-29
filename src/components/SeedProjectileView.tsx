@@ -3,8 +3,11 @@ import { Image, StyleSheet, View } from 'react-native';
 import { SeedProjectile } from '../game/types';
 
 export default function SeedProjectileView({ seed }: { seed: SeedProjectile }) {
-  const height = seed.width * 1.45;
-  const width = height * 1.65;
+  // Rootwarden's ground wave shares the collision-safe seed body, but reads
+  // as a broader low thorn sweep instead of another small flying seed.
+  const isRootWave = seed.source === 'bossWave';
+  const height = seed.width * (isRootWave ? 1.9 : 1.45);
+  const width = height * (isRootWave ? 2.1 : 1.65);
   return (
     <View
       style={[

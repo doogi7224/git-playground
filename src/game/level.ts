@@ -85,7 +85,7 @@ const floatingPlatforms: Platform[] = [
   { id: 'p3', x: 980, y: GROUND_Y - 110, width: 110, height: 20 },
   { id: 'p4', x: 1250, y: GROUND_Y - 70, width: 100, height: 20 },
   { id: 'p5', x: 1440, y: GROUND_Y - 60, width: 90, height: 20 },
-  { id: 'p6', x: 1650, y: GROUND_Y - 120, width: 110, height: 20 },
+  { id: 'p6', x: 1650, y: GROUND_Y - 120, width: 170, height: 20 },
   { id: 'p7', x: 1900, y: GROUND_Y - 70, width: 100, height: 20 },
   { id: 'p8', x: 2260, y: GROUND_Y - 60, width: 90, height: 20 },
   { id: 'p9', x: 2500, y: GROUND_Y - 110, width: 120, height: 20 },
@@ -95,7 +95,7 @@ const floatingPlatforms: Platform[] = [
   { id: 'p12', x: 3450, y: GROUND_Y - 110, width: 100, height: 20 },
   { id: 'p13', x: 3700, y: GROUND_Y - 70, width: 90, height: 20 },
   { id: 'p14', x: 3920, y: GROUND_Y - 60, width: 90, height: 20 }, // bridges the pit before ground-5
-  { id: 'p15', x: 4100, y: GROUND_Y - 100, width: 110, height: 20 },
+  { id: 'p15', x: 4100, y: GROUND_Y - 100, width: 180, height: 20 },
   { id: 'p16', x: 4540, y: GROUND_Y - 60, width: 60, height: 20 },
   // Area 3.
   { id: 'p17', x: 4680, y: GROUND_Y - 70, width: 90, height: 20 }, // bridges the pit into area 3
@@ -154,14 +154,17 @@ function makePressurePistons(): PressurePiston[] {
 }
 
 function makeBioCoils(): BioCoil[] {
-  const defs: [string, number][] = [['coil1', 3060]];
-  return defs.map(([id, x]) => ({
+  // This lane is clear after shortening e5's patrol below. It stays on the
+  // same solid ground segment and leaves a full sprite gap at both ends.
+  const defs: [string, number, number][] = [['coil1', 3020, 3170]];
+  return defs.map(([id, minX, maxX]) => ({
     id,
-    x,
+    x: minX + (maxX - minX) / 2,
     y: GROUND_Y - BIOCOIL_HEIGHT,
     width: BIOCOIL_WIDTH,
     height: BIOCOIL_HEIGHT,
-    homeX: x,
+    minX,
+    maxX,
     groundY: GROUND_Y - BIOCOIL_HEIGHT,
     phase: 'coiled',
     timer: 0,
@@ -189,7 +192,7 @@ function makeBowPickup(): BowPickup {
   return { id: 'bow1', x: 250, y: GROUND_Y - BOW_PICKUP_SIZE, width: BOW_PICKUP_SIZE, height: BOW_PICKUP_SIZE, collected: false };
 }
 
-// Jumpers sit on existing wide floating platforms rather than the ground —
+// Jumpers sit on wide floating platforms rather than the ground —
 // every current ground-level Cogmite patrols at GROUND_Y, so any floating
 // platform is guaranteed free of hazard overlap without needing to re-check
 // the (already densely packed) ground lanes. Their authored x span is the
@@ -197,8 +200,8 @@ function makeBowPickup(): BowPickup {
 // edge rather than snapping back to its spawn point.
 function makeJumpers(): Jumper[] {
   const defs: [string, number, number, number][] = [
-    ['jumper1', 1650, 1760, 60], // p6 safe interior
-    ['jumper2', 4100, 4210, 80], // p15 safe interior
+    ['jumper1', 1658, 1812, 60], // p6 safe interior, widened for a real forward hop
+    ['jumper2', 4108, 4272, 80], // p15 safe interior, widened for a real forward hop
   ];
   return defs.map(([id, minX, platformRight, groundY], index) => {
     const maxX = platformRight - JUMPER_WIDTH;
@@ -308,7 +311,7 @@ function makeEnemies(): Enemy[] {
     ['e2', 900, 1350, GROUND_Y],
     ['e3', 1560, 2000, GROUND_Y],
     ['e4', 2400, 2480, GROUND_Y], // preserves a broad, non-overlapping Roller lane
-    ['e5', 2900, 3150, GROUND_Y],
+    ['e5', 2900, 2960, GROUND_Y], // leaves a collision-free Bio-Coil leap lane
     ['e6', 3400, 3850, GROUND_Y],
     ['e7', 4060, 4550, GROUND_Y],
     ['e8', 4800, 5250, GROUND_Y],
@@ -372,11 +375,17 @@ function makeBoss(): Boss {
     y: GROUND_Y - BOSS_HEIGHT,
     width: BOSS_WIDTH,
     height: BOSS_HEIGHT,
+    // Keep Rootwarden in the flat final room, with clear room at both edges
+    // for a player to retreat and read each warning.
+    minX: 6980,
+    maxX: 7540,
     phase: 'idle',
     timer: 0,
     hp: BOSS_HP,
     alive: true,
     facing: -1,
+    attackKind: 'volley',
+    attackCycle: 0,
   };
 }
 

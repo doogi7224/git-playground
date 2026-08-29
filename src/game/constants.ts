@@ -59,10 +59,10 @@ export const PISTON_CYCLE =
 
 export const BIOCOIL_WIDTH = 26;
 export const BIOCOIL_HEIGHT = 30;
-export const BIOCOIL_RANGE = 120; // px, distance that triggers a leap from 'coiled'
+export const BIOCOIL_RANGE = 170; // px, distance that triggers a leap from 'coiled'
 export const BIOCOIL_WINDUP_WILD = 0.4; // seconds; mechanical state skips windup entirely
 export const BIOCOIL_LANDED_DURATION = 0.6; // defenseless window after landing
-export const BIOCOIL_LEAP_VX_WILD = 180;
+export const BIOCOIL_LEAP_VX_WILD = 200;
 export const BIOCOIL_LAUNCH_VY_WILD = -520; // big, telegraphed arc
 
 export const ROOTHOOK_RANGE = 90; // px, distance from a root point within which the grapple can attach
@@ -112,6 +112,14 @@ export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the
 export const BOSS_VOLLEY_SPEED = 300;
 export const BOSS_VOLLEY_VERTICAL_SPEED = 82;
 export const BOSS_VOLLEY_LIFETIME = 1.1;
+// Rootwarden closes the distance only during its safe idle walk. It stops
+// well outside its body so it cannot silently push the player into a wall.
+export const BOSS_IDLE_WALK_SPEED = 70;
+export const BOSS_IDLE_STANDOFF = 175;
+// Every second warning alternates to a low, ground-hugging root wave. It is
+// faster than the seed fan but can be cleared with one ordinary jump.
+export const BOSS_ROOT_WAVE_SPEED = 390;
+export const BOSS_ROOT_WAVE_LIFETIME = 1.35;
 
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations
@@ -142,7 +150,7 @@ export const JUMPER_HEIGHT = 26;
 export const JUMPER_INTERVAL = 1.8; // seconds grounded before the next windup starts
 export const JUMPER_WINDUP_DURATION = 0.4; // telegraph before launch
 export const JUMPER_LAUNCH_VY = -480;
-export const JUMPER_LAUNCH_VX = 82; // px/s; about half a platform per hop
+export const JUMPER_LAUNCH_VX = 150; // px/s; travels visibly across its widened safe platform
 
 // Turret: fixed in place, fires one SeedProjectile toward the player's
 // current side at the moment the cycle fires (locked in then, not homing).
