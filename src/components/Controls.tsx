@@ -57,14 +57,28 @@ const ROLE_COLORS: Record<ButtonRole, [string, string]> = {
   grapple: ['#3f9b86', '#174b43'],
   dash: ['#b24f37', '#4b1d1b'],
   jump: ['#d5a947', '#624018'],
-  attack: ['#398b88', '#153f43'],
+  attack: ['#bd6a25', '#543019'],
 };
 
-function ButtonFace({ label, role, big, scale, disabled }: { label: string; role: ButtonRole; big?: boolean; scale: Animated.Value; disabled?: boolean }) {
+function ActionGlyph({ role }: { role: Exclude<ButtonRole, 'move'> }) {
+  if (role === 'grapple') return <Text style={styles.hookGlyph}>⚓</Text>;
+  if (role === 'attack') return <View style={styles.arrowGlyph}><View style={styles.arrowTrailLong} /><View style={styles.arrowTrailMid} /><View style={styles.arrowShaft} /><View style={styles.arrowHead} /></View>;
+  const jumping = role === 'jump';
+  return <View style={[styles.runnerGlyph, jumping && styles.jumpGlyph]}>
+    {!jumping && <><View style={styles.speedLineOne} /><View style={styles.speedLineTwo} /></>}
+    <View style={styles.runnerHead} />
+    <View style={styles.runnerBody} />
+    <View style={[styles.runnerArm, jumping && styles.jumpArm]} />
+    <View style={[styles.runnerLegBack, jumping && styles.jumpLegBack]} />
+    <View style={[styles.runnerLegFront, jumping && styles.jumpLegFront]} />
+  </View>;
+}
+
+function ButtonFace({ label, role, scale, disabled }: { label: string; role: ButtonRole; scale: Animated.Value; disabled?: boolean }) {
   const glowOpacity = scale.interpolate({ inputRange: [0.88, 1], outputRange: [1, 0], extrapolate: 'clamp' });
   const [faceTop, faceBottom] = ROLE_COLORS[role];
   return (
-    <Animated.View style={[styles.buttonShadow, role === 'move' && styles.moveButtonShadow, big && styles.bigButton, disabled && styles.disabledButton, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.buttonShadow, role === 'move' && styles.moveButtonShadow, disabled && styles.disabledButton, { transform: [{ scale }] }]}>
       <LinearGradient colors={[faceTop, faceBottom]} style={[styles.buttonInner, role === 'move' && styles.moveButtonInner]}>
         {/* bolt rivets — the "작은 볼트" motif from the brass/steampunk frame spec */}
         <View style={[styles.rivet, styles.rivetN]} />
@@ -73,10 +87,7 @@ function ButtonFace({ label, role, big, scale, disabled }: { label: string; role
         <View style={[styles.rivet, styles.rivetW]} />
         <View style={styles.glassHighlight} />
         <Animated.View pointerEvents="none" style={[styles.pressGlow, { opacity: glowOpacity }]} />
-        <Text style={[styles.label, role === 'move' && styles.moveLabel, big && styles.bigLabel]}>{label}</Text>
-        {role !== 'move' && <Text style={[styles.roleLabel, big && styles.bigRoleLabel]}>
-          {role === 'grapple' ? 'HOOK' : role === 'dash' ? 'DASH' : role === 'attack' ? 'ARROW' : 'JUMP'}
-        </Text>}
+        {role === 'move' ? <Text style={[styles.label, styles.moveLabel]}>{label}</Text> : <ActionGlyph role={role} />}
       </LinearGradient>
     </Animated.View>
   );
@@ -238,9 +249,6 @@ export default function Controls({
         </View>
       </View>
       <View style={styles.actionPad}>
-        <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
-          <ButtonFace label="▲" role="jump" big scale={jumpScale} />
-        </View>
         <View ref={grappleRef} onLayout={() => measure(grappleRef, 'grapple')}>
           <ButtonFace label="⚓" role="grapple" scale={grappleScale} />
         </View>
@@ -249,6 +257,9 @@ export default function Controls({
         </View>
         <View ref={attackRef} onLayout={() => measure(attackRef, 'attack')}>
           <ButtonFace label="➜" role="attack" scale={attackScale} disabled={!hasBow || arrows <= 0} />
+        </View>
+        <View ref={jumpRef} onLayout={() => measure(jumpRef, 'jump')}>
+          <ButtonFace label="▲" role="jump" scale={jumpScale} />
         </View>
       </View>
     </View>
@@ -276,7 +287,8 @@ const styles = StyleSheet.create({
   },
   actionPad: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+    width: 161,
     gap: 9,
   },
   buttonShadow: {
@@ -292,11 +304,6 @@ const styles = StyleSheet.create({
   moveButtonShadow: {
     shadowOpacity: 0.2,
     shadowRadius: 5,
-  },
-  bigButton: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
   },
   buttonInner: {
     flex: 1,
@@ -323,11 +330,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 1,
   },
-  bigLabel: {
-    marginTop: 4,
-    fontSize: 38,
-    color: '#fff3cb',
-  },
   moveLabel: {
     marginTop: 0,
     fontSize: 48,
@@ -339,18 +341,24 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   disabledButton: { opacity: 0.38 },
-  roleLabel: {
-    marginTop: -2,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    color: 'rgba(255,246,214,0.72)',
-  },
-  bigRoleLabel: {
-    marginTop: -1,
-    fontSize: 9,
-    color: 'rgba(255,247,213,0.86)',
-  },
+  hookGlyph: { fontSize: 42, lineHeight: 48, color: '#fffdf4', textShadowColor: 'rgba(0,0,0,0.58)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 2 },
+  arrowGlyph: { width: 47, height: 30, justifyContent: 'center' },
+  arrowShaft: { position: 'absolute', right: 5, width: 31, height: 5, borderRadius: 3, backgroundColor: '#fffdf4' },
+  arrowHead: { position: 'absolute', right: 1, width: 21, height: 21, borderRightWidth: 6, borderTopWidth: 6, borderColor: '#fffdf4', transform: [{ rotate: '45deg' }] },
+  arrowTrailLong: { position: 'absolute', left: 0, top: 5, width: 15, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,253,244,0.9)' },
+  arrowTrailMid: { position: 'absolute', left: 3, bottom: 5, width: 12, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,253,244,0.76)' },
+  runnerGlyph: { width: 45, height: 48, position: 'relative' },
+  jumpGlyph: { transform: [{ rotate: '-20deg' }, { translateY: -2 }] },
+  runnerHead: { position: 'absolute', top: 2, left: 25, width: 10, height: 10, borderRadius: 5, backgroundColor: '#fffdf4' },
+  runnerBody: { position: 'absolute', top: 12, left: 20, width: 8, height: 20, borderRadius: 4, backgroundColor: '#fffdf4', transform: [{ rotate: '29deg' }] },
+  runnerArm: { position: 'absolute', top: 17, left: 8, width: 19, height: 6, borderRadius: 3, backgroundColor: '#fffdf4', transform: [{ rotate: '-21deg' }] },
+  runnerLegBack: { position: 'absolute', top: 29, left: 9, width: 20, height: 7, borderRadius: 4, backgroundColor: '#fffdf4', transform: [{ rotate: '-33deg' }] },
+  runnerLegFront: { position: 'absolute', top: 30, left: 23, width: 20, height: 7, borderRadius: 4, backgroundColor: '#fffdf4', transform: [{ rotate: '37deg' }] },
+  jumpArm: { top: 11, left: 4, transform: [{ rotate: '-58deg' }] },
+  jumpLegBack: { top: 28, left: 6, transform: [{ rotate: '-60deg' }] },
+  jumpLegFront: { top: 29, left: 25, transform: [{ rotate: '7deg' }] },
+  speedLineOne: { position: 'absolute', left: 0, top: 16, width: 12, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,253,244,0.9)' },
+  speedLineTwo: { position: 'absolute', left: 2, top: 24, width: 9, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,253,244,0.7)' },
   // Small bolt/rivet dots at the compass points of the ring — the "작은 볼트"
   // detail called for in CLAUDE.md 19 so buttons read as machined parts
   // rather than flat circles.
