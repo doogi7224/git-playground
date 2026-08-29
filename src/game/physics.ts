@@ -24,6 +24,7 @@ import {
   CHESTNUT_ROLLER_ROLL_SPEED,
   CHESTNUT_ROLLER_WINDUP_DURATION,
   COG_MAGNET_RADIUS,
+  COG_MAGNET_PULL_SPEED,
   COG_MAGNET_DURATION,
   DASH_COOLDOWN,
   DASH_DURATION,
@@ -1019,15 +1020,30 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     }
   }
 
-  // Hoisted above resolvedCoins so Magnet Cog can use it for radius-based
-  // pickup; the Spore Sprite proximity check further below reuses it too.
+  // Hoisted above resolvedCoins so Magnet Cog can visibly pull coins toward
+  // the player; the Spore Sprite proximity check further below reuses it too.
   const playerCenter = rectCenter(player);
 
   const resolvedCoins = prev.coins.map((c) => {
     if (c.collected) return c;
-    const inMagnetRange =
-      player.equippedBody === 'magnet' && player.magnetFor > 0 && Math.hypot(rectCenter(c).x - playerCenter.x, rectCenter(c).y - playerCenter.y) <= COG_MAGNET_RADIUS;
-    if (rectIntersect(player, c) || inMagnetRange) {
+    const coinCenter = rectCenter(c);
+    const dx = playerCenter.x - coinCenter.x;
+    const dy = playerCenter.y - coinCenter.y;
+    const distance = Math.hypot(dx, dy);
+    const magnetActive = player.equippedBody === 'magnet' && player.magnetFor > 0;
+    if (magnetActive && distance <= COG_MAGNET_RADIUS && distance > 0) {
+      const travel = Math.min(distance, COG_MAGNET_PULL_SPEED * dt);
+      const pulled = { ...c, x: c.x + (dx / distance) * travel, y: c.y + (dy / distance) * travel };
+      // Only collect after the coin has visibly travelled into the player;
+      // this is intentionally not an invisible radius-based auto-pickup.
+      if (rectIntersect(player, pulled) || distance <= travel + c.width / 2) {
+        score += 10;
+        pushEffect('pickup', pulled.x + pulled.width / 2, pulled.y + pulled.height / 2);
+        return { ...pulled, collected: true };
+      }
+      return pulled;
+    }
+    if (rectIntersect(player, c)) {
       score += 10;
       pushEffect('pickup', c.x + c.width / 2, c.y + c.height / 2);
       return { ...c, collected: true };
