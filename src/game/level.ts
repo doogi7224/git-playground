@@ -269,12 +269,15 @@ function makeTurrets(): Turret[] {
 // level segments were added.
 function makeChestnutRollers(): ChestnutRoller[] {
   const defs: [string, number, number][] = [
-    ['roller1', 2720, 2880], // gap between e4 (ends 2700) and e5 (starts 2900)
+    ['roller1', 2500, 2900], // widened safe lane between the shortened e4 patrol and e5
     ['roller2', 6260, 6760], // fully open ground stretch before the boss portal
   ];
   return defs.map(([id, minX, maxX]) => ({
     id,
-    x: minX,
+    // Begin in the middle, not against a patrol wall. Otherwise a player
+    // approaching from the near side can trigger a roll with no visible
+    // travel before the boundary immediately cancels it.
+    x: minX + (maxX - minX - CHESTNUT_ROLLER_WIDTH) / 2,
     y: GROUND_Y - CHESTNUT_ROLLER_HEIGHT,
     width: CHESTNUT_ROLLER_WIDTH,
     height: CHESTNUT_ROLLER_HEIGHT,
@@ -324,7 +327,7 @@ function makeEnemies(): Enemy[] {
     ['e1', 400, 620, GROUND_Y],
     ['e2', 900, 1350, GROUND_Y],
     ['e3', 1560, 2000, GROUND_Y],
-    ['e4', 2400, 2700, GROUND_Y],
+    ['e4', 2400, 2480, GROUND_Y], // preserves a broad, non-overlapping Roller lane
     ['e5', 2900, 3150, GROUND_Y],
     ['e6', 3400, 3850, GROUND_Y],
     ['e7', 4060, 4550, GROUND_Y],
