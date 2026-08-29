@@ -102,24 +102,26 @@ export const PORTAL_HEIGHT = 70;
 // rather than being a walk-through hazard, matching how a boss arena reads.
 export const BOSS_WIDTH = 90;
 export const BOSS_HEIGHT = 110;
-export const BOSS_HP = 5;
-export const BOSS_IDLE_DURATION = 1.5; // safe to approach
-export const BOSS_TELEGRAPH_DURATION = 1.0; // clear visual warning before the attack lands (CLAUDE.md 18: 예고 부족 방지)
-export const BOSS_ATTACK_DURATION = 0.6; // one visible volley is released at its start
-export const BOSS_VULNERABLE_DURATION = 1.5; // weak point exposed, stompable
+export const BOSS_HP = 6;
+// A full turn remains readable, but shorter downtime prevents repeated free
+// stomp windows while preserving a deliberate one-hit vulnerability phase.
+export const BOSS_IDLE_DURATION = 1.05;
+export const BOSS_TELEGRAPH_DURATION = 0.9; // clear visual warning before the attack lands (CLAUDE.md 5.3)
+export const BOSS_ATTACK_DURATION = 0.55; // one visible volley is released at its start
+export const BOSS_VULNERABLE_DURATION = 1.1; // weak point exposed, stompable
 export const BOSS_ATTACK_RANGE = 42; // px, a small close-range fallback; the visible volley is the main threat
 export const BOSS_ATTACK_KNOCKBACK = 420; // px/s horizontal push, away from the boss
-export const BOSS_VOLLEY_SPEED = 300;
-export const BOSS_VOLLEY_VERTICAL_SPEED = 82;
-export const BOSS_VOLLEY_LIFETIME = 1.1;
+export const BOSS_VOLLEY_SPEED = 360;
+export const BOSS_VOLLEY_VERTICAL_SPEED = 102;
+export const BOSS_VOLLEY_LIFETIME = 1.25;
 // Rootwarden closes the distance only during its safe idle walk. It stops
 // well outside its body so it cannot silently push the player into a wall.
-export const BOSS_IDLE_WALK_SPEED = 70;
-export const BOSS_IDLE_STANDOFF = 175;
+export const BOSS_IDLE_WALK_SPEED = 95;
+export const BOSS_IDLE_STANDOFF = 145;
 // Every second warning alternates to a low, ground-hugging root wave. It is
 // faster than the seed fan but can be cleared with one ordinary jump.
-export const BOSS_ROOT_WAVE_SPEED = 390;
-export const BOSS_ROOT_WAVE_LIFETIME = 1.35;
+export const BOSS_ROOT_WAVE_SPEED = 465;
+export const BOSS_ROOT_WAVE_LIFETIME = 1.3;
 
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations

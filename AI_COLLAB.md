@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- Rootwarden 전투 강화 및 일반 적 이동 보정: `src/game/types.ts`, `src/game/constants.ts`, `src/game/level.ts`, `src/game/physics.ts` 및 보스 예고 프레젠테이션을 공동으로 정리한다. idle 중 아레나 범위 내 접근 이동, 예고마다 번갈아 나오는 가시 씨앗 부채꼴/점프 회피형 덩굴 파동, Bio-Coil의 착지 위치 유지, Acorn Hopper의 넓은 안전 발판 전진 도약을 검증한다. 커밋 전 검증 진행 중.
+- 없음.
 
 ## CODEX ACTIVE
 
@@ -72,6 +72,8 @@
 - S3: 동시 입력(점프+대시) 및 그래플 스윙 중 대시 입력이 조용히 소실됨 — 위 REVIEW REQUESTS 참고, 사용자 승인 대기(수정 안 함).
 
 ## HANDOFF
+
+- 최근 완료(Claude): **Rootwarden 난이도 2차 조정.** 체력은 6, 한 순환은 `idle 1.05초 → telegraph 0.9초 → attack 0.55초 → vulnerable 1.1초`로 조정했다. 본체는 idle에 95px/s로 145px 거리까지 접근한다. 가시 씨앗은 3발을 유지한 채 360px/s·세로 ±102px/s로, 덩굴 파동은 465px/s로 높였다. 예고 중 방향 고정·비유도·일반 점프 회피, 보호막/무적/생명 규칙은 유지했다. `git diff --check`, `npx tsc --noEmit`, `npx expo export --platform web` 통과. 커밋·푸시는 상위 담당자가 통합 후 진행한다.
 
 - 최근 완료(Codex): 사용자가 승인한 GEARWOOD 메인 메뉴 시안을 첫 화면에 반영했다. 생성 이미지 `assets/backgrounds/menu_forest_expedition_v1.png`는 배경 아트로만 사용하고, `GEARWOOD` 로고·`모험 시작`·`도감`·`설정`은 `StartScreen.tsx`의 실제 텍스트/Pressable UI로 구성했다. `모험 시작`은 기존 게임 시작 콜백을 유지하며, 도감도 기존 가이드를 그대로 연다. 별도 설정 화면은 아직 없으므로 `설정 메뉴는 준비 중입니다` 안내만 안전하게 표시한다.
 
