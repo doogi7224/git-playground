@@ -11,7 +11,7 @@
 
 ## CLAUDE ACTIVE
 
-- 없음.
+- (완료, 비어 있음) 최근 완료 내용은 HANDOFF 참고. 커밋 `dd41aff`(코그 상자 랜덤 보상 5종)를 사용자 지시로 검증했고 결함을 찾지 못해 `src/game/*` 수정 없이 종료했다.
 
 ## CODEX ACTIVE
 
@@ -72,6 +72,15 @@
 - S3: 동시 입력(점프+대시) 및 그래플 스윙 중 대시 입력이 조용히 소실됨 — 위 REVIEW REQUESTS 참고, 사용자 승인 대기(수정 안 함).
 
 ## HANDOFF
+
+- 최근 완료(Claude, 이번 세션): 사용자 지시로 커밋 `dd41aff`("Add random mystery rewards and cog HUD")의 `src/game/*` 변경분을 검증했다 — 결함 없음, 코드 수정 없음.
+  - Root Cache가 열릴 때 Spring/Magnet/Mirror/화살+1/생명+1 5종 중 하나를 `rollRootCacheReward`(LCG 시드, `GameState.lootRandomSeed`)로 무작위 지급하는 것을 확인. 400회 시행 분포가 5종 모두 고르게(68~86회) 나와 편향 없음.
+  - 각 보상 적용 확인: Spring→`equippedFoot`, Magnet→`equippedBody`+`magnetFor=30`, Mirror→`equippedHead`+`shieldCharges=1`, 화살+1/생명+1은 기존 `maxArrows`/`STARTING_LIVES` 클램프 그대로 재사용해 오버플로 없음.
+  - Magnet 30초 만료: `magnetFor`가 dt만큼 감소하다 0 이하가 되면 `equippedBody=null`로 정확히 해제되고 음수로 안 내려감. 70px 반경 자동 수집도 정상.
+  - Mirror 보호막: 일반 피격(적 접촉 등)에서 보호막 1회 소모 시 위치·생명 유지 + 무적시간 부여를 확인했고, 낙사(`applyHit(..., false)`)는 보호막이 막지 않고 항상 생명을 깎는 것도 확인.
+  - 상자 1회 개봉(재점프해도 재지급 없음)과 Relic Target(화살 명중으로만 열리고 레벨에 고정된 보상 지급, 대시로는 안 열림) 회귀 모두 정상.
+  - `npx tsc --noEmit`, `npx expo export --platform web`(357모듈) 통과. pure-logic 검증 27개 항목 전부 PASS(이번엔 처음부터 순찰 적을 격리해 지난번 같은 테스트 오검출 없었음).
+  - 이후 브랜치에 다른 세션들이 이미 보스 이동/난이도/Stage 2를 추가로 커밋했으므로, 이 검증은 그 이전 시점(`dd41aff`) 한정이다.
 
 - 최근 완료(Claude): **Rootwarden 난이도 2차 조정.** 체력은 6, 한 순환은 `idle 1.05초 → telegraph 0.9초 → attack 0.55초 → vulnerable 1.1초`로 조정했다. 본체는 idle에 95px/s로 145px 거리까지 접근한다. 가시 씨앗은 3발을 유지한 채 360px/s·세로 ±102px/s로, 덩굴 파동은 465px/s로 높였다. 예고 중 방향 고정·비유도·일반 점프 회피, 보호막/무적/생명 규칙은 유지했다. `git diff --check`, `npx tsc --noEmit`, `npx expo export --platform web` 통과. 커밋·푸시는 상위 담당자가 통합 후 진행한다.
 
