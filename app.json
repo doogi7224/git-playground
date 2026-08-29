@@ -1,10 +1,15 @@
 {
   "expo": {
-    "name": "Gearwood: The Broken Spring",
+    "name": "Gearwood",
     "slug": "gearwood-broken-spring",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon/gearwood_app_icon_v1.png",
+    "splash": {
+      "image": "./assets/app-icon/gearwood_splash_v1.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#082A25"
+    },
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -12,15 +17,14 @@
     "android": {
       "package": "com.noodoo.gearwoodbrokenspring",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#082A25",
+        "foregroundImage": "./assets/app-icon/gearwood_android_foreground_v1.png",
+        "backgroundImage": "./assets/app-icon/gearwood_android_background_v1.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/app-icon/gearwood_app_icon_v1.png"
     },
     "extra": {
       "eas": {
