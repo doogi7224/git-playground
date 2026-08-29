@@ -11,7 +11,9 @@
 
 ## CLAUDE ACTIVE
 
-- (완료) 사용자 지시로 Stage 2(Sunken Gearworks) 입구에 **훅 필수 협곡**과 **벽점프 필수 구간**을 구현했다. `src/game/level.ts`만 변경했고 `src/game/physics.ts`는 건드리지 않았다(기존 그래플/벽점프 로직을 그대로 재사용). 작업 도중 Codex가 같은 파일(`level.ts`)의 `makeRootPoints`(root1/root2 제거)와 `makeTreasureCaches`(cache-pod2 보상 변경)를 `c1f1c82`까지 먼저 푸시해, `git stash`로 로컬 변경분을 보관하고 `c1f1c82`로 리셋한 뒤 재적용해 병합했다 — 자동 병합 성공, 충돌 없음. 병합 후 pure-logic 검증을 전부 재실행해 root1/2 제거가 이번 신규 구간(root4/root5)에 영향 없음을 재확인했다. 상세는 개발로그 (87) 참고.
+- (완료) 사용자 지시로 Gearwood를 **Stage 1(start ~ Rootwarden)**과 **Stage 2(Sunken Gearworks)** 두 개의 독립 레벨로 분리했다. `createLevel(stageId: 1|2)`로 각각 자기 완결적인 spawn/worldWidth/checkpoints를 갖는다. Rootwarden 처치는 (배너까지 걸어갈 필요 없이) 같은 프레임에 즉시 `phase:'win'`이 되도록 승리 조건을 바꿨고, 보스에 예고 후 즉사(보호막 무시) 스팀 기둥 패턴을 3번째 순환 공격으로 추가했다. `ROOTHOOK_RANGE`는 90→120으로 늘렸다. `src/game/level.ts`/`physics.ts`/`types.ts`/`constants.ts`만 변경했다.
+  - 작업 도중 Codex가 `App.tsx`/`GameScreen.tsx`에 스테이지 선택 화면(`StageSelectScreen.tsx`, `stages.ts`)을 얹은 `c5f910f`를 먼저 푸시해, 같은 두 파일이 충돌했다. `git stash` → `c5f910f`로 리셋 → 재적용 후, `App.tsx`/`GameScreen.tsx`는 Codex 버전을 그대로 채택하고 `createLevel(stageId)` 호출 한 줄만 반영했다. `src/stages.ts`의 `StageId`가 `number`로 별도 선언돼 있던 것을 `src/game/types.ts`의 `StageId(1|2)`를 재-export하도록 고쳐 두 정의가 갈라지지 않게 했다.
+  - 상세는 개발로그 (88) 참고.
 
 ## CODEX ACTIVE
 
@@ -73,7 +75,16 @@
 
 ## HANDOFF
 
-- 최근 완료(Claude, 이번 세션, **미커밋**): 사용자 지시로 Stage 2 입구에 이동 메커니즘을 실제로 응용해야 통과 가능한 두 관문을 추가했다. `src/game/level.ts`만 수정(`physics.ts` 무변경).
+- 최근 완료(Claude, 이번 세션): 사용자 지시로 Gearwood를 **2개의 독립 스테이지**로 분리했다.
+  - **레벨 분리**: `src/game/level.ts`를 `createStage1Level()`/`createStage2Level()`로 나누고 `createLevel(stageId: StageId)`(`StageId = 1|2`, `src/game/types.ts`)로 노출한다. Stage 1은 기존 x=0-7700(시작~Rootwarden 아레나) 그대로이고, Stage 2는 옛 x=7700-12670 콘텐츠(훅 협곡, 벽점프 관문, Thorn Slinger 5기, Gear Glider 5기, 지면 4구간, g1-g4, 체크포인트, 최종 배너)를 전부 -7700 만큼 재배치해 x=0부터 시작하는 완전히 독립된 레벨로 만들었다 — 내부 상대 배치는 전혀 손대지 않아 (86)/(87)에서 검증한 안전성이 그대로 유지된다. Stage 2에는 보스·포탈이 없으므로 `Level`/`GameState` 타입을 건드리지 않기 위해 `alive:false`인 비활성 보스와 화면 밖 포탈을 채워 넣었다(둘 다 충돌·렌더링·승리 로직에서 이미 `alive`/좌표 기반으로 완전히 배제됨). Stage 2에는 활 픽업도 없다 — `collected:true`로 시작해 이 스테이지에서는 `hasBow`가 항상 false다(스테이지 간 장비 계승 없음, 각 스테이지가 완전히 새 `createInitialState`로 시작).
+  - **Stage 1 승리 조건**: `physics.ts`의 승리 체크를 `prev.boss.alive && !boss.alive`(에지 트리거) 우선으로 바꿔, Rootwarden이 죽는 바로 그 프레임에 깃발까지 갈 필요 없이 즉시 `phase:'win'`이 된다. Stage 2의 더미 보스는 처음부터 `alive:false`라 이 조건이 절대 발동하지 않고, 기존 `rectIntersect(player, level.flag)` 승리(Stage 2용)는 그대로 살아 있다 — pure-logic으로 "보스 즉사 프레임에 win", "보스 생존 중엔 win 불가", "Stage 2는 깃발 도달로 win" 3가지 모두 확인했다.
+  - **Rootwarden 스팀 기둥 패턴**: `attackCycle % 3`로 volley→rootWave→steamPillar 3종을 순환하도록 확장했다(기존 두 패턴은 로직 변경 없음). steamPillar는 텔레그래프(기존 `BOSS_TELEGRAPH_DURATION` 재사용, 충분한 예고 시간 확보)가 끝나면 보스 중심의 세로 기둥(`BOSS_STEAM_PILLAR_WIDTH=70`px, 화면 최상단부터 보스 발밑까지)이 활성화되고, 닿으면 `applyHit(..., canUseShield=false)`로 보호막을 무시하고 즉시 생명을 깎아 마지막 체크포인트로 되돌린다(낙사와 동일 규칙). 투사체를 만들지 않고 보스 자신의 위치/페이즈에서 바로 파생되는 존이라 새 GameState 필드가 필요 없었다.
+  - **ROOTHOOK_RANGE**: 90 → 120으로만 변경(스윙 물리·버튼 조작 무변경). 기존 훅 구간(root3/4/5)이 전부 더 널널해지는 방향이라 회귀 위험 없음을 재검증했다.
+  - **UI 연결**: `GameScreen`이 `stageId`/`onNextStage`/`onExit`을 받도록 시그니처를 정리했다(`createLevel(stageId)` 호출 및 `[stageId]` 의존성 배열 반영). 작업 도중 Codex가 같은 파일들에 실제 스테이지 선택 화면(`StageSelectScreen.tsx`, `stages.ts`, `App.tsx`/`GameScreen.tsx` 배선)을 얹은 `c5f910f`를 먼저 푸시해 충돌이 났다 — `App.tsx`/`GameScreen.tsx`는 Codex 버전을 그대로 채택하고 `createLevel(stageId)` 한 줄만 반영했다. `src/stages.ts`가 `StageId`를 `number`로 독자 선언하고 있던 걸 `src/game/types.ts`의 `StageId(1|2)`를 재-export하도록 고쳐, 두 정의가 갈라지지 않고 `createLevel`과 항상 맞물리게 했다.
+  - **검증**: `npx tsc --noEmit`, `npx expo export --platform web`(363모듈) 통과. pure-logic 16개 항목(플랫폼 겹침 없음 ×2, 보스 상태, Thorn Slinger/Gear Glider 개수, rootPoints 구성, 보스 즉사 승리, 보스 생존 시 승리 불가, 스팀 기둥 즉사·보호막 무시, 3종 공격 순환, Stage2 훅 협곡 점프대시 실패·훅 성공, Stage2 벽점프 성공, Stage2 깃발 승리) 전부 PASS.
+  - 커밋·푸시 완료.
+
+- 이전 완료(Claude, 커밋 `c088aef`): 사용자 지시로 Stage 2 입구에 이동 메커니즘을 실제로 응용해야 통과 가능한 두 관문을 추가했다. `src/game/level.ts`만 수정(`physics.ts` 무변경).
   - **훅 필수 협곡** (x=8000-8280, 280px): 점프+대시만으로 도달 가능한 최대 거리를 pure-logic으로 직접 측정한 결과 ~247px(대시를 착지 직전까지 최대한 늦게 써도 그 이상 못 감)였고, 280px는 이보다 33px 더 넓어 점프/대시로는 못 건넌다. 새 앵커 `root4`(x=8090)/`root5`(x=8190, 중간 지점 세이프티넷)를 `GROUND_Y-150`에 배치했다. 단일 스윙(펌프 후 첫 정점 근처 릴리즈)만으로도 280px를 여유 있게 건널 수 있음을 확인했다(성공 릴리즈 타이밍 폭이 약 9프레임/150ms로 널널함).
   - **벽점프 필수 구간** (x=8450-8790): 바닥이 없는 구간에 작은 단(`wall-step`, 60px 높이)과 마주보는 두 벽(`wall-left`/`wall-right`, 안쪽 폭 50px)을 배치했다. 단에서 걸어 나가면 벽 사이 틈으로 떨어지고, 벽점프 1회만으로 반대쪽 벽을 차고 올라 단과 같은 높이의 출구 발판(`wall-exit`)에 도달한다. 벽점프를 전혀 안 쓰는 봇은 반드시 추락사하고(확인함), 벽 접촉 시 반대 방향으로 점프하는 봇은 1회 바운스로 성공한다(확인함). 접근 방향에서 안쪽 틈으로 곧장 진입하도록 설계해, 바깥쪽 면에 먼저 부딪혀 뒤로 튕기는(진행 방향과 반대인) 시행착오 끝에 이 구조로 정착했다 — 자세한 이유는 개발로그 (87) 참고.
   - 두 관문 모두 그 사이 구간(7700-8850)에 Thorn Slinger/Gear Glider를 배치하지 않아, 순수하게 이동 메커니즘만 시험한다. 각 관문 앞뒤에 체크포인트(7750/8320/8850)를 둬서 실패해도 관문 하나만 다시 도전하면 된다.

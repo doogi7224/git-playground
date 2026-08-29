@@ -14,6 +14,7 @@ import {
   BOSS_IDLE_WALK_SPEED,
   BOSS_ROOT_WAVE_LIFETIME,
   BOSS_ROOT_WAVE_SPEED,
+  BOSS_STEAM_PILLAR_WIDTH,
   BOSS_VOLLEY_LIFETIME,
   BOSS_VOLLEY_SPEED,
   BOSS_VOLLEY_VERTICAL_SPEED,
@@ -324,7 +325,11 @@ function stepBoss(boss: Boss, player: Player, dt: number): Boss {
     // Lock both the attack choice and facing at the start of the full warning
     // window. The player is therefore never punished by a last-frame retarget.
     const facing: 1 | -1 = player.x + player.width / 2 < boss.x + boss.width / 2 ? -1 : 1;
-    const attackKind = boss.attackCycle % 2 === 0 ? 'volley' : 'rootWave';
+    // Three attacks rotate in a fixed order so every pattern is guaranteed to
+    // recur regularly, rather than a coin-flip that could (rarely but
+    // legitimately) skip one for a long stretch.
+    const cycle = boss.attackCycle % 3;
+    const attackKind = cycle === 0 ? 'volley' : cycle === 1 ? 'rootWave' : 'steamPillar';
     return { ...boss, phase: nextPhase, timer: 0, facing, attackKind, attackCycle: boss.attackCycle + 1 };
   }
   return { ...boss, phase: nextPhase, timer: 0 };
@@ -1165,26 +1170,29 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
   // flush contact rather than overlap).
   let boss = stepBoss(prev.boss, player, dt);
   if (boss.alive) {
-    // The warning phase locks both direction and pattern. Odd telegraphs
-    // release the established three-seed fan; even telegraphs release one
-    // ground-hugging root wave that an ordinary jump can clear. Neither attack
-    // homes after the warning, so both remain readable and fair.
+    // The warning phase locks both direction and pattern. The three attacks
+    // rotate in order: a three-seed fan, a ground-hugging root wave an
+    // ordinary jump clears, or a steam pillar straight down from the boss's
+    // own position (dodged by not standing under/beside the boss when the
+    // telegraph ends, not by reading a projectile). None of the three home
+    // after the warning, so all three stay readable and fair.
     if (prev.boss.phase === 'telegraph' && boss.phase === 'attack') {
       const bossCenter = boss.x + boss.width / 2;
-      if (boss.attackKind === 'volley') [-1, 0, 1].forEach((fan) => {
-        resolvedSeeds.push({
-          id: `seed-boss-${seedSeq++}`,
-          x: boss.facing > 0 ? boss.x + boss.width - 8 : boss.x - SEED_WIDTH + 8,
-          y: boss.y + boss.height * 0.42 - SEED_HEIGHT / 2,
-          width: SEED_WIDTH,
-          height: SEED_HEIGHT,
-          vx: boss.facing * BOSS_VOLLEY_SPEED,
-          vy: fan * BOSS_VOLLEY_VERTICAL_SPEED,
-          age: 0,
-          source: 'boss',
+      if (boss.attackKind === 'volley') {
+        [-1, 0, 1].forEach((fan) => {
+          resolvedSeeds.push({
+            id: `seed-boss-${seedSeq++}`,
+            x: boss.facing > 0 ? boss.x + boss.width - 8 : boss.x - SEED_WIDTH + 8,
+            y: boss.y + boss.height * 0.42 - SEED_HEIGHT / 2,
+            width: SEED_WIDTH,
+            height: SEED_HEIGHT,
+            vx: boss.facing * BOSS_VOLLEY_SPEED,
+            vy: fan * BOSS_VOLLEY_VERTICAL_SPEED,
+            age: 0,
+            source: 'boss',
+          });
         });
-      });
-      else {
+      } else if (boss.attackKind === 'rootWave') {
         resolvedSeeds.push({
           id: `seed-boss-wave-${seedSeq++}`,
           x: boss.facing > 0 ? boss.x + boss.width - 4 : boss.x - SEED_WIDTH + 4,
@@ -1199,7 +1207,23 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
           source: 'bossWave',
         });
       }
+      // steamPillar spawns no projectile -- its hazard zone is derived
+      // directly from the boss's own position/phase below, not a moving object.
       pushEffect('impact', bossCenter, boss.y + boss.height * 0.38);
+    }
+    // Steam pillar: a vertical column centered on the boss, live only during
+    // its own attack window. Instant death (canUseShield=false) rather than
+    // a shielded/normal hit, same rule as a pit fall -- always sends the
+    // player back to the last checkpoint. The column spans from the top of
+    // the world down to the ground, so standing anywhere near the boss when
+    // the telegraph ends is what's dangerous, not a hittable projectile.
+    if (boss.attackKind === 'steamPillar' && isBossAttackActive(boss) && player.invulnerableFor <= 0) {
+      const pillarCenter = boss.x + boss.width / 2;
+      const pillar: Rect = { x: pillarCenter - BOSS_STEAM_PILLAR_WIDTH / 2, y: 0, width: BOSS_STEAM_PILLAR_WIDTH, height: boss.y + boss.height };
+      if (rectIntersect(player, pillar)) {
+        pushEffect('hit', player.x + player.width / 2, player.y + player.height / 2);
+        lives = applyHit(player, lives, respawnPoint, false);
+      }
     }
     // Solid, so an arrow can't pass through it either way -- it's always
     // consumed on contact, but only actually damages during the same
@@ -1366,10 +1390,16 @@ export function stepGame(prev: GameState, input: InputState, level: Level, dt: n
     lives = applyHit(player, lives, respawnPoint, false);
   }
 
+  // Edge-triggered on prev.boss.alive so this only fires the instant a real,
+  // previously-alive boss dies (Stage 1's Rootwarden) -- Stage 2's inert
+  // placeholder boss starts and stays alive:false, so this never fires there
+  // and its win stays purely flag-based (see the flag check below).
   if (lives <= 0) {
     phase = 'gameover';
+  } else if (prev.boss.alive && !boss.alive) {
+    // Stage 1 ends the instant Rootwarden is defeated -- no banner to reach.
+    phase = 'win';
   } else if (rectIntersect(player, level.flag)) {
-    // Rootwarden opens the route, but the far Stage 2 banner completes it.
     phase = 'win';
   }
 

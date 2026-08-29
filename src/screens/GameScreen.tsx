@@ -67,7 +67,7 @@ export default function GameScreen({ stageId, onNextStage, onExit }: { stageId: 
   const stageScale = frameHeight / logicalStageHeight;
   const viewportWidth = frameWidth / stageScale;
   const worldOffsetY = logicalStageHeight - VIEWPORT_HEIGHT - WORLD_BOTTOM_BREATHING_ROOM;
-  const level = useMemo(() => createLevel(), []);
+  const level = useMemo(() => createLevel(stageId), [stageId]);
   const [gameState, setGameState] = useState<GameState>(() => createInitialState(level));
 
   const inputRef = useRef<InputState>({

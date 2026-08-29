@@ -75,7 +75,12 @@ export interface Portal extends Rect {
 }
 
 export type BossPhase = 'idle' | 'telegraph' | 'attack' | 'vulnerable';
-export type BossAttackKind = 'volley' | 'rootWave';
+export type BossAttackKind = 'volley' | 'rootWave' | 'steamPillar';
+
+// Stage 1 (start through the Rootwarden fight) and Stage 2 (Sunken
+// Gearworks) are independent levels, each with its own spawn/worldWidth/
+// checkpoints -- see createLevel(stageId) in level.ts.
+export type StageId = 1 | 2;
 
 // Area 3's finale — new content with no prior established design to match
 // (see CLAUDE.md decision log). Cycles idle (safe to approach) -> telegraph

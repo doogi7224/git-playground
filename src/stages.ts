@@ -2,7 +2,14 @@
 // intentionally data-only: append one entry here and provide its level data
 // to createLevel(stageId); the menu, next-stage button, and selection flow do
 // not need new conditional UI.
-export type StageId = number;
+//
+// StageId itself lives in src/game/types.ts (the actual game-logic type
+// createLevel(stageId) switches on) and is re-exported here so this catalog
+// and createLevel can never silently drift out of sync -- adding Stage 3
+// means widening that one union and adding its createLevel case, plus a
+// catalog entry here.
+import { StageId } from './game/types';
+export type { StageId };
 
 export interface StagePresentation {
   id: StageId;

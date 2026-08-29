@@ -65,7 +65,7 @@ export const BIOCOIL_LANDED_DURATION = 0.6; // defenseless window after landing
 export const BIOCOIL_LEAP_VX_WILD = 200;
 export const BIOCOIL_LAUNCH_VY_WILD = -520; // big, telegraphed arc
 
-export const ROOTHOOK_RANGE = 90; // px, distance from a root point within which the grapple can attach
+export const ROOTHOOK_RANGE = 120; // px, distance from a root point within which the grapple can attach
 export const ROOTHOOK_SIZE = 18;
 // Deliberately softer than normal GRAVITY for a controllable, slightly floaty swing feel
 // rather than a fast, twitchy pendulum given the short radii involved.
@@ -122,6 +122,15 @@ export const BOSS_IDLE_STANDOFF = 145;
 // faster than the seed fan but can be cleared with one ordinary jump.
 export const BOSS_ROOT_WAVE_SPEED = 465;
 export const BOSS_ROOT_WAVE_LIFETIME = 1.3;
+// Third attack in the rotation: a vertical steam column dropping straight
+// down from above Rootwarden's own position (not aimed at the player), so
+// dodging it is about being clear of the boss when the telegraph ends, not
+// reading a projectile's line. It reuses BOSS_TELEGRAPH_DURATION for its
+// warning and BOSS_ATTACK_DURATION for its active window -- no separate
+// timing knobs needed. Contact is instant death (bypasses the Mirror
+// shield), same rule as a pit fall, so it always sends the player back to
+// the last checkpoint rather than just costing a life via the shield.
+export const BOSS_STEAM_PILLAR_WIDTH = 70; // px, centered on the boss
 
 // EffectEvent lifetime: presentation-only (CLAUDE.md 19 — Effects), not a
 // gameplay balance number. Sized to comfortably outlast the burst animations
