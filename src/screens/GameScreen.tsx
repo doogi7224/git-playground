@@ -32,6 +32,7 @@ import { VIEWPORT_HEIGHT } from '../game/constants';
 import { createLevel } from '../game/level';
 import { computeCameraX, createInitialState, stepGame } from '../game/physics';
 import { GameState, InputState } from '../game/types';
+import { nextStageId, StageId } from '../stages';
 import { palette } from '../theme';
 
 // The game world must use the complete available device frame.  A fixed 16:9
@@ -52,7 +53,7 @@ const CULL_OVERSCAN_SCREENS = 1;
 
 type HorizontalBounds = { x: number; width?: number };
 
-export default function GameScreen({ onExit }: { onExit: () => void }) {
+export default function GameScreen({ stageId, onNextStage, onExit }: { stageId: StageId; onNextStage: () => void; onExit: () => void }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const frameWidth = windowWidth;
   const frameHeight = windowHeight;
@@ -136,6 +137,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
   const restart = useCallback(() => {
     setGameState(createInitialState(level));
   }, [level]);
+  const hasNextStage = nextStageId(stageId) != null;
 
   const cameraX = computeCameraX(gameState.player.x, viewportWidth, level.worldWidth);
   const cullPadding = viewportWidth * CULL_OVERSCAN_SCREENS;
@@ -250,7 +252,7 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
             <View style={[styles.rivetCorner, styles.rivetBL]} />
             <View style={[styles.rivetCorner, styles.rivetBR]} />
             <Text style={styles.overlayEyebrow}>
-              {gameState.phase === 'win' ? 'TRAIL COMPLETE' : 'TRAIL INTERRUPTED'}
+              {gameState.phase === 'win' ? `STAGE ${stageId} CLEAR` : 'TRAIL INTERRUPTED'}
             </Text>
             <View
               style={[
@@ -266,10 +268,10 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
               />
             </View>
             <Text style={styles.overlayTitle}>
-              {gameState.phase === 'win' ? '태양씨앗의 길을 완주했습니다' : '길 위에서 잠시 멈췄습니다'}
+              {gameState.phase === 'win' ? `스테이지 ${stageId} 클리어!` : '길 위에서 잠시 멈췄습니다'}
             </Text>
             <Text style={styles.overlaySubtitle}>
-              {gameState.phase === 'win' ? '숲의 표식을 되찾고, 다음 원정의 길을 열었습니다.' : '마지막 표식에서 다시 시작해 흐름을 이어가세요.'}
+              {gameState.phase === 'win' ? (hasNextStage ? '다음 원정의 길이 열렸습니다.' : '모든 원정을 완수했습니다.') : '마지막 표식에서 다시 시작해 흐름을 이어가세요.'}
             </Text>
             <View style={styles.overlayScorePanel}>
               <Text style={styles.overlayScoreLabel}>SUNSEEDS COLLECTED</Text>
@@ -279,10 +281,10 @@ export default function GameScreen({ onExit }: { onExit: () => void }) {
               </View>
             </View>
             <View style={styles.overlayButtons}>
-              <Pressable onPress={restart}>
+              <Pressable onPress={gameState.phase === 'win' && hasNextStage ? onNextStage : restart}>
                 <LinearGradient colors={[palette.uiPrimary, palette.uiPrimaryDark]} style={styles.overlayButton}>
-                  <Text style={styles.overlayButtonKicker}>RETURN TO THE TRAIL</Text>
-                  <Text style={styles.overlayButtonText}>다시 도전</Text>
+                  <Text style={styles.overlayButtonKicker}>{gameState.phase === 'win' && hasNextStage ? 'CONTINUE EXPEDITION' : 'RETURN TO THE TRAIL'}</Text>
+                  <Text style={styles.overlayButtonText}>{gameState.phase === 'win' && hasNextStage ? 'NEXT' : '다시 도전'}</Text>
                 </LinearGradient>
               </Pressable>
               <Pressable onPress={onExit}>
