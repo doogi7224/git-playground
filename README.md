@@ -23,6 +23,7 @@ tools/test.sh --gl     # Xvfb + OpenGL. MultiMesh 버퍼 검사까지 전부
 tools/screenshot.sh --out=/tmp/shot.png --seconds=80 --scale=6
 tools/bench.sh         # 적 수별 물리 1틱 비용
 tools/stress.sh --count=3000    # 3,000마리 스트레스 (F3 오버레이)
+tools/playthrough.sh --runs=2 --scale=8   # 20분 한 판 끝까지 자동 플레이 (밸런싱용)
 ```
 
 `tools/screenshot.sh` 는 실제 렌더러로 한 판을 자동 플레이해서 PNG를 뽑습니다.
@@ -63,7 +64,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 
 - [x] 프롬프트 0 — 프로젝트 초기화 (뼈대)
 - [x] M0 — 화이트박스 프로토타입
-- [ ] M1 — 코어 루프 + 성능 검증
+- [x] M1 — 코어 루프 + 성능 검증
 - [ ] M2 — 아트 1차 패스
 - [ ] M3 — 콘텐츠 확장
 - [ ] M4 — 메타 진행

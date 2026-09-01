@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"excavator"
+display_name = "굴삭기"
+description = "전방위 광역. 삽이 커지면 이렇게 된다."
+behavior = 0
+cooldown = 0.55
+damage = 26.0
+reach = 205.0
+half_angle_deg = 180.0
+projectiles = 1
+knockback = 0.0
+alternate_direction = false
+per_level_damage = 7.0
+per_level_cooldown = -0.02
+per_level_reach = 10.0
+per_level_projectiles = 0.0
+max_level = 8
+evolves_into = &""
+evolution_passive = &""

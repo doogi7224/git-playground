@@ -1,11 +1,17 @@
-[gd_resource type="Resource" script_class="UpgradeTable" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="UpgradeTable" load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://core/data/upgrade_table.gd" id="1_table"]
-[ext_resource type="Resource" path="res://data/upgrades/speed_up.tres" id="2_speed"]
-[ext_resource type="Resource" path="res://data/upgrades/damage_up.tres" id="3_damage"]
-[ext_resource type="Resource" path="res://data/upgrades/max_hp_up.tres" id="4_hp"]
-[ext_resource type="Resource" path="res://data/upgrades/magnet_up.tres" id="5_magnet"]
+[ext_resource type="Resource" path="res://data/upgrades/boots.tres" id="2_boots"]
+[ext_resource type="Resource" path="res://data/upgrades/ammo_belt.tres" id="3_ammo_belt"]
+[ext_resource type="Resource" path="res://data/upgrades/rank_insignia.tres" id="4_rank_insignia"]
+[ext_resource type="Resource" path="res://data/upgrades/watch.tres" id="5_watch"]
+[ext_resource type="Resource" path="res://data/upgrades/hardtack.tres" id="6_hardtack"]
+[ext_resource type="Resource" path="res://data/upgrades/w_shovel.tres" id="7_w_shovel"]
+[ext_resource type="Resource" path="res://data/upgrades/w_k2.tres" id="8_w_k2"]
+[ext_resource type="Resource" path="res://data/upgrades/w_canteen.tres" id="9_w_canteen"]
+[ext_resource type="Resource" path="res://data/upgrades/w_brush_cutter.tres" id="10_w_brush_cutter"]
+[ext_resource type="Resource" path="res://data/upgrades/w_smoke.tres" id="11_w_smoke"]
 
 [resource]
 script = ExtResource("1_table")
-upgrades = Array[Resource]([ExtResource("2_speed"), ExtResource("3_damage"), ExtResource("4_hp"), ExtResource("5_magnet")])
+upgrades = Array[Resource]([ExtResource("2_boots"), ExtResource("3_ammo_belt"), ExtResource("4_rank_insignia"), ExtResource("5_watch"), ExtResource("6_hardtack"), ExtResource("7_w_shovel"), ExtResource("8_w_k2"), ExtResource("9_w_canteen"), ExtResource("10_w_brush_cutter"), ExtResource("11_w_smoke")])

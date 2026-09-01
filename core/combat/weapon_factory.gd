@@ -5,6 +5,10 @@ class_name WeaponFactory
 
 const SCRIPTS: Dictionary = {
 	WeaponData.Behavior.MELEE_ARC: preload("res://weapons/melee_arc_weapon.gd"),
+	WeaponData.Behavior.PROJECTILE: preload("res://weapons/projectile_weapon.gd"),
+	WeaponData.Behavior.AURA: preload("res://weapons/aura_weapon.gd"),
+	WeaponData.Behavior.GROUND_AREA: preload("res://weapons/ground_area_weapon.gd"),
+	WeaponData.Behavior.THROWN: preload("res://weapons/thrown_weapon.gd"),
 }
 
 

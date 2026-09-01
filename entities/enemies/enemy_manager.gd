@@ -39,6 +39,9 @@ var _flash: PackedFloat32Array = PackedFloat32Array()   ## 피격 흰 플래시 
 var _seed: PackedFloat32Array = PackedFloat32Array()    ## 개체별 bob 위상
 var _type: PackedByteArray = PackedByteArray()
 var _dying: PackedByteArray = PackedByteArray()
+## 보스처럼 "계속 지목해야 하는" 개체용 핸들. 0이면 추적 안 함.
+## 인덱스는 swap-remove 때문에 프레임 사이에 유지되지 않는다.
+var _handle: PackedInt64Array = PackedInt64Array()
 
 var _count: int = 0
 var _capacity: int = 0
@@ -69,6 +72,10 @@ var _scratch: PackedInt32Array = PackedInt32Array()
 var _sep_scratch: PackedInt32Array = PackedInt32Array()
 var _sep_parity: int = 0
 
+## 핸들 → 현재 인덱스. 추적 대상(보스/엘리트)만 들어가므로 3,000개가 들어올 일은 없다.
+var _tracked: Dictionary = {}
+var _next_handle: int = 1
+
 ## 디버그 오버레이용 계측 (프레임당 Time 호출 2번, 무시할 수준)
 var last_sim_usec: int = 0
 var last_buffer_usec: int = 0
@@ -91,6 +98,7 @@ func set_capacity(p_capacity: int) -> void:
 	_seed.resize(p_capacity)
 	_type.resize(p_capacity)
 	_dying.resize(p_capacity)
+	_handle.resize(p_capacity)
 	_reap_list.resize(p_capacity)
 	_scratch.resize(p_capacity)
 	_sep_scratch.resize(64)
@@ -171,8 +179,41 @@ func spawn(type_index: int, pos: Vector2) -> int:
 	_seed[i] = randf() * TAU
 	_type[i] = type_index
 	_dying[i] = 0
+	_handle[i] = 0
 	_count += 1
 	return i
+
+
+## 스폰 후 계속 지목해야 하는 개체(보스)를 위한 핸들 발급.
+func spawn_tracked(type_index: int, pos: Vector2) -> int:
+	var i: int = spawn(type_index, pos)
+	if i < 0:
+		return 0
+	var handle: int = _next_handle
+	_next_handle += 1
+	_handle[i] = handle
+	_tracked[handle] = i
+	return handle
+
+
+## 핸들에 해당하는 현재 인덱스. 이미 죽었으면 -1.
+func index_of_handle(handle: int) -> int:
+	return int(_tracked.get(handle, -1))
+
+
+func is_alive(handle: int) -> bool:
+	return _tracked.has(handle)
+
+
+## Node2D.set_position 과 이름이 겹치면 안 된다.
+func move_to(i: int, pos: Vector2) -> void:
+	_px[i] = pos.x
+	_py[i] = pos.y
+
+
+func hp_ratio(i: int) -> float:
+	var max_hp: float = _t_max_hp[_type[i]]
+	return 0.0 if max_hp <= 0.0 else clampf(_hp[i] / max_hp, 0.0, 1.0)
 
 
 ## 피해를 준다. 죽더라도 바로 지우지 않고 프레임 끝에 한꺼번에 정리한다(_reap).
@@ -324,7 +365,11 @@ func reap() -> void:
 
 func _swap_remove(i: int) -> void:
 	var last: int = _count - 1
+	if _handle[i] != 0:
+		_tracked.erase(_handle[i])
 	if i != last:
+		if _handle[last] != 0:
+			_tracked[_handle[last]] = i
 		_px[i] = _px[last]
 		_py[i] = _py[last]
 		_hp[i] = _hp[last]
@@ -332,6 +377,7 @@ func _swap_remove(i: int) -> void:
 		_seed[i] = _seed[last]
 		_type[i] = _type[last]
 		_dying[i] = _dying[last]
+		_handle[i] = _handle[last]
 	_count = last
 
 
@@ -339,6 +385,7 @@ func clear() -> void:
 	_count = 0
 	_reap_count = 0
 	_reap_scheduled = false
+	_tracked.clear()
 
 
 func _ensure_renderer() -> void:

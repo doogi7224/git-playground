@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"multi_smoke"
+display_name = "다연장 발연통"
+description = "5발 동시 투척. 시야가 사라지는 건 적 사정이다."
+behavior = 4
+cooldown = 2.0
+damage = 20.0
+reach = 380.0
+half_angle_deg = 3.0
+projectiles = 5
+knockback = 0.0
+alternate_direction = false
+per_level_damage = 6.0
+per_level_cooldown = -0.07
+per_level_reach = 16.0
+per_level_projectiles = 0.34
+max_level = 8
+evolves_into = &""
+evolution_passive = &""

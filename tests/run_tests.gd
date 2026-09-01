@@ -34,6 +34,9 @@ func _run_all() -> void:
 	test_weapon_shovel()
 	test_data_resources()
 	await test_arena_smoke()
+	test_projectiles_and_areas()
+	test_evolution()
+	await test_boss()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	get_tree().quit(1 if _failures > 0 else 0)
 
@@ -331,14 +334,18 @@ func test_arena_smoke() -> void:
 	_check(GameState.elapsed >= TARGET_SEC, "%.0f초까지 진행됐다 (t=%.1f)" % [TARGET_SEC, GameState.elapsed])
 	_check(GameState.phase == GameState.Phase.PLAYING, "%.0f초 안에 죽지 않는다 (phase=%d)" % [TARGET_SEC, GameState.phase])
 	_check(GameState.days_left() < 100, "D-100이 줄어든다 (D-%d)" % GameState.days_left())
-	_check(enemies.get_count() > 20, "적이 쌓인다 (%d마리)" % enemies.get_count())
+	# 무기가 늘면 살아남는 적이 줄어든다. 마릿수보다 "돌고 있는가"를 본다.
+	_check(enemies.get_count() > 0, "적이 화면에 있다 (%d마리)" % enemies.get_count())
 	_check(enemies.get_count() <= enemies.get_capacity(), "용량을 넘지 않는다")
 	_check(kills >= 20, "자동공격이 실제로 적을 잡는다 (%d마리)" % kills)
 	_check(saw_pickup, "'짬'이 드랍된다")
 	_check(saw_level_up, "레벨업 명령서가 뜬다")
 	_check(player.level >= 2, "진급한다 (Lv.%d)" % player.level)
-	_check(player.speed_mult > 1.0 or player.damage_mult > 1.0 or player.max_hp > 100.0
-			or player.magnet_mult > 1.0, "고른 업그레이드가 실제로 반영된다")
+	# 첫 장이 "야전삽 숙련"이면 무기 수도 스탯도 안 변한다(레벨만 오른다).
+	# 그래서 "뭔가 기록됐는가"로 본다.
+	_check(not player.upgrade_levels.is_empty(),
+			"고른 명령서가 실제로 반영된다 (기록 %s, 무기 %d종)" % [
+				player.upgrade_levels, player.weapon_ids().size()])
 	_check(player.hp < player.max_hp, "접촉 피해를 받는다 (HP %.0f/%.0f)" % [player.hp, player.max_hp])
 
 	arena.queue_free()
@@ -418,3 +425,184 @@ func test_data_resources() -> void:
 		_check(shovel.cooldown_at(1) > shovel.cooldown_at(5), "레벨이 오르면 빨라진다")
 		_check(shovel.damage_at(5) > shovel.damage_at(1), "레벨이 오르면 세진다")
 		_check(shovel.evolves_into != &"", "진화 대상이 지정돼 있다")
+
+
+func test_projectiles_and_areas() -> void:
+	print("[투사체 / 장판]")
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(64)
+	var t: int = em.register_enemy(_make_enemy(0.0, 1000.0, 12.0))
+
+	var areas := AreaManager.new()
+	get_tree().root.add_child(areas)
+	areas.set_capacity(32)
+	areas.enemies = em
+
+	var projectiles := ProjectileManager.new()
+	get_tree().root.add_child(projectiles)
+	projectiles.set_capacity(64)
+	projectiles.enemies = em
+	projectiles.areas = areas
+
+	GameState.phase = GameState.Phase.PLAYING
+
+	# --- 직선 투사체가 적을 맞힌다 ---
+	em.spawn(t, Vector2(100.0, 0.0))
+	em.hash_grid.rebuild(PackedFloat32Array([100.0]), PackedFloat32Array([0.0]), 1)
+	var hits: Array[float] = []
+	var cb := func(_pos: Vector2, amount: float, _crit: bool) -> void:
+		hits.append(amount)
+	EventBus.damage_number_requested.connect(cb)
+
+	projectiles.fire(Vector2.ZERO, Vector2(600.0, 0.0), 25.0, 7.0, 1.0, 0, Color.WHITE)
+	_check(projectiles.get_count() == 1, "투사체가 1발 생겼다")
+	for _i in 20:
+		projectiles._physics_process(1.0 / 60.0)
+	_check(hits.size() == 1, "날아가서 적을 맞힌다 (got %d)" % hits.size())
+	_check(projectiles.get_count() == 0, "관통 0이면 맞고 사라진다 (남은 %d)" % projectiles.get_count())
+
+	# --- 관통은 여러 마리를 뚫는다 ---
+	em.clear()
+	hits.clear()
+	em.spawn(t, Vector2(60.0, 0.0))
+	em.spawn(t, Vector2(62.0, 6.0))
+	em.spawn(t, Vector2(64.0, -6.0))
+	em.hash_grid.rebuild(PackedFloat32Array([60.0, 62.0, 64.0]),
+			PackedFloat32Array([0.0, 6.0, -6.0]), 3)
+	projectiles.fire(Vector2.ZERO, Vector2(600.0, 0.0), 10.0, 7.0, 1.0, 2, Color.WHITE)
+	for _i in 20:
+		projectiles._physics_process(1.0 / 60.0)
+	_check(hits.size() == 3, "관통 2면 3마리까지 뚫는다 (got %d)" % hits.size())
+
+	# --- 투척물은 착탄해서 장판을 남긴다 ---
+	em.clear()
+	hits.clear()
+	em.spawn(t, Vector2(200.0, 0.0))
+	em.hash_grid.rebuild(PackedFloat32Array([200.0]), PackedFloat32Array([0.0]), 1)
+	projectiles.lob(Vector2.ZERO, Vector2(200.0, 0.0), 0.2, 30.0, 9.0, Color.WHITE, 90.0, 12.0, 2.0)
+	_check(areas.get_count() == 0, "날아가는 동안은 장판이 없다")
+	for _i in 16:
+		projectiles._physics_process(1.0 / 60.0)
+	_check(projectiles.get_count() == 0, "착탄하면 투척물은 사라진다")
+	_check(areas.get_count() == 1, "착탄 자리에 장판이 남는다 (got %d)" % areas.get_count())
+	_check(hits.size() >= 1, "폭발 즉발 피해가 들어간다 (got %d)" % hits.size())
+
+	# --- 장판은 시간이 지나면 사라지고 그동안 계속 때린다 ---
+	var before: int = hits.size()
+	for _i in 40:
+		areas._physics_process(1.0 / 60.0)
+	_check(hits.size() > before, "장판이 주기적으로 피해를 준다")
+	for _i in 180:
+		areas._physics_process(1.0 / 60.0)
+	_check(areas.get_count() == 0, "지속시간이 끝나면 장판이 사라진다 (남은 %d)" % areas.get_count())
+
+	EventBus.damage_number_requested.disconnect(cb)
+	projectiles.queue_free()
+	areas.queue_free()
+	em.queue_free()
+
+
+func test_evolution() -> void:
+	print("[무기 진화]")
+	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	get_tree().root.add_child(player)
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(16)
+	em.register_enemy(_make_enemy(0.0, 10.0, 12.0))
+	player.setup(em, load("res://data/characters/kim_private.tres") as CharacterData)
+
+	var shovel: BaseWeapon = player.find_weapon(&"shovel")
+	_check(shovel != null, "시작 무기로 야전삽을 들고 있다")
+	if shovel == null:
+		return
+
+	_check(player.try_evolve() == &"", "Lv1에서는 진화하지 않는다")
+
+	shovel.level = shovel.data.max_level
+	_check(player.try_evolve() == &"", "Lv8이어도 지정 패시브가 없으면 진화하지 않는다")
+
+	player.apply_upgrade(load("res://data/upgrades/ammo_belt.tres") as UpgradeData)
+	_check(player.extra_projectiles == 1, "탄띠가 투사체 발수를 올린다")
+
+	var evolved: StringName = player.try_evolve()
+	_check(evolved == &"excavator", "Lv8 + 탄띠 → 굴삭기 (got %s)" % evolved)
+	_check(player.find_weapon(&"shovel") == null, "진화하면 원래 무기는 사라진다")
+	var excavator: BaseWeapon = player.find_weapon(&"excavator")
+	_check(excavator != null, "굴삭기를 들고 있다")
+	if excavator != null:
+		_check(excavator.data.half_angle_deg >= 180.0, "굴삭기는 전방위다 (기획서 5.1)")
+		_check(excavator.enemies == em, "진화형에도 EnemyManager가 주입된다")
+	_check(player.try_evolve() == &"", "진화형은 더 진화하지 않는다")
+
+	player.queue_free()
+	em.queue_free()
+
+
+## 5분 보스 '대대장 순시'. 5분을 실제로 기다리지 않고 시계를 4분 55초로 밀어놓는다.
+func test_boss() -> void:
+	print("[보스 — 대대장 순시]")
+	var arena: Node = (load("res://maps/arena.tscn") as PackedScene).instantiate()
+	get_tree().root.add_child(arena)
+	await get_tree().process_frame
+
+	var enemies: EnemyManager = arena.get_node("Enemies")
+	var bosses: Node2D = arena.get_node("Bosses")
+	var pickups: PickupManager = arena.get_node("Pickups")
+	var player: Player = arena.get_node("Player")
+	player.invulnerable = true
+
+	var spawned: Array[StringName] = []
+	var died: Array[StringName] = []
+	var on_spawn := func(id: StringName) -> void: spawned.append(id)
+	var on_die := func(id: StringName) -> void: died.append(id)
+	EventBus.boss_spawned.connect(on_spawn)
+	EventBus.boss_died.connect(on_die)
+
+	GameState.elapsed = 295.0
+	var guard: int = 0
+	while spawned.is_empty() and guard < 3000:
+		await get_tree().process_frame
+		guard += 1
+
+	_check(not spawned.is_empty(), "5분에 보스가 등장한다")
+	_check(spawned.size() == 1 and spawned[0] == &"battalion_commander",
+			"등장한 건 대대장 순시 (got %s)" % [spawned])
+	_check(bosses.get_child_count() == 1, "보스 컨트롤러가 1기 (got %d)" % bosses.get_child_count())
+
+	var boss: BossController = bosses.get_child(0) as BossController
+	var boss_handle: int = boss.handle
+	_check(boss_handle != 0, "보스가 핸들로 추적된다")
+	var idx: int = enemies.index_of_handle(boss_handle)
+	_check(idx >= 0, "핸들로 현재 인덱스를 찾을 수 있다")
+
+	# 몸통이 배열 안에 있으니 일반 무기와 똑같이 때릴 수 있어야 한다
+	var before_ratio: float = enemies.hp_ratio(idx)
+	enemies.damage(idx, 100.0)
+	_check(enemies.hp_ratio(enemies.index_of_handle(boss_handle)) < before_ratio,
+			"보스도 EnemyManager로 그냥 때려진다")
+
+	# 소환된 잡몹 때문에 인덱스가 흔들려도 핸들은 유지돼야 한다
+	for _i in 30:
+		enemies.spawn(0, Vector2(randf_range(-500, 500), randf_range(-500, 500)))
+	var idx2: int = enemies.index_of_handle(boss_handle)
+	_check(idx2 >= 0 and enemies.radius_of(idx2) > 30.0,
+			"잡몹이 섞여도 핸들이 여전히 보스를 가리킨다")
+
+	# 죽이면 보물상자를 떨군다
+	var chests_before: int = pickups.get_count()
+	enemies.damage(enemies.index_of_handle(boss_handle), 99999.0)
+	enemies.reap()
+	guard = 0
+	while died.is_empty() and guard < 300:
+		await get_tree().process_frame
+		guard += 1
+	_check(not died.is_empty(), "보스가 죽으면 boss_died가 뜬다")
+	_check(pickups.get_count() > chests_before, "보물상자를 떨군다")
+	_check(enemies.index_of_handle(boss_handle) < 0, "죽은 뒤에는 핸들이 무효")
+
+	EventBus.boss_spawned.disconnect(on_spawn)
+	EventBus.boss_died.disconnect(on_die)
+	arena.queue_free()
+	await get_tree().process_frame

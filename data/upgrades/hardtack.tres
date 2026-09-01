@@ -4,10 +4,11 @@
 
 [resource]
 script = ExtResource("1_upgrade")
-id = &"magnet_up"
-title = "무전기 수령"
-description = "'짬' 획득 범위 +25%"
+id = &"hardtack"
+title = "건빵"
+description = "최대 체력 +15, 초당 0.35 회복"
 kind = 0
 max_level = 5
 weight = 1.0
-magnet_mult_add = 0.25
+max_hp_add = 15.0
+regen_add = 0.35

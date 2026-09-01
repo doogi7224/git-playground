@@ -28,3 +28,5 @@ enum Kind {
 @export var xp_mult_add: float = 0.0
 @export var luck_add: float = 0.0
 @export var heal_on_pick: float = 0.0
+@export var projectiles_add: int = 0      ## 탄띠 — 투사체 발수
+@export var regen_add: float = 0.0        ## 건빵 — 초당 회복

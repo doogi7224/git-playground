@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Resource" path="res://data/weapons/smoke_grenade.tres" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"w_smoke"
+title = "연막탄"
+description = "포물선 투척 폭발"
+kind = 1
+max_level = 8
+weight = 1.0
+weapon = ExtResource("2_weapon")

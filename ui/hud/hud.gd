@@ -7,6 +7,9 @@ extends Control
 @onready var hp_bar: ProgressBar = $BottomLeft/HPBar
 @onready var xp_bar: ProgressBar = $XPBar
 @onready var kill_label: Label = $TopRight/KillLabel
+@onready var boss_box: VBoxContainer = $BossBox
+@onready var boss_label: Label = $BossBox/BossLabel
+@onready var boss_bar: ProgressBar = $BossBox/BossBar
 
 var _kills: int = 0
 
@@ -20,7 +23,12 @@ func _ready() -> void:
 	EventBus.rank_changed.connect(_on_rank_changed)
 	EventBus.enemy_died.connect(_on_enemy_died)
 	EventBus.run_started.connect(_on_run_started)
-	_refresh_rank(1, &"private_2")
+	EventBus.boss_spawned.connect(_on_boss_spawned)
+	EventBus.boss_hp_changed.connect(_on_boss_hp)
+	EventBus.boss_died.connect(_on_boss_died)
+	EventBus.weapon_evolved.connect(_on_weapon_evolved)
+	boss_box.visible = false
+	_refresh_rank(1, GameState.rank_for_level(1))
 
 
 func _process(_delta: float) -> void:
@@ -60,6 +68,30 @@ func _on_rank_changed(rank_id: StringName) -> void:
 func _refresh_rank(level: int, rank_id: StringName) -> void:
 	var name_kr: String = GameState.rank_name(rank_id)
 	rank_label.text = "%s  Lv.%d" % [name_kr, level]
+
+
+const BOSS_NAMES: Dictionary = {
+	&"battalion_commander": "대대장 순시",
+}
+
+
+func _on_boss_spawned(boss_id: StringName) -> void:
+	boss_label.text = BOSS_NAMES.get(boss_id, String(boss_id))
+	boss_bar.value = 1.0
+	boss_box.visible = true
+
+
+func _on_boss_hp(ratio: float) -> void:
+	boss_bar.value = ratio
+
+
+func _on_boss_died(_boss_id: StringName) -> void:
+	boss_box.visible = false
+
+
+func _on_weapon_evolved(_from_id: StringName, to_id: StringName) -> void:
+	# M2에서 제대로 된 연출로 바뀐다. 지금은 처치 카운터 옆에 잠깐 띄운다.
+	kill_label.text = "진화! %s" % to_id
 
 
 func _on_enemy_died(_pos: Vector2, _xp: float, _enemy_type: StringName) -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://maps/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://maps/ground_grid.gd" id="2_ground"]
@@ -13,6 +13,8 @@
 [ext_resource type="Resource" path="res://data/maps/parade_ground.tres" id="11_map"]
 [ext_resource type="Resource" path="res://data/characters/kim_private.tres" id="12_char"]
 [ext_resource type="Resource" path="res://data/upgrades/upgrade_table.tres" id="13_upgrades"]
+[ext_resource type="Script" path="res://entities/pickups/area_manager.gd" id="14_areas"]
+[ext_resource type="Script" path="res://weapons/projectile_manager.gd" id="15_projectiles"]
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
@@ -24,6 +26,9 @@ upgrade_table = ExtResource("13_upgrades")
 script = ExtResource("2_ground")
 follow = NodePath("../Player")
 
+[node name="Areas" type="Node2D" parent="."]
+script = ExtResource("14_areas")
+
 [node name="Pickups" type="Node2D" parent="."]
 z_index = 1
 script = ExtResource("4_pickups")
@@ -31,6 +36,12 @@ script = ExtResource("4_pickups")
 [node name="Enemies" type="Node2D" parent="."]
 z_index = 2
 script = ExtResource("3_enemies")
+
+[node name="Projectiles" type="Node2D" parent="."]
+script = ExtResource("15_projectiles")
+
+[node name="Bosses" type="Node2D" parent="."]
+z_index = 3
 
 [node name="Player" parent="." instance=ExtResource("5_player")]
 

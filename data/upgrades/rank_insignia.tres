@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1_upgrade")
-id = &"speed_up"
-title = "전투화 지급"
-description = "이동속도 +10%"
+id = &"rank_insignia"
+title = "계급장"
+description = "공격력 +15%"
 kind = 0
 max_level = 5
 weight = 1.0
-speed_mult_add = 0.1
+damage_mult_add = 0.15

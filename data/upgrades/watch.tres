@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1_upgrade")
-id = &"max_hp_up"
-title = "건빵 보급"
-description = "최대 체력 +20"
+id = &"watch"
+title = "시계"
+description = "재사용 대기시간 -7%"
 kind = 0
 max_level = 5
 weight = 1.0
-max_hp_add = 20.0
+cooldown_mult_add = -0.07

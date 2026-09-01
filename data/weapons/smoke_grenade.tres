@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"smoke_grenade"
+display_name = "연막탄"
+description = "던지면 터지고 연기가 남는다. 연기도 아프다."
+behavior = 4
+cooldown = 2.2
+damage = 16.0
+reach = 320.0
+half_angle_deg = 2.5
+projectiles = 1
+knockback = 0.0
+alternate_direction = false
+per_level_damage = 5.0
+per_level_cooldown = -0.09
+per_level_reach = 14.0
+per_level_projectiles = 0.5
+max_level = 8
+evolves_into = &"multi_smoke"
+evolution_passive = &"watch"

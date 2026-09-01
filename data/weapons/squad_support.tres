@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"squad_support"
+display_name = "분대지원화기"
+description = "3점사 관통. 뒤에 있는 놈까지 뚫는다."
+behavior = 1
+cooldown = 0.5
+damage = 12.0
+reach = 520.0
+half_angle_deg = 0.0
+projectiles = 3
+knockback = 3.0
+alternate_direction = false
+per_level_damage = 4.0
+per_level_cooldown = -0.02
+per_level_reach = 20.0
+per_level_projectiles = 0.34
+max_level = 8
+evolves_into = &""
+evolution_passive = &""

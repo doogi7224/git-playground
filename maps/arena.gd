@@ -10,6 +10,9 @@ const ENEMY_CAPACITY: int = 4096
 
 @onready var enemies: EnemyManager = $Enemies
 @onready var pickups: PickupManager = $Pickups
+@onready var areas: AreaManager = $Areas
+@onready var projectiles: ProjectileManager = $Projectiles
+@onready var bosses: Node2D = $Bosses
 @onready var player: Player = $Player
 @onready var director: SpawnDirector = $SpawnDirector
 @onready var level_up: Control = $UI/LevelUpScreen
@@ -24,9 +27,14 @@ func _ready() -> void:
 	enemies.set_capacity(ENEMY_CAPACITY)
 	enemies.register_map(map)
 
-	player.setup(enemies, character)
+	areas.enemies = enemies
+	projectiles.enemies = enemies
+	projectiles.areas = areas
+
+	player.setup(enemies, character, projectiles, areas)
 	pickups.collected.connect(player.add_xp)
-	director.setup(enemies, player, map.wave_table)
+	pickups.chest_collected.connect(_on_chest_collected)
+	director.setup(enemies, player, map.wave_table, pickups, bosses)
 
 	level_up.player = player
 	level_up.upgrade_table = upgrade_table
@@ -35,6 +43,14 @@ func _ready() -> void:
 	ground.line_color = map.ground_color
 
 	GameState.start_run(character.id)
+
+
+## 보물상자 = 진화. 진화할 게 없으면 빈손으로 보내지 않고 회복 + 경험치로 바꿔준다.
+func _on_chest_collected() -> void:
+	var evolved: StringName = player.try_evolve()
+	if evolved == &"":
+		player.heal(player.max_hp * 0.35)
+		player.add_xp(player.xp_to_next * 0.8)
 
 
 func _physics_process(_delta: float) -> void:

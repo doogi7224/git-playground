@@ -26,9 +26,9 @@ script = ExtResource("2_wave")
 minute = 5
 enemy_ids = Array[StringName]([&"shovel_mob"])
 spawns_per_second = 6.0
-pattern = 0
+pattern = 1
 elite_chance = 0.02
-boss_id = &""
+boss_id = &"battalion_commander"
 
 [sub_resource type="Resource" id="Wave_08"]
 script = ExtResource("2_wave")

@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://vfx/shaders/blob_multimesh.gdshader" id="1_blob"]
+
+[resource]
+shader = ExtResource("1_blob")
+shader_parameter/outline_strength = 0.18
+shader_parameter/bob_speed = 2.0
+shader_parameter/bob_amount = 0.01

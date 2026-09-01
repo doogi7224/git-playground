@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"brush_cutter"
+display_name = "예초기"
+description = "주변을 상시로 갈아버린다. 제초 작업은 끝이 없다."
+behavior = 2
+cooldown = 0.6
+damage = 6.0
+reach = 110.0
+half_angle_deg = 0.0
+projectiles = 1
+knockback = 0.0
+alternate_direction = false
+per_level_damage = 2.5
+per_level_cooldown = -0.03
+per_level_reach = 11.0
+per_level_projectiles = 0.0
+max_level = 8
+evolves_into = &"tractor"
+evolution_passive = &"boots"

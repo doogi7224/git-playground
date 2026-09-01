@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/enemy_data.gd" id="1_enemy"]
+
+[resource]
+script = ExtResource("1_enemy")
+id = &"battalion_commander"
+display_name = "대대장 순시"
+max_hp = 2400.0
+contact_dps = 22.0
+xp = 60.0
+speed = 0.0
+radius = 46.0
+color = Color(0.36, 0.28, 0.22, 1)
+atlas_index = 1

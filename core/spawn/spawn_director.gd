@@ -8,6 +8,8 @@ class_name SpawnDirector
 
 var enemies: EnemyManager = null
 var target: Node2D = null
+var pickups: PickupManager = null
+var boss_container: Node = null
 var enabled: bool = true
 
 var _accum: float = 0.0
@@ -17,10 +19,13 @@ var _type_cache: Dictionary = {}   ## StringName -> 타입 인덱스
 var _wall_angle: float = 0.0
 
 
-func setup(p_enemies: EnemyManager, p_target: Node2D, p_table: WaveTable) -> void:
+func setup(p_enemies: EnemyManager, p_target: Node2D, p_table: WaveTable,
+		p_pickups: PickupManager = null, p_boss_container: Node = null) -> void:
 	enemies = p_enemies
 	target = p_target
 	wave_table = p_table
+	pickups = p_pickups
+	boss_container = p_boss_container
 	_type_cache.clear()
 	_last_minute = -1
 	_wall_angle = randf() * TAU
@@ -35,8 +40,12 @@ func _physics_process(delta: float) -> void:
 	var minute: int = int(GameState.elapsed / 60.0)
 	if minute != _last_minute:
 		_last_minute = minute
+		var previous: WaveData = _current
 		_current = wave_table.wave_for_minute(minute)
 		EventBus.wave_changed.emit(minute)
+		# 구간이 실제로 바뀐 순간에만 보스를 부른다(같은 구간이 이어지면 다시 안 부른다)
+		if _current != null and _current != previous and _current.boss_id != &"":
+			_spawn_boss()
 	if _current == null or _current.enemy_ids.is_empty():
 		return
 
@@ -64,6 +73,19 @@ func _spawn_one() -> void:
 	var angle: float = _angle_for_pattern()
 	var r: float = spawn_ring_radius * randf_range(0.95, 1.15)
 	enemies.spawn(type_index, target.global_position + Vector2(cos(angle), sin(angle)) * r)
+
+
+func _spawn_boss() -> void:
+	if boss_container == null or target == null:
+		return
+	var boss := BossController.new()
+	boss.name = "Boss_%s" % _current.boss_id
+	boss_container.add_child(boss)
+	var angle: float = randf() * TAU
+	var pos: Vector2 = target.global_position + Vector2(cos(angle), sin(angle)) * 620.0
+	var minion: StringName = _current.enemy_ids[0] if not _current.enemy_ids.is_empty() else &""
+	if not boss.setup(enemies, target, pickups, _current.boss_id, minion, pos):
+		boss.queue_free()
 
 
 func _angle_for_pattern() -> float:
