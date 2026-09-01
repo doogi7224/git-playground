@@ -25,7 +25,7 @@ func _run() -> void:
 		var em := EnemyManager.new()
 		get_tree().root.add_child(em)
 		em.set_capacity(CAPACITY)
-		em.register_type(&"bench", 130.0, 20.0, 13.0, 5.0, 1.0, Color("#8A7B5E"))
+		em.register_enemy(load("res://data/enemies/shovel_mob.tres") as EnemyData)
 		_fill(em, n)
 		GameState.phase = GameState.Phase.PLAYING
 

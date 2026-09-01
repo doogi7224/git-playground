@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="ProgressionData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/progression_data.gd" id="1_prog"]
+
+[resource]
+script = ExtResource("1_prog")
+run_duration_sec = 1200.0
+total_days = 100
+xp_base = 10.0
+xp_per_level = 8.0
+ranks = Array[Dictionary]([{
+"id": &"private_2",
+"level": 1,
+"name": "이등병"
+}, {
+"id": &"private_1",
+"level": 6,
+"name": "일병"
+}, {
+"id": &"corporal",
+"level": 16,
+"name": "상병"
+}, {
+"id": &"sergeant",
+"level": 31,
+"name": "병장"
+}, {
+"id": &"veteran",
+"level": 51,
+"name": "말년"
+}])

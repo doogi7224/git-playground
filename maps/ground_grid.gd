@@ -2,10 +2,12 @@ extends Node2D
 ## 화이트박스 연병장 바닥. 카메라를 따라다니는 격자만 그린다. M2에서 실제 타일로 교체.
 
 const CELL: float = 128.0
-const COLOR_LINE: Color = Color(0.30, 0.35, 0.25, 0.55)
-const COLOR_LINE_MAJOR: Color = Color(0.45, 0.50, 0.36, 0.65)
-
 @export var follow: NodePath
+## MapData.ground_color 를 아레나가 넣어준다.
+@export var line_color: Color = Color(0.243137, 0.290196, 0.196078, 1.0):
+	set(value):
+		line_color = value
+		queue_redraw()
 
 var _target: Node2D = null
 var _last_cell: Vector2i = Vector2i(9999, 9999)
@@ -31,6 +33,7 @@ func _draw() -> void:
 	var span: int = 12
 	for i in range(-span, span + 1):
 		var x: float = float(i) * CELL
-		var col: Color = COLOR_LINE_MAJOR if (i % 4 == 0) else COLOR_LINE
+		var col: Color = line_color.lightened(0.28 if (i % 4 == 0) else 0.12)
+		col.a = 0.65 if (i % 4 == 0) else 0.5
 		draw_line(Vector2(x, -span * CELL), Vector2(x, span * CELL), col, 1.0)
 		draw_line(Vector2(-span * CELL, x), Vector2(span * CELL, x), col, 1.0)

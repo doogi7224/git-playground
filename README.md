@@ -44,6 +44,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 | `core/` | 전투/스폰/업그레이드 시스템 |
 | `entities/` | 플레이어, EnemyManager(배열 기반), 픽업 |
 | `weapons/` | 무기 10종 |
+| `core/data/` | Resource 스키마 (`docs/data.md`) |
 | `data/` | 밸런싱 데이터 (`.tres`) — 수치는 전부 여기 |
 | `ui/` | HUD, 레벨업 명령서, 결과(전역증), 메타 |
 | `vfx/` | 셰이더, 파티클 |

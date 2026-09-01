@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="WaveTable" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/data/wave_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://core/data/wave_data.gd" id="2_wave"]
+
+[sub_resource type="Resource" id="Wave_00"]
+script = ExtResource("2_wave")
+minute = 0
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 1.5
+pattern = 0
+elite_chance = 0.0
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_02"]
+script = ExtResource("2_wave")
+minute = 2
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 3.0
+pattern = 0
+elite_chance = 0.0
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_05"]
+script = ExtResource("2_wave")
+minute = 5
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 6.0
+pattern = 0
+elite_chance = 0.02
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_08"]
+script = ExtResource("2_wave")
+minute = 8
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 11.0
+pattern = 0
+elite_chance = 0.04
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_12"]
+script = ExtResource("2_wave")
+minute = 12
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 20.0
+pattern = 0
+elite_chance = 0.06
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_15"]
+script = ExtResource("2_wave")
+minute = 15
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 32.0
+pattern = 0
+elite_chance = 0.08
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_19"]
+script = ExtResource("2_wave")
+minute = 19
+enemy_ids = Array[StringName]([&"shovel_mob"])
+spawns_per_second = 6.0
+pattern = 0
+elite_chance = 0.0
+boss_id = &""
+
+[resource]
+script = ExtResource("1_table")
+waves = Array[Resource]([SubResource("Wave_00"), SubResource("Wave_02"), SubResource("Wave_05"), SubResource("Wave_08"), SubResource("Wave_12"), SubResource("Wave_15"), SubResource("Wave_19")])

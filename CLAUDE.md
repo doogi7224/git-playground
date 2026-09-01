@@ -79,7 +79,23 @@
 
 ---
 
-## 5. AI 아트 파이프라인
+## 5. 데이터 위치
+
+스키마(Resource 클래스)는 `core/data/`, 값은 `data/`. 자세한 건 `docs/data.md`.
+
+| 무엇을 바꾸려면 | 어디를 고치나 |
+|---|---|
+| 적 능력치·새 적 | `data/enemies/*.tres` + 맵의 `enemies` 배열 |
+| 웨이브 밀도·패턴·보스 | `data/waves/*.tres` |
+| 무기 수치·레벨 곡선·진화 | `data/weapons/*.tres` |
+| 명령서(업그레이드) | `data/upgrades/*.tres` + `upgrade_table.tres` |
+| 캐릭터 기본 스탯 | `data/characters/*.tres` |
+| 한 판 길이·경험치 곡선·계급표 | `data/progression.tres` |
+
+**GDScript에 수치를 되돌려 넣지 말 것.** `EnemyManager`가 등록 시점에 Packed 배열로
+캐시하는 건 성능 때문이며, 원본은 언제나 `.tres`다.
+
+## 6. AI 아트 파이프라인
 
 > **AI에게 스프라이트 시트를 시키지 마세요. 반드시 실패합니다.** 프레임 간 일관성이 안 지켜진다.
 
@@ -94,7 +110,7 @@ AI로 캐릭터 1장(정지) 고해상도 생성
 
 ---
 
-## 6. 폴더 구조
+## 7. 폴더 구조
 
 ```
 res://
@@ -108,7 +124,8 @@ res://
 │   ├── enemies/    enemy_manager.gd  ← ★ 개별 노드 아님, 데이터 배열
 │   └── pickups/
 ├── weapons/        base_weapon.gd + 10종
-├── data/           *.tres (WeaponData, EnemyData, WaveData, UpgradeData, CharacterData)
+├── core/data/      Resource 스키마 (.gd)
+├── data/           *.tres 값 — enemies/ weapons/ upgrades/ waves/ characters/ maps/
 ├── ui/             hud/, level_up/, results/, meta/
 ├── vfx/            shaders/, particles/
 ├── maps/
@@ -118,7 +135,7 @@ res://
 
 ---
 
-## 7. 마일스톤 (순서대로만 진행)
+## 8. 마일스톤 (순서대로만 진행)
 
 | M | 기간 | 산출물 | 완료 기준 |
 |---|---|---|---|
@@ -130,13 +147,13 @@ res://
 | **M5** | 2주 | 폴리시 | 사운드, 튜토리얼, 옵션, 한/영 로컬라이즈, 최적화 |
 | **M6** | 2주 | 출시 준비 | Steam 페이지, 데모 빌드, 트레일러 |
 
-**현재 상태: M0 + 3,000마리 성능 검증 완료. 다음은 프롬프트 3 = 데이터 주도 전환(.tres).**
+**현재 상태: M0 + 성능 검증 + 데이터 주도 전환 완료. 다음은 프롬프트 4 = M1 코어 루프(무기 5·패시브 5·진화·보스 1).**
 
 한 번에 두 마일스톤 이상 진행하지 않는다. 기획서 8장의 프롬프트 팩을 순서대로 따른다.
 
 ---
 
-## 8. 검증 도구 (새 기능 붙일 때마다 돌릴 것)
+## 9. 검증 도구 (새 기능 붙일 때마다 돌릴 것)
 
 ```bash
 tools/test.sh          # 헤드리스 자체 검증. 실패 시 종료 코드 1
@@ -155,13 +172,13 @@ tools/stress.sh --count=3000 --shot=/tmp/stress.png   # 3,000마리 유지 + 리
 - 인게임에서는 **F3**로 성능 오버레이(FPS/드로우콜/적 수/시뮬 ms)를 켠다.
 - 성능 수치와 최적화 내역은 `docs/performance.md`.
 
-## 9. 프로젝트 설정
+## 10. 프로젝트 설정
 
 - Godot **4.7.x** 고정 (3.x 금지), 렌더러 **Forward+** (2D 라이팅·글로우 품질), 저사양용 Mobile 렌더러 토글 제공
 - 해상도 1920×1080, 스트레치 `canvas_items` / `expand`
 - 빌드: `tools/build.sh` (`godot --headless --export-release` 래퍼)
 
-## 10. 리스크 체크리스트
+## 11. 리스크 체크리스트
 
 - [ ] 성능: M1에서 3,000마리 검증 완료 (아트 넣기 전에)
 - [ ] 아트 일관성: 팔레트 스냅 파이프라인 가동

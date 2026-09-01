@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MapData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/data/map_data.gd" id="1_map"]
+[ext_resource type="Resource" path="res://data/enemies/shovel_mob.tres" id="2_mob"]
+[ext_resource type="Resource" path="res://data/waves/parade_ground_waves.tres" id="3_waves"]
+
+[resource]
+script = ExtResource("1_map")
+id = &"parade_ground"
+display_name = "연병장"
+enemies = Array[Resource]([ExtResource("2_mob")])
+wave_table = ExtResource("3_waves")
+ambient_tint = Color(1, 1, 1, 1)
+ground_color = Color(0.243137, 0.290196, 0.196078, 1)

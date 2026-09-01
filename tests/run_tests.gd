@@ -32,6 +32,7 @@ func _run_all() -> void:
 	test_game_state()
 	test_enemy_manager()
 	test_weapon_shovel()
+	test_data_resources()
 	await test_arena_smoke()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -155,9 +156,9 @@ func test_game_state() -> void:
 		return
 	gs.elapsed = 0.0
 	_check(gs.days_left() == 100, "시작은 D-100 (got %d)" % gs.days_left())
-	gs.elapsed = gs.RUN_DURATION_SEC
+	gs.elapsed = gs.run_duration()
 	_check(gs.days_left() == 0, "끝은 D-DAY (got %d)" % gs.days_left())
-	gs.elapsed = gs.RUN_DURATION_SEC * 0.5
+	gs.elapsed = gs.run_duration() * 0.5
 	_check(gs.days_left() == 50, "절반은 D-50 (got %d)" % gs.days_left())
 	gs.elapsed = 0.0
 
@@ -174,7 +175,7 @@ func test_enemy_manager() -> void:
 	get_tree().root.add_child(em)
 
 	em.set_capacity(256)
-	var t: int = em.register_type(&"test", 100.0, 20.0, 12.0, 5.0, 1.0, Color.RED)
+	var t: int = em.register_enemy(_make_enemy(100.0, 20.0, 12.0))
 
 	for i in 10:
 		em.spawn(t, Vector2(float(i) * 40.0, 0.0))
@@ -227,15 +228,15 @@ func test_weapon_shovel() -> void:
 	var em := EnemyManager.new()
 	get_tree().root.add_child(em)
 	em.set_capacity(64)
-	var t: int = em.register_type(&"test", 0.0, 100.0, 12.0, 5.0, 1.0, Color.RED)
+	var t: int = em.register_enemy(_make_enemy(0.0, 100.0, 12.0))
 
 	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
 	get_tree().root.add_child(player)
 	player.global_position = Vector2.ZERO
 	player.facing = Vector2.RIGHT
-	player.setup(em)
+	player.setup(em, load("res://data/characters/kim_private.tres") as CharacterData)
 
-	var shovel: WeaponShovel = player.get_node("Weapons/Shovel")
+	var shovel: MeleeArcWeapon = player.find_weapon(&"shovel") as MeleeArcWeapon
 	_check(shovel.enemies == em, "무기에 EnemyManager가 주입됐다")
 	_check(shovel.player == player, "무기에 Player가 주입됐다")
 
@@ -259,13 +260,33 @@ func test_weapon_shovel() -> void:
 		_check(is_equal_approx(hits[0].x, 80.0), "맞은 건 정면 적 (x=%.0f)" % hits[0].x)
 		_check(is_equal_approx(hits[0].y, 10.0), "기본 데미지 10 (got %.1f)" % hits[0].y)
 
-	# 데미지 배율이 반영되는지
+	# 데미지 배율과 무기 레벨이 반영되는지
 	player.damage_mult = 2.0
-	_check(is_equal_approx(shovel.damage_per_hit(), 20.0),
-			"damage_mult 반영 (got %.1f)" % shovel.damage_per_hit())
+	_check(is_equal_approx(shovel.current_damage(), 20.0),
+			"damage_mult 반영 (got %.1f)" % shovel.current_damage())
+	player.damage_mult = 1.0
+	shovel.level = 3
+	var expected: float = shovel.data.damage + shovel.data.per_level_damage * 2.0
+	_check(is_equal_approx(shovel.current_damage(), expected),
+			"무기 레벨이 .tres 곡선대로 (Lv3 = %.1f, got %.1f)" % [expected, shovel.current_damage()])
+	shovel.level = 1
 
 	player.queue_free()
 	em.queue_free()
+
+
+## 테스트 전용 EnemyData. 파일을 만들지 않고 메모리에서 조립한다.
+func _make_enemy(speed: float, max_hp: float, radius: float) -> EnemyData:
+	var d := EnemyData.new()
+	d.id = &"test"
+	d.display_name = "테스트"
+	d.speed = speed
+	d.max_hp = max_hp
+	d.radius = radius
+	d.contact_dps = 5.0
+	d.xp = 1.0
+	d.color = Color.RED
+	return d
 
 
 ## 아레나를 실제로 돌려보는 통합 스모크 테스트.
@@ -322,3 +343,78 @@ func test_arena_smoke() -> void:
 
 	arena.queue_free()
 	await get_tree().process_frame
+
+
+## data/ 의 .tres 가 전부 살아 있고 서로 가리키는 게 맞는지 본다.
+## 밸런싱을 .tres만 고쳐서 한다는 건, 오타 하나가 조용히 게임을 망칠 수 있다는 뜻이다.
+func test_data_resources() -> void:
+	print("[data/*.tres 무결성]")
+
+	var progression: ProgressionData = load("res://data/progression.tres") as ProgressionData
+	_check(progression != null, "progression.tres 로드")
+	if progression != null:
+		_check(is_equal_approx(progression.run_duration_sec, 1200.0), "한 판은 20분")
+		_check(progression.total_days == 100, "D-100")
+		_check(progression.ranks.size() == 5, "계급 5단계 (got %d)" % progression.ranks.size())
+		_check(progression.rank_name(&"veteran") == "말년", "계급 이름이 붙어 있다")
+
+	var character: CharacterData = load("res://data/characters/kim_private.tres") as CharacterData
+	_check(character != null, "kim_private.tres 로드")
+	_check(character != null and character.starting_weapon != null, "김이병은 시작 무기가 있다")
+
+	var map: MapData = load("res://data/maps/parade_ground.tres") as MapData
+	_check(map != null, "parade_ground.tres 로드")
+	if map != null:
+		_check(not map.enemies.is_empty(), "맵에 적이 등록돼 있다")
+		_check(map.wave_table != null, "맵에 웨이브 테이블이 붙어 있다")
+
+		# 웨이브가 부르는 적 id가 맵의 적 목록에 실제로 있는지 — 오타 잡기
+		var known: Array[StringName] = []
+		for e: EnemyData in map.enemies:
+			_check(e != null and e.id != &"", "적 id가 비어 있지 않다")
+			known.append(e.id)
+		var unknown: Array[StringName] = []
+		for w: WaveData in map.wave_table.waves:
+			for id: StringName in w.enemy_ids:
+				if not known.has(id) and not unknown.has(id):
+					unknown.append(id)
+		_check(unknown.is_empty(), "웨이브가 부르는 적이 전부 맵에 있다 (없는 것: %s)" % [unknown])
+
+		# 밀도 곡선이 기획서 5.4대로: 중간까지 오르다가 마지막 1분은 소강
+		var table: WaveTable = map.wave_table
+		_check(table.waves.size() >= 5, "웨이브 구간이 최소 5개 (got %d)" % table.waves.size())
+		var peak: WaveData = table.wave_for_minute(15)
+		var lull: WaveData = table.wave_for_minute(19)
+		_check(peak != null and lull != null, "15분/19분 구간이 있다")
+		if peak != null and lull != null:
+			_check(lull.spawns_per_second < peak.spawns_per_second,
+					"20분 직전 1분은 의도적 소강 (15분 %.1f/s → 19분 %.1f/s)" % [
+						peak.spawns_per_second, lull.spawns_per_second])
+		_check(table.wave_for_minute(0).spawns_per_second < peak.spawns_per_second,
+				"밀도가 시간에 따라 오른다")
+
+	var upgrades: UpgradeTable = load("res://data/upgrades/upgrade_table.tres") as UpgradeTable
+	_check(upgrades != null, "upgrade_table.tres 로드")
+	if upgrades != null:
+		_check(upgrades.upgrades.size() >= 3, "명령서 후보가 3장 이상 (got %d)" % upgrades.upgrades.size())
+		for u: UpgradeData in upgrades.upgrades:
+			_check(u != null and u.id != &"" and u.title != "", "명령서에 id와 제목이 있다")
+		# 최대 레벨까지 찍은 건 다시 안 나와야 한다
+		var maxed: Dictionary = {}
+		for u: UpgradeData in upgrades.upgrades:
+			maxed[u.id] = u.max_level
+		_check(upgrades.roll(3, maxed).is_empty(), "전부 최대 레벨이면 아무것도 안 뽑는다")
+		_check(upgrades.roll(3, {}).size() == 3, "빈 상태에서는 3장 뽑는다")
+		# 같은 걸 두 번 내밀면 안 된다
+		var drawn: Array[UpgradeData] = upgrades.roll(3, {})
+		_check(drawn[0] != drawn[1] and drawn[1] != drawn[2] and drawn[0] != drawn[2],
+				"한 번에 같은 명령서를 두 장 내밀지 않는다")
+
+	var shovel: WeaponData = load("res://data/weapons/shovel.tres") as WeaponData
+	_check(shovel != null, "shovel.tres 로드")
+	if shovel != null:
+		_check(shovel.behavior == WeaponData.Behavior.MELEE_ARC, "야전삽은 부채꼴 근접")
+		_check(shovel.alternate_direction, "야전삽은 앞뒤로 번갈아 휘두른다")
+		_check(shovel.cooldown_at(1) > shovel.cooldown_at(5), "레벨이 오르면 빨라진다")
+		_check(shovel.damage_at(5) > shovel.damage_at(1), "레벨이 오르면 세진다")
+		_check(shovel.evolves_into != &"", "진화 대상이 지정돼 있다")

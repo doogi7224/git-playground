@@ -43,7 +43,10 @@ var _dying: PackedByteArray = PackedByteArray()
 var _count: int = 0
 var _capacity: int = 0
 
-## --- 타입 스탯 (프롬프트 3에서 EnemyData.tres로 이관) ---
+## --- 타입 스탯 ---
+## 원본은 EnemyData(.tres). 여기 있는 Packed 배열은 매 프레임 3,000번 읽는 값만
+## 뽑아둔 캐시다. Resource 프로퍼티를 루프 안에서 읽으면 그것만으로 느려진다.
+var _t_data: Array[EnemyData] = []
 var _t_id: Array[StringName] = []
 var _t_speed: PackedFloat32Array = PackedFloat32Array()
 var _t_max_hp: PackedFloat32Array = PackedFloat32Array()
@@ -51,6 +54,7 @@ var _t_radius: PackedFloat32Array = PackedFloat32Array()
 var _t_contact_dps: PackedFloat32Array = PackedFloat32Array()
 var _t_xp: PackedFloat32Array = PackedFloat32Array()
 var _t_color: PackedColorArray = PackedColorArray()
+var _t_atlas: PackedInt32Array = PackedInt32Array()
 var _type_count: int = 0
 var _max_radius: float = 0.0
 
@@ -97,19 +101,39 @@ func set_capacity(p_capacity: int) -> void:
 	_renderer.multimesh.visible_instance_count = 0
 
 
-func register_type(id: StringName, speed: float, max_hp: float, radius: float,
-		contact_dps: float, xp: float, color: Color) -> int:
+## EnemyData 하나를 등록하고 타입 인덱스를 돌려준다. 런 시작 전에만 호출한다.
+func register_enemy(data: EnemyData) -> int:
+	assert(data != null, "EnemyData가 null이다")
 	assert(_type_count < MAX_TYPES, "적 타입이 MAX_TYPES를 넘었다")
-	_t_id.append(id)
-	_t_speed.append(speed)
-	_t_max_hp.append(max_hp)
-	_t_radius.append(radius)
-	_t_contact_dps.append(contact_dps)
-	_t_xp.append(xp)
-	_t_color.append(color)
-	_max_radius = maxf(_max_radius, radius)
+	var existing: int = _t_id.find(data.id)
+	if existing >= 0:
+		return existing
+	_t_data.append(data)
+	_t_id.append(data.id)
+	_t_speed.append(data.speed)
+	_t_max_hp.append(data.max_hp)
+	_t_radius.append(data.radius)
+	_t_contact_dps.append(data.contact_dps)
+	_t_xp.append(data.xp)
+	_t_color.append(data.color)
+	_t_atlas.append(data.atlas_index)
+	_max_radius = maxf(_max_radius, data.radius)
 	_type_count += 1
 	return _type_count - 1
+
+
+## 맵의 적 목록을 통째로 등록한다.
+func register_map(map: MapData) -> void:
+	for e: EnemyData in map.enemies:
+		register_enemy(e)
+
+
+func data_of_type(type_index: int) -> EnemyData:
+	return _t_data[type_index]
+
+
+func type_count() -> int:
+	return _type_count
 
 
 func type_index_of(id: StringName) -> int:
@@ -365,7 +389,7 @@ func _update_buffer() -> void:
 		buf[b + 11] = c.a
 		buf[b + 12] = _seed[i]                              # bob 위상
 		buf[b + 13] = _flash[i] / HIT_FLASH_TIME            # 흰 플래시 0~1
-		buf[b + 14] = float(t)                              # M2: 아틀라스 UV 인덱스
+		buf[b + 14] = float(_t_atlas[t])                    # M2: 아틀라스 UV 인덱스
 		buf[b + 15] = 0.0                                   # M2: 스쿼시 양
 
 	_renderer.multimesh.buffer = buf

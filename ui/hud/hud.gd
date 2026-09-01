@@ -1,14 +1,6 @@
 extends Control
 ## 인게임 HUD. EventBus만 구독한다 — 게임 로직 노드를 직접 참조하지 않는다. (CLAUDE.md 규칙 9)
 
-const RANK_NAMES: Dictionary = {
-	&"private_2": "이등병",
-	&"private_1": "일병",
-	&"corporal": "상병",
-	&"sergeant": "병장",
-	&"veteran": "말년",
-}
-
 @onready var day_label: Label = $DayLabel
 @onready var time_label: Label = $TimeLabel
 @onready var rank_label: Label = $BottomLeft/RankLabel
@@ -32,7 +24,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	var left: float = maxf(0.0, GameState.RUN_DURATION_SEC - GameState.elapsed)
+	var left: float = maxf(0.0, GameState.run_duration() - GameState.elapsed)
 	time_label.text = "%02d:%02d" % [int(left) / 60, int(left) % 60]
 
 
@@ -66,7 +58,7 @@ func _on_rank_changed(rank_id: StringName) -> void:
 
 
 func _refresh_rank(level: int, rank_id: StringName) -> void:
-	var name_kr: String = RANK_NAMES.get(rank_id, "이등병")
+	var name_kr: String = GameState.rank_name(rank_id)
 	rank_label.text = "%s  Lv.%d" % [name_kr, level]
 
 

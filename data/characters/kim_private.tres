@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/character_data.gd" id="1_char"]
+[ext_resource type="Resource" path="res://data/weapons/shovel.tres" id="2_shovel"]
+
+[resource]
+script = ExtResource("1_char")
+id = &"kim_private"
+display_name = "김이병"
+description = "밸런스형. 아무 특징이 없다는 게 특징."
+max_hp = 100.0
+move_speed = 200.0
+body_radius = 14.0
+magnet_radius = 90.0
+damage_mult = 1.0
+color = Color(0.717647, 0.780392, 0.478431, 1)
+starting_weapon = ExtResource("2_shovel")

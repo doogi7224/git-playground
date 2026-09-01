@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="UpgradeTable" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/data/upgrade_table.gd" id="1_table"]
+[ext_resource type="Resource" path="res://data/upgrades/speed_up.tres" id="2_speed"]
+[ext_resource type="Resource" path="res://data/upgrades/damage_up.tres" id="3_damage"]
+[ext_resource type="Resource" path="res://data/upgrades/max_hp_up.tres" id="4_hp"]
+[ext_resource type="Resource" path="res://data/upgrades/magnet_up.tres" id="5_magnet"]
+
+[resource]
+script = ExtResource("1_table")
+upgrades = Array[Resource]([ExtResource("2_speed"), ExtResource("3_damage"), ExtResource("4_hp"), ExtResource("5_magnet")])

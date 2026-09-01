@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/enemy_data.gd" id="1_enemy"]
+
+[resource]
+script = ExtResource("1_enemy")
+id = &"shovel_mob"
+display_name = "삽"
+max_hp = 20.0
+contact_dps = 5.0
+xp = 1.0
+speed = 130.0
+radius = 13.0
+color = Color(0.541176, 0.482353, 0.368627, 1)
+atlas_index = 0
