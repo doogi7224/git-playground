@@ -23,8 +23,8 @@ var cell_size: float = 64.0
 var _inv_cell: float = 1.0 / 64.0
 var _counts: PackedInt32Array = PackedInt32Array()  ## rebuild 후 [b] = 버킷 b 시작 인덱스
 var _items: PackedInt32Array = PackedInt32Array()   ## 버킷 순으로 정렬된 원소 인덱스
-var _cell_x: PackedInt32Array = PackedInt32Array()  ## 원소별 셀 좌표 (해시 충돌 검증용)
-var _cell_y: PackedInt32Array = PackedInt32Array()
+var _cell_key: PackedInt64Array = PackedInt64Array()  ## 원소별 셀 좌표를 int 하나로 (해시 충돌 검증용)
+var _cell_bucket: PackedInt32Array = PackedInt32Array()  ## 원소별 버킷 (배치 패스에서 재계산 안 하려고)
 var _count: int = 0
 
 
@@ -39,12 +39,18 @@ func reserve(p_capacity: int) -> void:
 	if _items.size() >= p_capacity:
 		return
 	_items.resize(p_capacity)
-	_cell_x.resize(p_capacity)
-	_cell_y.resize(p_capacity)
+	_cell_key.resize(p_capacity)
+	_cell_bucket.resize(p_capacity)
 
 
 static func hash_cell(cx: int, cy: int) -> int:
 	return ((cx * 73856093) ^ (cy * 19349663)) & BUCKET_MASK
+
+
+## 셀 좌표를 int 하나로 접는다. GDScript int는 64비트라 충돌이 없다.
+## 후보를 걸러낼 때 배열 두 번 읽고 두 번 비교하던 걸 한 번으로 줄인다.
+static func pack_cell(cx: int, cy: int) -> int:
+	return cx * 4294967296 + cy
 
 
 func cell_coord(v: float) -> int:
@@ -63,9 +69,10 @@ func rebuild(pos_x: PackedFloat32Array, pos_y: PackedFloat32Array, count: int) -
 	for i in count:
 		var cx: int = int(floor(pos_x[i] * _inv_cell))
 		var cy: int = int(floor(pos_y[i] * _inv_cell))
-		_cell_x[i] = cx
-		_cell_y[i] = cy
-		_counts[hash_cell(cx, cy)] += 1
+		var b: int = ((cx * 73856093) ^ (cy * 19349663)) & BUCKET_MASK
+		_cell_key[i] = cx * 4294967296 + cy
+		_cell_bucket[i] = b
+		_counts[b] += 1
 
 	# 2) 누적합 → _counts[b] = 버킷 b의 끝(exclusive). 마지막 칸에 전체 개수.
 	var running: int = 0
@@ -77,7 +84,7 @@ func rebuild(pos_x: PackedFloat32Array, pos_y: PackedFloat32Array, count: int) -
 	# 3) 뒤에서부터 채우면 _counts[b]가 그대로 "시작 인덱스"로 바뀐다.
 	#    버킷은 연속이므로 버킷 b의 끝 = _counts[b + 1]이 된다. 커서 배열이 필요 없다.
 	for i in count:
-		var b: int = hash_cell(_cell_x[i], _cell_y[i])
+		var b: int = _cell_bucket[i]
 		_counts[b] -= 1
 		_items[_counts[b]] = i
 
@@ -99,10 +106,11 @@ func query_circle(px: float, py: float, radius: float, out: PackedInt32Array) ->
 			var b: int = hash_cell(cx, cy)
 			var start: int = _counts[b]
 			var end: int = _counts[b + 1]
+			var key: int = cx * 4294967296 + cy
 			for k in range(start, end):
 				var idx: int = _items[k]
 				# 다른 셀이 같은 버킷에 해시됐을 수 있다.
-				if _cell_x[idx] != cx or _cell_y[idx] != cy:
+				if _cell_key[idx] != key:
 					continue
 				if written >= cap:
 					return written
@@ -113,3 +121,24 @@ func query_circle(px: float, py: float, radius: float, out: PackedInt32Array) ->
 
 func get_count() -> int:
 	return _count
+
+
+## --- 내부 배열 직통 접근 ---
+## EnemyManager가 이웃 검사를 직접 인라인하기 위해 쓴다. GDScript에서는 적 1마리마다
+## 메서드를 부르는 것 자체가 큰 비용이라, 3,000번의 query_circle() 호출을 없애려면
+## 배열을 지역 변수로 받아가야 한다. 읽기만 하면 CoW 덕분에 복사도 일어나지 않는다.
+## 절대 수정하지 말 것.
+func get_counts() -> PackedInt32Array:
+	return _counts
+
+
+func get_items() -> PackedInt32Array:
+	return _items
+
+
+func get_cell_keys() -> PackedInt64Array:
+	return _cell_key
+
+
+func get_inv_cell() -> float:
+	return _inv_cell

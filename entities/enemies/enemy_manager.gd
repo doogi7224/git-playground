@@ -12,7 +12,11 @@ class_name EnemyManager
 
 const MAX_TYPES: int = 32
 const BUFFER_STRIDE: int = 16   ## transform_2d(8) + color(4) + custom_data(4)
-const CELL_SIZE: float = 64.0
+## 셀 크기는 분리 계산 기준으로 정한다. 무기 질의는 0.8초에 한 번이지만
+## 분리는 적 1마리마다 매번 돌기 때문이다. 실측(3,000마리 기준 이동+분리 ms):
+##   32px → 5.38 / 48px → 5.73 / 64px → 6.65 / 96px → 8.97
+## 기획서 6.2는 64px이라고 적었지만 32px이 20% 빠르다.
+const CELL_SIZE: float = 32.0
 const HIT_FLASH_TIME: float = 0.08
 
 ## 군집 분리. 이게 없으면 적이 전부 플레이어 뒤 한 줄로 겹쳐서, 전방 무기가
@@ -20,6 +24,12 @@ const HIT_FLASH_TIME: float = 0.08
 ## 비용을 묶기 위해 이웃은 MAX_NEIGHBORS개까지만 본다.
 const SEPARATION_FORCE: float = 5.0
 const MAX_NEIGHBORS: int = 6
+
+## 분리 계산을 매 프레임 전부 돌리면 3,000마리에서 26ms가 나온다(60fps 예산의 162%).
+## 세 프레임에 한 번씩만 하고 힘을 3배로 주면 평균 밀어내는 양은 같으면서 비용은 1/3이다.
+const SEPARATION_INTERVAL: int = 3
+## 화면 반대각이 약 1,100px이다. 그보다 훨씬 먼 적은 겹쳐 보여도 아무도 모른다.
+const SEPARATION_MAX_DIST: float = 1300.0
 
 ## --- 적 상태 배열 (SoA) ---
 var _px: PackedFloat32Array = PackedFloat32Array()
@@ -53,6 +63,11 @@ var _reap_count: int = 0
 var _reap_scheduled: bool = false
 var _scratch: PackedInt32Array = PackedInt32Array()
 var _sep_scratch: PackedInt32Array = PackedInt32Array()
+var _sep_parity: int = 0
+
+## 디버그 오버레이용 계측 (프레임당 Time 호출 2번, 무시할 수준)
+var last_sim_usec: int = 0
+var last_buffer_usec: int = 0
 
 var target_position: Vector2 = Vector2.ZERO
 
@@ -169,60 +184,92 @@ func _physics_process(delta: float) -> void:
 		return
 	# 분리 계산은 지난 프레임 격자를 쓴다(한 프레임 낡아도 밀어내기엔 충분).
 	# 이동이 끝난 뒤 다시 만들어서, 이번 프레임 무기 판정은 최신 위치로 한다.
+	var t0: int = Time.get_ticks_usec()
 	_move(delta)
 	hash_grid.rebuild(_px, _py, _count)
+	last_sim_usec = Time.get_ticks_usec() - t0
 
 
 func _process(_delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
 	_update_buffer()
+	last_buffer_usec = Time.get_ticks_usec() - t0
 
 
 func _move(delta: float) -> void:
 	var tx: float = target_position.x
 	var ty: float = target_position.y
+
+	# 해시 내부 배열을 지역 변수로 받아온다. 읽기만 하므로 CoW 복사는 일어나지 않고,
+	# 적 1마리마다 query_circle()을 부르던 3,000번의 메서드 호출이 사라진다.
+	var counts: PackedInt32Array = hash_grid.get_counts()
+	var items: PackedInt32Array = hash_grid.get_items()
+	var cell_keys: PackedInt64Array = hash_grid.get_cell_keys()
+	var inv_cell: float = hash_grid.get_inv_cell()
+	var has_grid: bool = hash_grid.get_count() > 0
+
+	_sep_parity = (_sep_parity + 1) % SEPARATION_INTERVAL
+	var far_sq: float = SEPARATION_MAX_DIST * SEPARATION_MAX_DIST
+	var force: float = SEPARATION_FORCE * float(SEPARATION_INTERVAL)
+
 	for i in _count:
 		var t: int = _type[i]
 		var speed: float = _t_speed[t]
-		var radius: float = _t_radius[t]
-
-		var vx: float = 0.0
-		var vy: float = 0.0
+		var px: float = _px[i]
+		var py: float = _py[i]
 
 		# 1) 플레이어 추격
-		var dx: float = tx - _px[i]
-		var dy: float = ty - _py[i]
-		var dist: float = sqrt(dx * dx + dy * dy)
-		if dist > 0.001:
-			vx = dx / dist * speed
-			vy = dy / dist * speed
+		var dx: float = tx - px
+		var dy: float = ty - py
+		var to_player_sq: float = dx * dx + dy * dy
+		var vx: float = 0.0
+		var vy: float = 0.0
+		if to_player_sq > 0.000001:
+			var inv: float = speed / sqrt(to_player_sq)
+			vx = dx * inv
+			vy = dy * inv
 
-		# 2) 겹친 이웃 밀어내기
-		var want: float = radius * 2.0
-		var n: int = hash_grid.query_circle(_px[i], _py[i], want, _sep_scratch)
-		var seen: int = 0
-		for k in n:
-			var j: int = _sep_scratch[k]
-			if j == i or j >= _count:
-				continue
-			var ox: float = _px[i] - _px[j]
-			var oy: float = _py[i] - _py[j]
-			var d2: float = ox * ox + oy * oy
-			if d2 >= want * want:
-				continue
-			if d2 < 0.0001:
-				# 완전히 겹쳤으면 개체별 위상으로 갈라놓는다
-				ox = cos(_seed[i])
-				oy = sin(_seed[i])
-				d2 = 1.0
-			var d: float = sqrt(d2)
-			var push: float = (want - d) / want
-			vx += ox / d * push * speed * SEPARATION_FORCE
-			vy += oy / d * push * speed * SEPARATION_FORCE
-			seen += 1
-			if seen >= MAX_NEIGHBORS:
-				break
+		# 2) 겹친 이웃 밀어내기 (격자 셀을 직접 훑는다)
+		if has_grid and to_player_sq < far_sq and (i % SEPARATION_INTERVAL) == _sep_parity:
+			var want: float = _t_radius[t] * 2.0
+			var want_sq: float = want * want
+			var min_cx: int = int(floor((px - want) * inv_cell))
+			var max_cx: int = int(floor((px + want) * inv_cell))
+			var min_cy: int = int(floor((py - want) * inv_cell))
+			var max_cy: int = int(floor((py + want) * inv_cell))
+			var neighbors: int = 0
+			var cy: int = min_cy
+			while cy <= max_cy and neighbors < MAX_NEIGHBORS:
+				var cx: int = min_cx
+				while cx <= max_cx and neighbors < MAX_NEIGHBORS:
+					var b: int = ((cx * 73856093) ^ (cy * 19349663)) & SpatialHash.BUCKET_MASK
+					var key: int = cx * 4294967296 + cy
+					var k: int = counts[b]
+					var end: int = counts[b + 1]
+					while k < end and neighbors < MAX_NEIGHBORS:
+						var j: int = items[k]
+						k += 1
+						if j == i or cell_keys[j] != key:
+							continue
+						var ox: float = px - _px[j]
+						var oy: float = py - _py[j]
+						var d2: float = ox * ox + oy * oy
+						if d2 >= want_sq:
+							continue
+						if d2 < 0.0001:
+							# 완전히 겹쳤으면 개체별 위상으로 갈라놓는다
+							ox = cos(_seed[i])
+							oy = sin(_seed[i])
+							d2 = 1.0
+						var d: float = sqrt(d2)
+						var push: float = (want - d) / want * speed * force / d
+						vx += ox * push
+						vy += oy * push
+						neighbors += 1
+					cx += 1
+				cy += 1
 
-		# 속도 상한을 두지 않으면 밀림이 폭주한다
+		# 속도 상한이 없으면 밀림이 폭주한다
 		var v2: float = vx * vx + vy * vy
 		var cap: float = speed * 1.6
 		if v2 > cap * cap:
@@ -230,8 +277,8 @@ func _move(delta: float) -> void:
 			vx *= k2
 			vy *= k2
 
-		_px[i] += vx * delta
-		_py[i] += vy * delta
+		_px[i] = px + vx * delta
+		_py[i] = py + vy * delta
 
 		if _flash[i] > 0.0:
 			_flash[i] = maxf(0.0, _flash[i] - delta)

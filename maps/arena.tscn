@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://maps/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://maps/ground_grid.gd" id="2_ground"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://ui/hud/hud.tscn" id="7_hud"]
 [ext_resource type="PackedScene" path="res://ui/level_up/level_up_screen.tscn" id="8_levelup"]
 [ext_resource type="PackedScene" path="res://ui/results/results_screen.tscn" id="9_results"]
+[ext_resource type="PackedScene" path="res://ui/hud/debug_overlay.tscn" id="10_debug"]
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
@@ -37,3 +38,5 @@ script = ExtResource("6_director")
 [node name="LevelUpScreen" parent="UI" instance=ExtResource("8_levelup")]
 
 [node name="ResultsScreen" parent="UI" instance=ExtResource("9_results")]
+
+[node name="DebugOverlay" parent="UI" instance=ExtResource("10_debug")]

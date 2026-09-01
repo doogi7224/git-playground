@@ -9,6 +9,7 @@ const ENEMY_CAPACITY: int = 4096
 @onready var player: Player = $Player
 @onready var director: SpawnDirector = $SpawnDirector
 @onready var level_up: Control = $UI/LevelUpScreen
+@onready var debug_overlay: Control = $UI/DebugOverlay
 
 
 func _ready() -> void:
@@ -29,6 +30,8 @@ func _ready() -> void:
 	pickups.collected.connect(player.add_xp)
 	director.setup(enemies, player, mob)
 	level_up.player = player
+	debug_overlay.enemies = enemies
+	debug_overlay.pickups = pickups
 
 	GameState.start_run(&"kim_private")
 

@@ -21,6 +21,8 @@ godot --path .          # 에디터로 열기 (아직 main_scene 없음 — M0�
 tools/test.sh          # 헤드리스 자체 검증 (~13초, 116개 검사)
 tools/test.sh --gl     # Xvfb + OpenGL. MultiMesh 버퍼 검사까지 전부
 tools/screenshot.sh --out=/tmp/shot.png --seconds=80 --scale=6
+tools/bench.sh         # 적 수별 물리 1틱 비용
+tools/stress.sh --count=3000    # 3,000마리 스트레스 (F3 오버레이)
 ```
 
 `tools/screenshot.sh` 는 실제 렌더러로 한 판을 자동 플레이해서 PNG를 뽑습니다.
@@ -54,7 +56,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 - 물리 엔진 대신 spatial hash grid
 - 런타임 `instantiate()` 금지 → `ObjectPool`
 - 수치 하드코딩 금지 → `.tres`
-- 목표: **3,000마리 @ 60fps @ 1080p**
+- 목표: **3,000마리 @ 60fps @ 1080p** — 현재 물리 1틱 8.7ms(예산의 52%), 드로우콜 40 (`docs/performance.md`)
 
 ## 진행 상황
 

@@ -1,0 +1,41 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/hud/debug_overlay.gd" id="1_dbg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dbg"]
+bg_color = Color(0.0313726, 0.0392157, 0.0235294, 0.78)
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[node name="DebugOverlay" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_dbg")
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 0
+offset_left = 24.0
+offset_top = 150.0
+offset_right = 640.0
+offset_bottom = 280.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dbg")
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="Label" type="Label" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.611765, 0.929412, 0.878431, 1)
+theme_override_font_sizes/font_size = 22
+text = "..."

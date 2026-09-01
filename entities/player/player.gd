@@ -17,6 +17,8 @@ var damage_mult: float = 1.0
 var magnet_mult: float = 1.0
 
 var hp: float = 100.0
+## 스트레스 테스트/디버그용. 켜면 피해를 받지 않는다.
+var invulnerable: bool = false
 var facing: Vector2 = Vector2.RIGHT
 var level: int = 1
 var xp: float = 0.0
@@ -83,7 +85,7 @@ func _contact_damage(delta: float) -> void:
 
 
 func take_damage(amount: float) -> void:
-	if hp <= 0.0:
+	if hp <= 0.0 or invulnerable:
 		return
 	hp = maxf(0.0, hp - amount)
 	EventBus.player_damaged.emit(amount, hp / max_hp)
