@@ -118,9 +118,10 @@
 
 ```
 AI로 캐릭터 1장(정지) 고해상도 생성
-  → 배경 제거(rembg) → 파츠 분리(머리/몸통/양팔/양다리/무기)
-  → Godot Skeleton2D + Polygon2D 컷아웃 리깅
-  → 걷기/공격/피격/사망은 리깅으로 재사용
+  → tools/art_pipeline.py (배경 제거·팔레트 스냅·외곽선·노멀맵)
+  → 파츠 분리(머리/몸통/양팔/양다리/무기)
+  → entities/characters/rigged_character.tscn 슬롯에 텍스처만 끼움
+  → 걷기/공격/피격/사망이 그대로 나온다 (docs/rigging.md)
 ```
 
 `tools/art_pipeline.py`가 배경 제거 → **팔레트 강제 스냅** → Sobel 외곽선 강화 → 노멀맵 생성
@@ -148,6 +149,7 @@ res://
 │   ├── spawn/      spawn_director.gd, spatial_hash.gd
 │   └── upgrade/    upgrade_pool.gd, evolution_rules.gd
 ├── entities/
+│   ├── characters/ rigged_character.tscn  ← 컷아웃 리깅 템플릿
 │   ├── player/     player.gd, player.tscn
 │   ├── enemies/    enemy_manager.gd  ← ★ 개별 노드 아님, 데이터 배열
 │   └── pickups/
@@ -175,7 +177,7 @@ res://
 | **M5** | 2주 | 폴리시 | 사운드, 튜토리얼, 옵션, 한/영 로컬라이즈, 최적화 |
 | **M6** | 2주 | 출시 준비 | Steam 페이지, 데모 빌드, 트레일러 |
 
-**현재 상태: M1 + 아트 파이프라인 + 그래픽 폴리시 완료. 다음은 프롬프트 7 = 컷아웃 리깅 템플릿.**
+**현재 상태: 기획서 8장의 프롬프트 0~7 전부 완료. 다음은 M2 = 실제 아트 1차 패스(플레이어 + 적 5종).**
 
 한 번에 두 마일스톤 이상 진행하지 않는다. 기획서 8장의 프롬프트 팩을 순서대로 따른다.
 
@@ -198,7 +200,8 @@ tools/stress.sh --count=3000 --shot=/tmp/stress.png   # 3,000마리 유지 + 리
 - 헤드리스(더미 렌더러)는 MultiMesh 데이터를 서버에 담지 않는다. 버퍼 레이아웃 검사는
   `--gl` 에서만 돈다.
 - 인게임에서는 **F3**로 성능 오버레이(FPS/드로우콜/적 수/시뮬 ms)를 켠다.
-- `tools/playthrough.sh` 로 20분 한 판을 끝까지 자동 플레이해서 밸런스를 본다.
+- `tools/rigging_preview.sh   # 리깅 4종 애니메이션을 여러 컷으로 확인
+tools/playthrough.sh` 로 20분 한 판을 끝까지 자동 플레이해서 밸런스를 본다.
   **배속은 8 이하.** 그보다 올리면 물리 델타가 커져서 '짬'을 통과해 버리는 가짜 결과가 나온다.
 - 성능 수치와 최적화 내역은 `docs/performance.md`.
 

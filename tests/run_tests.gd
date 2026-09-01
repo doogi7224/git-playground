@@ -38,6 +38,7 @@ func _run_all() -> void:
 	test_evolution()
 	await test_boss()
 	await test_graphics_polish()
+	await test_rigging_template()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	get_tree().quit(1 if _failures > 0 else 0)
 
@@ -708,4 +709,72 @@ func test_graphics_polish() -> void:
 	sprite.queue_free()
 
 	Settings.load_from(before)
+	await get_tree().process_frame
+
+
+## 컷아웃 리깅 템플릿 (기획서 프롬프트 7). 생성기(tools/gen_rig_template.py)가 만든 씬이라
+## 트랙 경로 오타가 나면 애니메이션이 조용히 안 돈다 — 그걸 잡는다.
+func test_rigging_template() -> void:
+	print("[컷아웃 리깅 템플릿]")
+	var scene: PackedScene = load("res://entities/characters/rigged_character.tscn") as PackedScene
+	_check(scene != null, "템플릿 씬이 로드된다")
+	if scene == null:
+		return
+
+	var rig: RiggedCharacter = scene.instantiate()
+	get_tree().root.add_child(rig)
+	await get_tree().process_frame
+
+	_check(rig.skeleton != null, "Skeleton2D 가 있다")
+	_check(rig.anim != null, "AnimationPlayer 가 있다")
+
+	# 파츠 슬롯이 전부 있는가 — 새 캐릭터는 여기에 텍스처만 끼운다
+	for part: StringName in RiggedCharacter.PARTS:
+		_check(rig.part_node(part) != null, "파츠 슬롯 %s" % part)
+
+	for name: String in ["walk", "attack", "hit", "die"]:
+		_check(rig.anim.has_animation(name), "애니메이션 '%s' 가 있다" % name)
+		if not rig.anim.has_animation(name):
+			continue
+		var animation: Animation = rig.anim.get_animation(name)
+		_check(animation.get_track_count() > 0, "'%s' 에 트랙이 있다 (%d개)" % [name, animation.get_track_count()])
+		# 트랙 경로가 실제 노드를 가리키는지 — 오타 하나면 조용히 아무 일도 안 일어난다
+		var broken: Array[String] = []
+		for t in animation.get_track_count():
+			var path: String = String(animation.track_get_path(t))
+			var node_part: String = path.get_slice(":", 0)
+			# ":modulate" 처럼 노드 부분이 비면 루트 자신을 가리킨다 — 정상이다
+			if node_part.is_empty():
+				continue
+			if rig.get_node_or_null(NodePath(node_part)) == null:
+				broken.append(path)
+		_check(broken.is_empty(), "'%s' 트랙 경로가 전부 살아 있다 (끊긴 것: %s)" % [name, broken])
+
+	_check(rig.anim.get_animation("walk").loop_mode == Animation.LOOP_LINEAR, "걷기는 반복된다")
+	_check(rig.anim.get_animation("die").loop_mode == Animation.LOOP_NONE, "사망은 반복되지 않는다")
+
+	# 실제로 뼈가 움직이는가
+	var leg: Bone2D = rig.get_node("Skeleton2D/Hip/LegL") as Bone2D
+	rig.play_walk()
+	rig.anim.seek(0.0, true)
+	var pose_a: float = leg.rotation
+	rig.anim.seek(0.33, true)
+	var pose_b: float = leg.rotation
+	_check(absf(pose_a - pose_b) > 0.1, "걷기에서 다리가 실제로 움직인다 (%.2f → %.2f)" % [pose_a, pose_b])
+
+	# 사망은 다른 애니메이션으로 안 넘어간다
+	rig.play_die()
+	_check(rig.is_dead(), "사망 상태가 잠긴다")
+	rig.play_walk()
+	_check(rig.is_dead(), "죽은 뒤에는 걷기로 안 넘어간다")
+	rig.revive()
+	_check(not rig.is_dead(), "되살리면 풀린다")
+
+	# 좌우 반전은 뼈대를 통째로 뒤집는다
+	rig.set_facing(-1.0)
+	_check(rig.skeleton.scale.x < 0.0, "왼쪽을 보면 뼈대가 뒤집힌다")
+	rig.set_facing(1.0)
+	_check(rig.skeleton.scale.x > 0.0, "오른쪽을 보면 되돌아온다")
+
+	rig.queue_free()
 	await get_tree().process_frame

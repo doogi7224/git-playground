@@ -27,6 +27,7 @@ tools/playthrough.sh --runs=2 --scale=8   # 20분 한 판 끝까지 자동 플�
 
 python3 tools/art_pipeline.py --input art/raw --palette core --normal --atlas main
 python3 tools/test_art_pipeline.py       # 아트 파이프라인 자체 검증
+tools/rigging_preview.sh --out=/tmp/rig  # 컷아웃 리깅 4종 애니메이션 확인
 ```
 
 `tools/screenshot.sh` 는 실제 렌더러로 한 판을 자동 플레이해서 PNG를 뽑습니다.
@@ -46,7 +47,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 |---|---|
 | `autoload/` | GameState, EventBus, AudioManager, SaveSystem, ObjectPool |
 | `core/` | 전투/스폰/업그레이드 시스템 |
-| `entities/` | 플레이어, EnemyManager(배열 기반), 픽업 |
+| `entities/` | 플레이어, EnemyManager(배열 기반), 픽업, 리깅 템플릿 |
 | `weapons/` | 무기 10종 |
 | `core/data/` | Resource 스키마 (`docs/data.md`) |
 | `data/` | 밸런싱 데이터 (`.tres`) — 수치는 전부 여기 |
