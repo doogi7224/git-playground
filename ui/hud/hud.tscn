@@ -1,0 +1,100 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/hud/hud.gd" id="1_hud"]
+
+[node name="HUD" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="XPBar" type="ProgressBar" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 12.0
+grow_horizontal = 2
+mouse_filter = 2
+max_value = 1.0
+step = 0.001
+value = 0.0
+show_percentage = false
+
+[node name="DayLabel" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 20.0
+offset_right = 260.0
+offset_bottom = 108.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.788235, 0.290196, 1)
+theme_override_font_sizes/font_size = 66
+text = "D-100"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -160.0
+offset_top = 104.0
+offset_right = 160.0
+offset_bottom = 140.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.87451, 0.882353, 0.792157, 1)
+theme_override_font_sizes/font_size = 26
+text = "20:00"
+horizontal_alignment = 1
+
+[node name="BottomLeft" type="VBoxContainer" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = -110.0
+offset_right = 392.0
+offset_bottom = -32.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="RankLabel" type="Label" parent="BottomLeft"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.87451, 0.882353, 0.792157, 1)
+theme_override_font_sizes/font_size = 30
+text = "이등병  Lv.1"
+
+[node name="HPBar" type="ProgressBar" parent="BottomLeft"]
+custom_minimum_size = Vector2(360, 24)
+layout_mode = 2
+mouse_filter = 2
+max_value = 1.0
+step = 0.001
+value = 1.0
+show_percentage = false
+
+[node name="TopRight" type="VBoxContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -280.0
+offset_top = 24.0
+offset_right = -32.0
+offset_bottom = 70.0
+grow_horizontal = 0
+mouse_filter = 2
+alignment = 2
+
+[node name="KillLabel" type="Label" parent="TopRight"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.87451, 0.882353, 0.792157, 1)
+theme_override_font_sizes/font_size = 26
+text = "처치 0"
+horizontal_alignment = 2

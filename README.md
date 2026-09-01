@@ -13,6 +13,19 @@
 godot --path .          # 에디터로 열기 (아직 main_scene 없음 — M0에서 추가)
 ```
 
+## 검증
+
+화면 없이도 전부 확인할 수 있게 해뒀습니다.
+
+```bash
+tools/test.sh          # 헤드리스 자체 검증 (~13초, 116개 검사)
+tools/test.sh --gl     # Xvfb + OpenGL. MultiMesh 버퍼 검사까지 전부
+tools/screenshot.sh --out=/tmp/shot.png --seconds=80 --scale=6
+```
+
+`tools/screenshot.sh` 는 실제 렌더러로 한 판을 자동 플레이해서 PNG를 뽑습니다.
+자동 조작(`tests/auto_player.gd`)이 8자로 돌며 레벨업 카드까지 골라줍니다.
+
 ## 빌드
 
 ```bash
@@ -46,7 +59,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 ## 진행 상황
 
 - [x] 프롬프트 0 — 프로젝트 초기화 (뼈대)
-- [ ] M0 — 화이트박스 프로토타입
+- [x] M0 — 화이트박스 프로토타입
 - [ ] M1 — 코어 루프 + 성능 검증
 - [ ] M2 — 아트 1차 패스
 - [ ] M3 — 콘텐츠 확장

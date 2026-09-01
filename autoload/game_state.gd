@@ -30,6 +30,11 @@ var _last_days_left: int = TOTAL_DAYS
 
 func _ready() -> void:
 	set_process(false)
+	EventBus.enemy_died.connect(_on_enemy_died)
+
+
+func _on_enemy_died(_pos: Vector2, _xp: float, _enemy_type: StringName) -> void:
+	run_stats["kills"] = int(run_stats.get("kills", 0)) + 1
 
 
 func _process(delta: float) -> void:
