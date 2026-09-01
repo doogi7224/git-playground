@@ -24,6 +24,9 @@ tools/screenshot.sh --out=/tmp/shot.png --seconds=80 --scale=6
 tools/bench.sh         # 적 수별 물리 1틱 비용
 tools/stress.sh --count=3000    # 3,000마리 스트레스 (F3 오버레이)
 tools/playthrough.sh --runs=2 --scale=8   # 20분 한 판 끝까지 자동 플레이 (밸런싱용)
+
+python3 tools/art_pipeline.py --input art/raw --palette core --normal --atlas main
+python3 tools/test_art_pipeline.py       # 아트 파이프라인 자체 검증
 ```
 
 `tools/screenshot.sh` 는 실제 렌더러로 한 판을 자동 플레이해서 PNG를 뽑습니다.
@@ -49,7 +52,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 | `data/` | 밸런싱 데이터 (`.tres`) — 수치는 전부 여기 |
 | `ui/` | HUD, 레벨업 명령서, 결과(전역증), 메타 |
 | `vfx/` | 셰이더, 파티클 |
-| `art/` | `raw/`(AI 원본) → `processed/` → `atlas/` |
+| `art/` | `raw/`(AI 원본, 커밋함) → `processed/` → `atlas/` (생성물) |
 | `tools/` | `art_pipeline.py`, `build.sh` |
 
 ## 지켜야 할 선
