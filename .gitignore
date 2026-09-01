@@ -1,0 +1,36 @@
+# Godot 4
+.godot/
+/android/
+*.translation
+
+# 내보내기 산출물
+/build/
+/export/
+*.pck
+*.exe
+*.x86_64
+*.dmg
+*.apk
+*.aab
+export_presets.cfg
+
+# 아트 파이프라인 (원본은 커밋, 중간 산출물은 제외)
+art/processed/*
+!art/processed/.gitkeep
+art/atlas/*
+!art/atlas/.gitkeep
+*.psd
+*.kra
+*.blend1
+
+# Python (tools/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
