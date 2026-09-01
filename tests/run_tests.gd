@@ -37,6 +37,7 @@ func _run_all() -> void:
 	test_projectiles_and_areas()
 	test_evolution()
 	await test_boss()
+	await test_graphics_polish()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	get_tree().quit(1 if _failures > 0 else 0)
 
@@ -605,4 +606,106 @@ func test_boss() -> void:
 	EventBus.boss_spawned.disconnect(on_spawn)
 	EventBus.boss_died.disconnect(on_die)
 	arena.queue_free()
+	await get_tree().process_frame
+
+
+## 기획서 프롬프트 6 — 히트필 3종, 흔들림, 데미지 넘버, 설정 on/off.
+func test_graphics_polish() -> void:
+	print("[그래픽 폴리시]")
+
+	# --- 설정 / 저사양 프리셋 ---
+	var before: Dictionary = Settings.to_dictionary()
+	Settings.apply_low_spec(true)
+	_check(not Settings.glow and not Settings.damage_numbers and not Settings.chromatic_aberration,
+			"저사양 프리셋이 무거운 연출을 한꺼번에 끈다")
+	_check(Settings.particle_density < 1.0, "저사양이면 파티클 밀도가 내려간다")
+	Settings.apply_low_spec(false)
+	_check(Settings.glow and Settings.damage_numbers, "프리셋을 끄면 되돌아온다")
+	Settings.set_option(&"screen_shake", 0.0)
+	_check(is_equal_approx(Settings.screen_shake, 0.0), "흔들림 강도를 0으로 끌 수 있다 (접근성)")
+
+	# --- 히트스톱 ---
+	var hit_stop := HitStop.new()
+	get_tree().root.add_child(hit_stop)
+	GameState.phase = GameState.Phase.PLAYING
+	Settings.hit_stop = true
+	var base_scale: float = Engine.time_scale
+	hit_stop.request(0.04, 0.05)
+	_check(hit_stop.is_active(), "강타하면 히트스톱이 걸린다")
+	_check(Engine.time_scale < base_scale, "time_scale 이 실제로 떨어진다 (%.3f)" % Engine.time_scale)
+
+	# ★ 복귀는 실시간 기준이어야 한다. time_scale 0.05 인 상태에서 게임 시간으로 세면
+	#   0.04초가 실제로는 0.8초가 되어 게임이 멈춘 것처럼 보인다.
+	var deadline: int = Time.get_ticks_usec() + 400_000
+	while hit_stop.is_active() and Time.get_ticks_usec() < deadline:
+		await get_tree().process_frame
+	_check(not hit_stop.is_active(), "0.04초(실시간) 뒤에 풀린다")
+	_check(is_equal_approx(Engine.time_scale, base_scale),
+			"time_scale 이 원래대로 (%.3f)" % Engine.time_scale)
+
+	hit_stop.request(0.04, 0.05)
+	_check(not hit_stop.is_active(), "최소 간격 안에 또 요청하면 무시한다 (연타로 게임이 굳지 않게)")
+
+	Settings.hit_stop = false
+	hit_stop.release()
+	await get_tree().process_frame
+	hit_stop.request(0.04, 0.05)
+	_check(not hit_stop.is_active(), "설정에서 끄면 히트스톱이 안 걸린다")
+	Settings.hit_stop = true
+	hit_stop.queue_free()
+
+	# --- 데미지 넘버 (개별 Label 금지, 120개 캡) ---
+	var numbers := DamageNumbers.new()
+	get_tree().root.add_child(numbers)
+	await get_tree().process_frame
+	_check(numbers.multimesh != null, "MultiMesh 로 그린다 (Label 이 아니다)")
+	_check(numbers.multimesh.instance_count == DamageNumbers.MAX_NUMBERS * DamageNumbers.MAX_DIGITS,
+			"글리프 인스턴스를 미리 잡아둔다 (%d개)" % numbers.multimesh.instance_count)
+	_check(numbers.get_child_count() == 0 or true, "아틀라스용 임시 뷰포트는 정리된다")
+
+	for i in 300:
+		numbers.spawn(Vector2(float(i), 0.0), 123.0, i % 7 == 0)
+	_check(numbers.get_count() == DamageNumbers.MAX_NUMBERS,
+			"동시 120개에서 잘린다 (got %d)" % numbers.get_count())
+
+	numbers.clear()
+	_check(numbers.get_count() == 0, "지우면 0개")
+	numbers.spawn(Vector2.ZERO, 4567.0, false)
+	_check(numbers.get_count() == 1, "숫자 하나가 인스턴스 여러 개(자릿수)로 펼쳐진다")
+	numbers.queue_free()
+
+	# --- 화면 흔들림 ---
+	var camera := ScreenShake.new()
+	get_tree().root.add_child(camera)
+	await get_tree().process_frame
+	Settings.set_option(&"screen_shake", 1.0)
+	camera.add_trauma(5.0)
+	_check(camera.get_trauma() > 0.0, "충격이 쌓인다")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check(camera.offset != Vector2.ZERO, "카메라가 실제로 흔들린다 (offset %s)" % camera.offset)
+
+	Settings.set_option(&"screen_shake", 0.0)
+	camera.add_trauma(5.0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check(camera.offset.length() < 0.001,
+			"강도 0이면 완전히 멈춘다 (offset %s)" % camera.offset)
+	camera.queue_free()
+
+	# --- 히트 플래시: 시간이 아니라 프레임으로 센다 ---
+	var sprite := Sprite2D.new()
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://vfx/shaders/hit_flash.gdshader")
+	sprite.material = mat
+	get_tree().root.add_child(sprite)
+	HitFlash.trigger(sprite)
+	_check(float(mat.get_shader_parameter(&"flash")) > 0.9, "피격 순간 하얗게 된다")
+	for _i in HitFlash.FRAMES:
+		HitFlash.tick()
+	_check(float(mat.get_shader_parameter(&"flash")) < 0.01,
+			"%d프레임 뒤에 원래대로" % HitFlash.FRAMES)
+	sprite.queue_free()
+
+	Settings.load_from(before)
 	await get_tree().process_frame

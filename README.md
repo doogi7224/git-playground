@@ -51,7 +51,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 | `core/data/` | Resource 스키마 (`docs/data.md`) |
 | `data/` | 밸런싱 데이터 (`.tres`) — 수치는 전부 여기 |
 | `ui/` | HUD, 레벨업 명령서, 결과(전역증), 메타 |
-| `vfx/` | 셰이더, 파티클 |
+| `vfx/` | 셰이더, 히트필, 데미지 넘버, 화면 흔들림 (`docs/graphics.md`) |
 | `art/` | `raw/`(AI 원본, 커밋함) → `processed/` → `atlas/` (생성물) |
 | `tools/` | `art_pipeline.py`, `build.sh` |
 

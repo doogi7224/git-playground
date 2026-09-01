@@ -18,6 +18,8 @@ const ENEMY_CAPACITY: int = 4096
 @onready var level_up: Control = $UI/LevelUpScreen
 @onready var debug_overlay: Control = $UI/DebugOverlay
 @onready var ground: Node2D = $Ground
+@onready var canvas_modulate: CanvasModulate = $CanvasModulate
+@onready var damage_numbers: DamageNumbers = $DamageNumbers
 
 
 func _ready() -> void:
@@ -41,6 +43,8 @@ func _ready() -> void:
 	debug_overlay.enemies = enemies
 	debug_overlay.pickups = pickups
 	ground.line_color = map.ground_color
+	# 기획서 3.3: CanvasModulate 로 맵별 전역 톤. 야간 위병소는 짙은 남색이 된다.
+	canvas_modulate.color = map.ambient_tint
 
 	GameState.start_run(character.id)
 

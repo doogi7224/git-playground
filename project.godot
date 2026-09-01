@@ -22,6 +22,7 @@ EventBus="*res://autoload/event_bus.gd"
 GameState="*res://autoload/game_state.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 SaveSystem="*res://autoload/save_system.gd"
+Settings="*res://autoload/settings.gd"
 ObjectPool="*res://autoload/object_pool.gd"
 
 [display]

@@ -24,6 +24,8 @@ var magnet_mult: float = 1.0
 var xp_mult: float = 1.0
 var armor: float = 0.0
 var luck: float = 0.0
+var crit_chance: float = 0.10
+var crit_mult: float = 2.0
 var extra_projectiles: int = 0   ## 탄띠
 var regen: float = 0.0           ## 건빵 — 초당 회복
 
@@ -234,6 +236,8 @@ func apply_upgrade(upgrade: UpgradeData) -> void:
 			xp_mult += upgrade.xp_mult_add
 			armor += upgrade.armor_add
 			luck += upgrade.luck_add
+			# 휴가증(행운)은 크리티컬 확률로도 들어간다
+			crit_chance = minf(0.85, crit_chance + upgrade.luck_add * 0.5)
 			extra_projectiles += upgrade.projectiles_add
 			regen += upgrade.regen_add
 			if upgrade.max_hp_add != 0.0:

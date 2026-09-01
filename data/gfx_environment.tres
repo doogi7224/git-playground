@@ -1,0 +1,20 @@
+[gd_resource type="Environment" load_steps=2 format=3]
+
+[sub_resource type="Sky" id="Sky_none"]
+
+[resource]
+background_mode = 0
+ambient_light_source = 0
+reflected_light_source = 0
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.6
+glow_strength = 1.0
+glow_bloom = 0.12
+glow_blend_mode = 1
+glow_hdr_threshold = 0.85
+glow_hdr_scale = 2.0
+adjustment_enabled = true
+adjustment_brightness = 1.0
+adjustment_contrast = 1.1
+adjustment_saturation = 1.05

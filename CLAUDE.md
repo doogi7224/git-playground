@@ -68,12 +68,18 @@
 | 위험(적 공격/장판) | 진홍 `#C8102E` | 이 색 = 무조건 피해야 함 |
 | 회복/획득 | 연녹 `#8FE388` | |
 
-### 히트 필 3종 (필수)
-1. `hit_flash.gdshader` — 피격 시 2프레임 흰 플래시
-2. 히트스톱 — 강타 시 `Engine.time_scale = 0.05` → 0.04초 후 복구
-3. 스쿼시&스트레치 — **정점 셰이더**로 (Sprite2D 스케일 애니 아님)
+### 히트 필 3종 (구현 완료 — `docs/graphics.md`)
+1. `vfx/shaders/hit_flash.gdshader` — 피격 시 **2프레임**(시간 아님) 흰 플래시
+2. 히트스톱 — 크리티컬·보스 사망 시 `time_scale` 0.05 → 0.04초 후 복구.
+   **복귀 시각은 실시간으로 잰다** (게임 시간으로 세면 0.04초가 0.8초가 된다)
+3. 스쿼시&스트레치 — `vfx/shaders/squash_stretch.gdshader` 정점 셰이더
 
-포스트: `WorldEnvironment` glow 0.6, 대비 +10%, 채도 +5%, 비네트 + 아주 약한 색수차. 화면 흔들림은 Perlin 노이즈 기반 + 강도 슬라이더(접근성).
+**MultiMesh 로 텍스처를 그릴 때 주의**: `QuadMesh` 를 2D에서 쓰면 UV의 V가 뒤집힌다.
+원은 상하 대칭이라 안 보이지만 글자는 바로 드러난다. `1.0 - UV.y` 로 뒤집을 것.
+
+포스트: `WorldEnvironment` glow 0.6, 대비 +10%, 채도 +5%, 비네트 + 아주 약한 색수차(코너가 중앙보다 8% 어두운 정도 — 기획서가 "강하면 촌스러움"이라 못 박았다). 화면 흔들림은 Perlin 노이즈 + 강도 슬라이더(접근성, 0이면 완전 정지).
+데미지 넘버는 MultiMesh + 폰트 아틀라스, 동시 120개 캡, 크리티컬 1.5배 금색.
+연출은 전부 **Esc 옵션 패널**에서 개별로 끌 수 있고 저사양 프리셋도 있다.
 라이팅: `CanvasModulate` 맵별 전역 톤, `PointLight2D`(총구 화염/조명탄/연막/발밑 림라이트), 주요 오브젝트에 노멀맵.
 
 ### UI 컨셉 = 군대 행정 서류
@@ -136,7 +142,7 @@ python3 tools/test_art_pipeline.py     # 자체 검증 19개
 
 ```
 res://
-├── autoload/       GameState, EventBus, AudioManager, SaveSystem, ObjectPool
+├── autoload/       GameState, EventBus, AudioManager, SaveSystem, Settings, ObjectPool
 ├── core/
 │   ├── combat/     damage_system.gd, stat_block.gd, status_effect.gd
 │   ├── spawn/      spawn_director.gd, spatial_hash.gd
@@ -169,7 +175,7 @@ res://
 | **M5** | 2주 | 폴리시 | 사운드, 튜토리얼, 옵션, 한/영 로컬라이즈, 최적화 |
 | **M6** | 2주 | 출시 준비 | Steam 페이지, 데모 빌드, 트레일러 |
 
-**현재 상태: M1 + 아트 파이프라인 완료. 다음은 프롬프트 6 = 그래픽 폴리시(히트필 3종·글로우·데미지 넘버).**
+**현재 상태: M1 + 아트 파이프라인 + 그래픽 폴리시 완료. 다음은 프롬프트 7 = 컷아웃 리깅 템플릿.**
 
 한 번에 두 마일스톤 이상 진행하지 않는다. 기획서 8장의 프롬프트 팩을 순서대로 따른다.
 

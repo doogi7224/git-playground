@@ -13,15 +13,14 @@ func _fire() -> void:
 		return
 	var origin: Vector2 = player.global_position
 	var reach: float = current_reach()
-	var dmg: float = current_damage()
-
 	var n: int = enemies.query(origin.x, origin.y, reach)
 	var cand: PackedInt32Array = enemies.candidates()
 	for k in n:
 		var i: int = cand[k]
 		var r: float = reach + enemies.radius_of(i)
 		if origin.distance_squared_to(enemies.position_of(i)) <= r * r:
-			enemies.damage(i, dmg)
+			var hit: Array = roll_hit()
+			enemies.damage(i, hit[0], hit[1])
 	_pulse = 1.0
 
 

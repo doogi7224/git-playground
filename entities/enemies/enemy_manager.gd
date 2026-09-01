@@ -223,7 +223,8 @@ func damage(i: int, amount: float, is_crit: bool = false) -> void:
 		return
 	_hp[i] -= amount
 	_flash[i] = HIT_FLASH_TIME
-	EventBus.damage_number_requested.emit(Vector2(_px[i], _py[i]), amount, is_crit)
+	if Settings.damage_numbers:
+		EventBus.damage_number_requested.emit(Vector2(_px[i], _py[i]), amount, is_crit)
 	if _hp[i] <= 0.0:
 		_dying[i] = 1
 		_reap_list[_reap_count] = i

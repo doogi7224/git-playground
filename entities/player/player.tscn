@@ -1,13 +1,25 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://entities/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://vfx/screen_shake.gd" id="2_shake"]
+[ext_resource type="Texture2D" path="res://vfx/light_radial.tres" id="3_light"]
+[ext_resource type="Material" path="res://vfx/shaders/player_material.tres" id="4_mat"]
 
 [node name="Player" type="Node2D"]
 z_index = 10
+material = ExtResource("4_mat")
 script = ExtResource("1_player")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position_smoothing_enabled = true
 position_smoothing_speed = 9.0
+script = ExtResource("2_shake")
+
+[node name="FootLight" type="PointLight2D" parent="."]
+position = Vector2(0, 6)
+color = Color(1, 0.933333, 0.803922, 1)
+energy = 0.85
+texture = ExtResource("3_light")
+texture_scale = 1.35
 
 [node name="Weapons" type="Node2D" parent="."]

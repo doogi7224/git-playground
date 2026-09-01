@@ -31,7 +31,6 @@ func _fire() -> void:
 	_swipe_left = SWIPE_TIME
 
 	var origin: Vector2 = player.global_position
-	var dmg: float = current_damage()
 	var reach: float = current_reach()
 	var cos_limit: float = cos(deg_to_rad(data.half_angle_deg))
 
@@ -46,7 +45,10 @@ func _fire() -> void:
 			continue
 		if len_sq > 0.001 and to.normalized().dot(_swipe_dir) < cos_limit:
 			continue
-		enemies.damage(i, dmg)
+		var hit: Array = roll_hit()
+		enemies.damage(i, hit[0], hit[1])
+		if hit[1]:
+			EventBus.hit_stop_requested.emit()
 
 	EventBus.screen_shake_requested.emit(1.5, 0.06)
 

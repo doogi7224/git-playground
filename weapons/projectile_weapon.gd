@@ -18,7 +18,11 @@ func _fire() -> void:
 	var shots: int = data.projectiles_at(level) + (player.extra_projectiles if player != null else 0)
 	var speed: float = maxf(50.0, data.reach_at(level) * 4.0)
 	var lifetime: float = data.reach_at(level) / speed
-	var dmg: float = current_damage()
+	var hit: Array = roll_hit()
+	var dmg: float = hit[0]
+	var is_crit: bool = hit[1]
+	if is_crit:
+		EventBus.hit_stop_requested.emit()
 	var pierce: int = int(data.knockback)   # knockback 칸을 관통 횟수로 쓴다(진화형 관통용)
 
 	for s in shots:

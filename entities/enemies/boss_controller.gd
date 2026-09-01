@@ -141,6 +141,9 @@ func _summon(pos: Vector2) -> void:
 
 func _on_death() -> void:
 	EventBus.boss_died.emit(boss_id)
+	# 보스가 쓰러지는 순간은 이 게임에서 가장 강한 타격이다
+	EventBus.hit_stop_requested.emit(0.12, 0.04)
+	EventBus.screen_shake_requested.emit(6.0, 0.4)
 	EventBus.boss_hp_changed.emit(0.0)
 	if pickups != null:
 		# 기획서 5.1: 진화는 보물상자에서 나온다

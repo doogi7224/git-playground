@@ -35,6 +35,17 @@ func current_damage() -> float:
 	return data.damage_at(level) * mult
 
 
+## 한 번의 타격 = 기본 피해 + 크리티컬 판정.
+## 크리티컬은 데미지 넘버가 1.5배 금색으로 뜨고 히트스톱을 부른다 (기획서 3.2 / 3.3).
+func roll_hit() -> Array:
+	var damage: float = current_damage()
+	if player == null:
+		return [damage, false]
+	if randf() < player.crit_chance:
+		return [damage * player.crit_mult, true]
+	return [damage, false]
+
+
 func current_reach() -> float:
 	return data.reach_at(level) if data != null else 0.0
 
