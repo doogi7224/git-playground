@@ -17,6 +17,7 @@ from pathlib import Path
 
 DATA = Path("data")
 OUT = Path("docs/art_request.md")
+OUT_PROMPTS = Path("docs/art_prompts.txt")
 
 STYLE_ENEMY = ("Korean webtoon art style, thick black ink outlines, cel shaded flat colors, "
                "muted brown and grey palette, top-down 3/4 view, transparent background, "
@@ -175,7 +176,82 @@ def main() -> None:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    # --- 복붙용: 완성된 프롬프트를 파일 이름과 함께 쭉 적어둔다 ---------------
+    # 템플릿에 {묘사} 를 직접 끼워 넣게 하면 실수한다. 완성본을 준다.
+    prompts: list[str] = [
+        "# 그록에 그대로 붙여넣는 프롬프트 (자동 생성 — tools/art_request.py)",
+        "#",
+        "# 쓰는 법",
+        "#   1) 아래 '스타일 기준' 을 맨 먼저 한 번 보낸다. 그 결과가 마음에 들 때까지 다듬는다.",
+        "#   2) 마음에 들면 그 대화를 이어가면서 나머지를 하나씩 보낸다.",
+        "#      (새 대화를 열면 스타일이 다시 흔들린다)",
+        "#   3) 받은 그림을 [파일] 이름 그대로 저장한다. 이름이 곧 게임 안의 id 다.",
+        "#   4) 다 모으면:  tools/build_art.sh",
+        "",
+        "=" * 78,
+        "스타일 기준 — 이걸 맨 먼저",
+        "=" * 78,
+        "",
+        ("Character design sheet for a Korean webtoon style top-down survival game set in "
+         "a military base. Establish the art style: thick black ink outlines, cel shaded "
+         "flat colors, muted brown khaki and olive palette, desaturated, top-down 3/4 view, "
+         "readable simple silhouettes, transparent background, no text. "
+         "Draw a single military field shovel standing upright, come to life, with simple "
+         "cartoon eyes. 512x512"),
+        "",
+        "# 위 결과가 마음에 들면 그 대화에서 아래를 하나씩 이어서 보낸다.",
+        "",
+    ]
+
+    def block(title: str, rows: list[tuple[str, str, str]], style: str, size: int) -> None:
+        prompts.append("=" * 78)
+        prompts.append(title)
+        prompts.append("=" * 78)
+        prompts.append("")
+        for filename, label, desc in rows:
+            prompts.append(f"[{filename}]  {label}")
+            prompts.append(f"{desc}, {style}, {size}x{size}")
+            prompts.append("")
+
+    block("잡몹 15장 (512px)",
+          [(f"{r['id']}.png", r["name"], DESCRIPTIONS.get(r["id"], "")) for r in mobs],
+          STYLE_ENEMY, 512)
+    block("중형 5장 (768px) — 잡몹보다 확실히 크게",
+          [(f"{r['id']}.png", r["name"], DESCRIPTIONS.get(r["id"], "")) for r in elites],
+          STYLE_ENEMY, 768)
+    block("보스 4장 (1024px) — 화면을 압도하게",
+          [(f"{r['id']}.png", r["name"], DESCRIPTIONS.get(r["id"], "")) for r in boss_rows],
+          STYLE_ENEMY, 1024)
+
+    prompts.append("=" * 78)
+    prompts.append("플레이어 파츠 7장 (512px) — 파츠를 따로따로")
+    prompts.append("=" * 78)
+    prompts.append("")
+    prompts.append("# 팔다리는 몸통에 가려지지 않은 상태여야 한다. 잘라 붙일 조각이라서.")
+    prompts.append("")
+    for name, desc in PARTS.items():
+        prompts.append(f"[{name}.png]")
+        prompts.append(f"Isolated body part of a Korean army conscript soldier: {desc}, "
+                       f"{STYLE_PLAYER}, 512x512")
+        prompts.append("")
+
+    prompts += [
+        "=" * 78,
+        "잘 안 나올 때",
+        "=" * 78,
+        "",
+        "# 배경이 안 지워진다      → \"plain flat white background\" 를 붙여서 다시. 파이프라인이 지운다.",
+        "# 그림자가 딸려온다        → \"no drop shadow, no ground shadow\" 추가.",
+        "# 시점이 정면이 된다      → \"seen from above at a 45 degree angle\" 로 바꿔 말한다.",
+        "# 스타일이 흔들린다        → 앞에서 잘 나온 그림을 다시 첨부하고 \"same style as this\" 라고 한다.",
+        "# 글자가 들어간다          → \"no text, no letters, no watermark\" 추가.",
+        "# 색이 너무 화려하다      → 그냥 둬도 된다. 팔레트 스냅이 게임 색으로 강제로 맞춘다.",
+        "",
+    ]
+    OUT_PROMPTS.write_text("\n".join(prompts) + "\n", encoding="utf-8")
     total = len(mobs) + len(elites) + len(boss_rows) + len(PARTS)
+    print(f"{OUT_PROMPTS} 생성 — 복붙용 프롬프트")
     print(f"{OUT} 생성 — 총 {total}장 "
           f"(잡몹 {len(mobs)} / 중형 {len(elites)} / 보스 {len(boss_rows)} / 파츠 {len(PARTS)})")
 
