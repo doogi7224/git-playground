@@ -11,7 +11,7 @@ extends Node
 ## 스크립트 하나가 컴파일에 실패하면 그걸 쓰는 테스트 함수가 런타임 에러로 중간에 끊긴다.
 ## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 40개쯤 안 돌았다. 실제로 겪었다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 320
+const MIN_CHECKS: int = 470
 
 var _failures: int = 0
 var _checks: int = 0
@@ -33,6 +33,9 @@ func _ready() -> void:
 func _run_all() -> void:
 	print("=== D-100 자체 검증 ===")
 	seed(12345)
+	# 테스트가 진짜 세이브를 건드리지 않게 맨 먼저 격리한다.
+	# 아레나 스모크 테스트도 한 판을 끝내면서 메타 정산을 부른다.
+	_sandbox_save_system()
 	test_spatial_hash()
 	test_multimesh_buffer_layout()
 	test_game_state()
@@ -51,6 +54,14 @@ func _run_all() -> void:
 	test_status_effects()
 	await test_revive()
 	await test_boss_patterns()
+	test_meta_save()
+	test_px_shop()
+	test_px_applies_to_player()
+	test_commendations()
+	test_unlocks()
+	test_run_settlement()
+	await test_meta_screens()
+	await test_arena_uses_selection()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1137,3 +1148,370 @@ func test_boss_patterns() -> void:
 	hazards.queue_free()
 	em.queue_free()
 	await get_tree().process_frame
+
+
+# =============================================================================
+# M4 — 메타 진행 (저장 · PX 상점 · 해금 · 표창장)
+# =============================================================================
+
+const TEST_SAVE_PATH: String = "user://test_savegame.cfg"
+
+
+## 테스트가 진짜 세이브를 건드리지 않게 격리한다. _run_all 맨 앞에서 부른다.
+## 아레나 스모크 테스트도 한 판을 끝내면서 record_run 을 부르기 때문에,
+## 이걸 안 하면 테스트를 돌릴 때마다 플레이어의 월급이 올라간다.
+func _sandbox_save_system() -> void:
+	SaveSystem.save_path = TEST_SAVE_PATH
+	SaveSystem.autosave = false
+	SaveSystem.data = SaveSystem._default_data()
+
+
+func _clear_test_save() -> void:
+	if FileAccess.file_exists(TEST_SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE_PATH))
+
+
+func test_meta_save() -> void:
+	print("[메타 저장 — 왕복과 마이그레이션]")
+	_sandbox_save_system()
+	_clear_test_save()
+
+	# --- 왕복 ---
+	SaveSystem.autosave = true
+	SaveSystem.add_salary(4321)
+	SaveSystem.data["px_upgrades"]["px_ration"] = 3
+	(SaveSystem.data["unlocked_characters"] as Array).append("choi_corporal")
+	(SaveSystem.data["commendations"] as Array).append("cmd_sweeper")
+	SaveSystem.stats()["total_kills"] = 777
+	SaveSystem.stats()["best_survive_sec"] = 612.5
+	SaveSystem.remember_selection(&"choi_corporal", &"obstacle_course")
+	SaveSystem.save_game()
+
+	SaveSystem.data = SaveSystem._default_data()   # 껐다 켠 셈 치고
+	SaveSystem.load_game()
+	_check(SaveSystem.salary() == 4321, "월급이 왕복한다 (got %d)" % SaveSystem.salary())
+	_check(SaveSystem.px_level(&"px_ration") == 3, "PX 레벨이 왕복한다")
+	_check(SaveSystem.is_character_unlocked(&"choi_corporal"), "해금이 왕복한다")
+	_check(SaveSystem.has_commendation(&"cmd_sweeper"), "표창장이 왕복한다")
+	_check(int(SaveSystem.stats().get("total_kills", 0)) == 777, "누적 처치가 왕복한다")
+	_check(is_equal_approx(float(SaveSystem.stats().get("best_survive_sec", 0.0)), 612.5),
+			"실수 통계가 왕복한다")
+	_check(SaveSystem.last_character() == &"choi_corporal", "마지막 선택 캐릭터가 왕복한다")
+	_check(SaveSystem.last_map() == &"obstacle_course", "마지막 선택 맵이 왕복한다")
+
+	# --- v1 세이브 마이그레이션 (누적 통계가 없던 시절) ---
+	var old := ConfigFile.new()
+	old.set_value("save", "version", 1)
+	old.set_value("save", "salary", 900)
+	old.set_value("save", "unlocked_characters", ["kim_private", "park_sergeant"])
+	old.save(TEST_SAVE_PATH)
+	SaveSystem.load_game()
+	_check(int(SaveSystem.data["version"]) == SaveSystem.SAVE_VERSION,
+			"옛 세이브가 현재 버전으로 올라온다")
+	_check(SaveSystem.salary() == 900, "마이그레이션이 월급을 지키다")
+	_check(SaveSystem.is_character_unlocked(&"park_sergeant"), "마이그레이션이 해금을 지키다")
+	_check(SaveSystem.stats().has("total_kills"), "없던 누적 통계가 채워진다")
+
+	# --- 망가진 세이브 ---
+	var broken := ConfigFile.new()
+	broken.set_value("save", "version", SaveSystem.SAVE_VERSION)
+	broken.set_value("save", "salary", "이건 숫자가 아니다")
+	broken.set_value("save", "unlocked_characters", 12345)
+	broken.set_value("save", "stats", {})
+	broken.save(TEST_SAVE_PATH)
+	SaveSystem.load_game()
+	_check(typeof(SaveSystem.data["salary"]) == TYPE_INT, "망가진 월급이 기본값으로 돌아온다")
+	_check(SaveSystem.is_character_unlocked(&"kim_private"), "기본 캐릭터는 절대 잠기지 않는다")
+	_check(SaveSystem.is_map_unlocked(&"parade_ground"), "기본 맵은 절대 잠기지 않는다")
+	_check(SaveSystem.stats().has("boss_kills"), "빈 통계에 기본 키가 채워진다")
+
+	_clear_test_save()
+	SaveSystem.autosave = false
+	SaveSystem.data = SaveSystem._default_data()
+
+
+func test_px_shop() -> void:
+	print("[PX 상점]")
+	_sandbox_save_system()
+	var shop: PxShopTable = SaveSystem.px_shop
+	_check(shop.items.size() == 10, "PX 항목 10종 (got %d)" % shop.items.size())
+
+	var item: PxUpgradeData = shop.find(&"px_ration")
+	_check(item != null, "px_ration 을 찾는다")
+	_check(SaveSystem.px_level(&"px_ration") == 0, "처음엔 레벨 0")
+	_check(not SaveSystem.buy_px(&"px_ration"), "월급이 없으면 못 산다")
+
+	SaveSystem.add_salary(1_000_000)
+	var first_cost: int = SaveSystem.px_next_cost(&"px_ration")
+	var before: int = SaveSystem.salary()
+	_check(SaveSystem.buy_px(&"px_ration"), "월급이 있으면 산다")
+	_check(SaveSystem.px_level(&"px_ration") == 1, "레벨이 1 오른다")
+	_check(SaveSystem.salary() == before - first_cost, "산 만큼 월급이 준다")
+	_check(SaveSystem.px_next_cost(&"px_ration") > first_cost, "다음 레벨이 더 비싸다")
+
+	# 최대 레벨까지 밀어붙인다
+	while SaveSystem.buy_px(&"px_ration"):
+		pass
+	_check(SaveSystem.px_level(&"px_ration") == item.max_level,
+			"최대 레벨에서 멈춘다 (got %d)" % SaveSystem.px_level(&"px_ration"))
+	_check(SaveSystem.px_next_cost(&"px_ration") == -1, "최대면 가격이 -1")
+	_check(not SaveSystem.can_buy_px(&"px_ration"), "최대면 더 못 산다")
+	_check(not SaveSystem.can_buy_px(&"없는항목"), "없는 항목은 못 산다")
+
+	# 합산: ADD 는 더하고 MULT 는 곱한다
+	_check(is_equal_approx(SaveSystem.px_add(&"max_hp"), item.per_level * float(item.max_level)),
+			"ADD 합계가 맞는다 (got %.2f)" % SaveSystem.px_add(&"max_hp"))
+	_check(is_equal_approx(SaveSystem.px_mult(&"speed_mult"), 1.0),
+			"안 산 MULT 는 1.0")
+	SaveSystem.buy_px(&"px_boots")
+	var boots: PxUpgradeData = shop.find(&"px_boots")
+	_check(is_equal_approx(SaveSystem.px_mult(&"speed_mult"), 1.0 + boots.per_level),
+			"MULT 가 곱해진다 (got %.3f)" % SaveSystem.px_mult(&"speed_mult"))
+
+	# 쿨다운은 음수 per_level 이다 — 배율이 1보다 작아져야 공격이 빨라진다
+	SaveSystem.buy_px(&"px_stopwatch")
+	_check(SaveSystem.px_mult(&"cooldown_mult") < 1.0,
+			"초시계는 쿨다운 배율을 낮춘다 (got %.3f)" % SaveSystem.px_mult(&"cooldown_mult"))
+
+	SaveSystem.data = SaveSystem._default_data()
+
+
+## PX 강화가 실제 플레이어 스탯에 얹히는지. 표만 맞고 배선이 빠지는 사고를 막는다.
+func test_px_applies_to_player() -> void:
+	print("[PX 강화가 플레이어에 실제로 붙는가]")
+	_sandbox_save_system()
+	var character: CharacterData = load("res://data/characters/kim_private.tres") as CharacterData
+
+	var plain: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	add_child(plain)
+	plain.setup(null, character)
+	var base_hp: float = plain.max_hp
+	var base_speed: float = plain.speed_mult
+	plain.queue_free()
+
+	SaveSystem.add_salary(1_000_000)
+	SaveSystem.buy_px(&"px_ration")
+	SaveSystem.buy_px(&"px_boots")
+	var buffed: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	add_child(buffed)
+	buffed.setup(null, character)
+	var ration: PxUpgradeData = SaveSystem.px_shop.find(&"px_ration")
+	var boots: PxUpgradeData = SaveSystem.px_shop.find(&"px_boots")
+	_check(is_equal_approx(buffed.max_hp, base_hp + ration.per_level),
+			"건빵이 최대 체력을 올린다 (%.1f → %.1f)" % [base_hp, buffed.max_hp])
+	_check(is_equal_approx(buffed.hp, buffed.max_hp), "올라간 체력만큼 꽉 채우고 시작한다")
+	_check(is_equal_approx(buffed.speed_mult, base_speed * (1.0 + boots.per_level)),
+			"전투화가 이동 배율을 올린다 (got %.3f)" % buffed.speed_mult)
+	buffed.queue_free()
+
+	SaveSystem.data = SaveSystem._default_data()
+
+
+func test_commendations() -> void:
+	print("[표창장]")
+	_sandbox_save_system()
+	var table: CommendationTable = SaveSystem.commendations_table
+	_check(table.commendations.size() == 12, "표창장 12장 (got %d)" % table.commendations.size())
+
+	var seen: Array[StringName] = []
+	for c: CommendationData in table.commendations:
+		_check(c.condition != null, "%s 에 조건이 있다" % c.id)
+		_check(not seen.has(c.id), "표창장 id 가 안 겹친다 (%s)" % c.id)
+		seen.append(c.id)
+
+	_check(SaveSystem.check_commendations().is_empty(), "빈 기록에서는 아무것도 안 나온다")
+
+	SaveSystem.stats()["total_kills"] = 1000
+	var awarded: Array[StringName] = SaveSystem.check_commendations()
+	_check(awarded.has(&"cmd_sweeper"), "누적 1,000 처치로 청소 유공이 나온다 (got %s)" % [awarded])
+	_check(SaveSystem.has_commendation(&"cmd_sweeper"), "받은 표창장이 기록에 남는다")
+	_check(SaveSystem.salary() >= 200, "표창장 보상이 월급으로 들어온다 (got %d)" % SaveSystem.salary())
+
+	_check(SaveSystem.check_commendations().is_empty(), "같은 표창장을 두 번 주지 않는다")
+	var salary_after: int = SaveSystem.salary()
+	SaveSystem.check_commendations()
+	_check(SaveSystem.salary() == salary_after, "두 번째 호출이 월급을 또 주지 않는다")
+
+	# 연쇄: 한 표창장의 보상 월급이 다른 표창장의 누적 월급 조건을 밀어 올린다.
+	# 신병 수료(보상 100)가 29,900 을 30,000 으로 만들어 적금 만기까지 같이 터져야 한다.
+	SaveSystem.stats()["total_salary"] = 29_900
+	SaveSystem.stats()["total_runs"] = 1
+	var cascaded: Array[StringName] = SaveSystem.check_commendations()
+	_check(cascaded.has(&"cmd_first_day"), "복무 1회로 신병 수료가 나온다 (got %s)" % [cascaded])
+	_check(cascaded.has(&"cmd_savings"),
+			"보상 월급이 다음 표창장 조건을 채우면 같은 판정에서 연달아 발급된다 (got %s)" % [cascaded])
+
+	SaveSystem.data = SaveSystem._default_data()
+
+
+func test_unlocks() -> void:
+	print("[해금]")
+	_sandbox_save_system()
+	var table: UnlockTable = SaveSystem.unlock_table
+
+	var characters: Array[String] = _all_tres("res://data/characters")
+	var maps: Array[String] = _all_tres("res://data/maps")
+	_check(table.unlocks.size() == characters.size() + maps.size(),
+			"해금표가 캐릭터+맵 전부를 덮는다 (%d vs %d)"
+			% [table.unlocks.size(), characters.size() + maps.size()])
+
+	# 해금표의 target_id 가 실재하는 파일이어야 한다.
+	# 아레나가 "파일 이름 = id" 로 캐릭터를 불러오기 때문에 이게 깨지면 게임이 안 뜬다.
+	for u: UnlockData in table.unlocks:
+		var dir: String = "characters" if u.target == UnlockData.Target.CHARACTER else "maps"
+		var path: String = "res://data/%s/%s.tres" % [dir, u.target_id]
+		_check(ResourceLoader.exists(path), "해금 %s 의 대상 파일이 있다 (%s)" % [u.id, path])
+		_check(u.condition != null, "해금 %s 에 조건이 있다" % u.id)
+
+	# 반대 방향: 모든 캐릭터/맵에 해금 항목이 있어야 선택 화면에 뜬다
+	for path: String in characters:
+		var c: CharacterData = load(path) as CharacterData
+		_check(path.get_file() == "%s.tres" % c.id, "캐릭터 파일 이름 = id (%s)" % path.get_file())
+		_check(table.for_target(UnlockData.Target.CHARACTER, c.id) != null,
+				"캐릭터 %s 에 해금 항목이 있다" % c.id)
+	for path: String in maps:
+		var m: MapData = load(path) as MapData
+		_check(path.get_file() == "%s.tres" % m.id, "맵 파일 이름 = id (%s)" % path.get_file())
+		_check(table.for_target(UnlockData.Target.MAP, m.id) != null,
+				"맵 %s 에 해금 항목이 있다" % m.id)
+
+	# 조건형(무료): 조건을 채우면 저절로 열린다
+	_check(not SaveSystem.is_character_unlocked(&"choi_corporal"), "최상병은 처음엔 잠겨 있다")
+	_check(SaveSystem.refresh_unlocks().is_empty(), "조건 전에는 안 열린다")
+	SaveSystem.stats()["total_kills"] = 500
+	var opened: Array[UnlockData] = SaveSystem.refresh_unlocks()
+	_check(opened.size() == 1 and opened[0].target_id == &"choi_corporal",
+			"누적 500 처치로 최상병이 열린다 (got %s)" % [opened.size()])
+	_check(SaveSystem.is_character_unlocked(&"choi_corporal"), "열린 캐릭터가 기록에 남는다")
+	_check(SaveSystem.refresh_unlocks().is_empty(), "이미 열린 건 다시 안 연다")
+
+	# 구매형: 조건을 채워도 값을 내야 한다
+	_check(not SaveSystem.can_buy_unlock(&"unlock_comms"), "조건 전에는 살 수 없다")
+	SaveSystem.stats()["evolutions"] = 1
+	_check(not SaveSystem.can_buy_unlock(&"unlock_comms"), "월급이 없으면 조건을 채워도 못 산다")
+	SaveSystem.add_salary(10_000)
+	_check(SaveSystem.can_buy_unlock(&"unlock_comms"), "조건 + 월급이면 살 수 있다")
+	var before: int = SaveSystem.salary()
+	_check(SaveSystem.buy_unlock(&"unlock_comms"), "구매형 해금을 산다")
+	_check(SaveSystem.is_character_unlocked(&"comms_soldier"), "산 캐릭터가 열린다")
+	_check(SaveSystem.salary() == before - 600, "산 만큼 월급이 준다")
+	_check(not SaveSystem.can_buy_unlock(&"unlock_comms"), "이미 산 건 또 못 산다")
+	_check(SaveSystem.refresh_unlocks().is_empty(), "구매형은 조건만으로 열리지 않는다")
+
+	SaveSystem.data = SaveSystem._default_data()
+
+
+## 한 판이 끝났을 때의 정산. 월급 공식은 data/progression.tres 에 있다.
+func test_run_settlement() -> void:
+	print("[런 결산 — 월급 · 통계 · 표창장]")
+	_sandbox_save_system()
+	var stats: Dictionary = {
+		"kills": 1200, "level": 24, "survived_sec": 620.0,
+		"boss_kills": 2, "evolutions": 1,
+	}
+	var expected: int = GameState.progression.salary_for(true, stats)
+	_check(expected > 0, "월급 공식이 0보다 큰 값을 낸다 (got %d)" % expected)
+	_check(GameState.progression.salary_for(true, stats)
+			> GameState.progression.salary_for(false, stats), "전역하면 더 받는다")
+
+	var result: Dictionary = SaveSystem.record_run(true, stats)
+	_check(int(result["salary"]) == expected, "결산이 공식대로 월급을 준다")
+	var s: Dictionary = SaveSystem.stats()
+	_check(int(s["total_runs"]) == 1, "복무 횟수가 오른다")
+	_check(int(s["runs_won"]) == 1, "전역 횟수가 오른다")
+	_check(int(s["total_kills"]) == 1200, "누적 처치가 쌓인다")
+	_check(int(s["boss_kills"]) == 2, "보스 처치가 쌓인다")
+	_check(int(s["best_level"]) == 24, "최고 진급이 기록된다")
+	_check(is_equal_approx(float(s["best_survive_sec"]), 620.0), "최장 생존이 기록된다")
+	_check((result["commendations"] as Array).has(&"cmd_discharge"),
+			"전역하면 전역증 표창이 나온다 (got %s)" % [result["commendations"]])
+	_check((result["unlocks"] as Array).size() > 0, "결산에서 해금도 같이 열린다")
+
+	# 나쁜 판이 좋은 기록을 깎아먹으면 안 된다
+	SaveSystem.record_run(false, {"kills": 3, "level": 2, "survived_sec": 10.0})
+	_check(int(SaveSystem.stats()["best_level"]) == 24, "최고 기록은 내려가지 않는다")
+	_check(int(SaveSystem.stats()["best_run_kills"]) == 1200, "한 판 최다 처치도 안 내려간다")
+	_check(int(SaveSystem.stats()["total_runs"]) == 2, "진 판도 복무에는 들어간다")
+	_check(int(SaveSystem.stats()["runs_won"]) == 1, "진 판은 전역에 안 들어간다")
+
+	SaveSystem.data = SaveSystem._default_data()
+
+
+## 메타 화면 4종이 실제로 만들어지고 항목이 다 뜨는지.
+## 겉모습은 tools/menu_shot.sh 로 눈으로 본다 — 여기서는 배선만 본다.
+func test_meta_screens() -> void:
+	print("[메타 화면 — 메인 / 출두 / PX / 표창장]")
+	_sandbox_save_system()
+	SaveSystem.add_salary(50_000)
+
+	var root: Control = (load("res://ui/meta/meta_root.tscn") as PackedScene).instantiate()
+	add_child(root)
+	await get_tree().process_frame
+
+	for path: String in ["MainMenu", "CharacterSelect", "PxShop", "CommendationBoard", "OptionsPanel"]:
+		_check(root.get_node_or_null(path) != null, "메타 화면에 %s 가 있다" % path)
+
+	var menu: Control = root.get_node("MainMenu")
+	_check(menu.visible, "처음엔 메인 메뉴가 보인다")
+
+	root._on_open_requested(&"shop")
+	await get_tree().process_frame
+	var shop: Control = root.get_node("PxShop")
+	_check(shop.visible and not menu.visible, "PX 상점으로 넘어간다")
+	_check(shop._list.get_child_count() == SaveSystem.px_shop.items.size(),
+			"PX 항목이 전부 줄에 뜬다 (got %d)" % shop._list.get_child_count())
+
+	root._on_open_requested(&"board")
+	await get_tree().process_frame
+	var board: Control = root.get_node("CommendationBoard")
+	_check(board.visible, "표창장으로 넘어간다")
+	_check(board._list.get_child_count() == SaveSystem.commendations_table.commendations.size(),
+			"표창장이 전부 줄에 뜬다 (got %d)" % board._list.get_child_count())
+
+	root._on_open_requested(&"select")
+	await get_tree().process_frame
+	var select: Control = root.get_node("CharacterSelect")
+	_check(select.visible, "출두 신고로 넘어간다")
+	_check(select._char_list.get_child_count() == _all_tres("res://data/characters").size(),
+			"캐릭터가 전부 뜬다 (got %d)" % select._char_list.get_child_count())
+	_check(select._map_list.get_child_count() == _all_tres("res://data/maps").size(),
+			"맵이 전부 뜬다 (got %d)" % select._map_list.get_child_count())
+	_check(not select._start_button.disabled, "기본 캐릭터/맵으로 출두할 수 있다")
+
+	# 고른 걸 저장해야 한다.
+	# MetaRoot._on_start 는 아레나로 씬을 갈아끼우므로 먼저 끊는다 —
+	# 안 끊으면 테스트 러너 씬까지 같이 날아가서 뒤의 검사가 통째로 안 돈다. 실제로 겪었다.
+	select.start_requested.disconnect(root._on_start)
+	select._choose(false, &"parade_ground")
+	select._on_start()
+	_check(SaveSystem.last_map() == &"parade_ground", "고른 맵이 저장된다")
+
+	# 화면 전환 후에도 다시 메인으로 돌아온다
+	root._go_main()
+	await get_tree().process_frame
+	_check(menu.visible and not shop.visible, "메인으로 돌아온다")
+
+	root.queue_free()
+	SaveSystem.data = SaveSystem._default_data()
+
+
+## 아레나가 저장된 선택을 실제로 싣는지.
+func test_arena_uses_selection() -> void:
+	print("[아레나가 저장된 선택을 싣는가]")
+	_sandbox_save_system()
+	(SaveSystem.data["unlocked_characters"] as Array).append("park_sergeant")
+	(SaveSystem.data["unlocked_maps"] as Array).append("winter_field")
+	SaveSystem.remember_selection(&"park_sergeant", &"winter_field")
+
+	var arena: Node = (load("res://maps/arena.tscn") as PackedScene).instantiate()
+	add_child(arena)
+	await get_tree().process_frame
+	_check(arena.character != null and arena.character.id == &"park_sergeant",
+			"저장된 캐릭터로 시작한다 (got %s)" % [arena.character.id if arena.character else &""])
+	_check(arena.map != null and arena.map.id == &"winter_field",
+			"저장된 맵으로 시작한다 (got %s)" % [arena.map.id if arena.map else &""])
+	arena.queue_free()
+	await get_tree().process_frame
+
+	SaveSystem.data = SaveSystem._default_data()
+	GameState.phase = GameState.Phase.MENU

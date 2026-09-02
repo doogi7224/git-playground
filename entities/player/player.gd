@@ -88,11 +88,30 @@ func setup(p_enemies: EnemyManager, p_character: CharacterData,
 		if character.starting_weapon != null:
 			add_weapon(character.starting_weapon)
 
+	_apply_px_upgrades()
+
 	hp = max_hp
 	xp_to_next = GameState.xp_to_next(level)
 	_bind_weapons()
 	_dress_rig()
 	queue_redraw()
+
+
+## PX 상점에서 산 영구 강화를 캐릭터 기본값 위에 한 번만 얹는다.
+## 런 중에 먹는 명령서와 곱해지므로 순서가 중요하다 — PX 가 먼저, 명령서가 나중.
+## 어떤 스탯을 얼마나 올리는지는 전부 data/px/*.tres 가 정한다.
+func _apply_px_upgrades() -> void:
+	max_hp += SaveSystem.px_add(&"max_hp")
+	armor += SaveSystem.px_add(&"armor")
+	luck += SaveSystem.px_add(&"luck")
+	regen += SaveSystem.px_add(&"regen")
+	crit_chance += SaveSystem.px_add(&"crit_chance")
+	revives += int(round(SaveSystem.px_add(&"revives")))
+	speed_mult *= SaveSystem.px_mult(&"speed_mult")
+	damage_mult *= SaveSystem.px_mult(&"damage_mult")
+	cooldown_mult *= SaveSystem.px_mult(&"cooldown_mult")
+	magnet_mult *= SaveSystem.px_mult(&"magnet_mult")
+	xp_mult *= SaveSystem.px_mult(&"xp_mult")
 
 
 ## 캐릭터 파츠 텍스처를 리깅 슬롯에 끼운다. 없으면 템플릿 플레이스홀더가 그대로 보인다.

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_ration"
+display_name = "건빵 추가 배급"
+description = "매점에서 건빵을 더 받아 둔다. 최대 체력이 오른다."
+stat = &"max_hp"
+apply = 0
+per_level = 8.0
+max_level = 5
+base_cost = 120
+cost_growth = 1.6

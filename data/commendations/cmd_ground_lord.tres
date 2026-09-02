@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CommendationData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/commendation_data.gd" id="1_cmd"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 0
+threshold = 50000.0
+
+[resource]
+script = ExtResource("1_cmd")
+id = &"cmd_ground_lord"
+display_name = "연병장의 주인"
+description = "누적 50,000마리. 이쯤이면 연병장이 집이다."
+condition = SubResource("Resource_cond")
+salary_reward = 1500

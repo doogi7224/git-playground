@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CommendationTable" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://core/data/commendation_table.gd" id="1_table"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_first_day.tres" id="2_cmd_first_day"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_sweeper.tres" id="3_cmd_sweeper"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_snow_duty.tres" id="4_cmd_snow_duty"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_ground_lord.tres" id="5_cmd_ground_lord"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_halfway.tres" id="6_cmd_halfway"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_discharge.tres" id="7_cmd_discharge"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_reenlist.tres" id="8_cmd_reenlist"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_veteran.tres" id="9_cmd_veteran"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_inspection.tres" id="10_cmd_inspection"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_no_accident.tres" id="11_cmd_no_accident"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_handy.tres" id="12_cmd_handy"]
+[ext_resource type="Resource" path="res://data/commendations/cmd_savings.tres" id="13_cmd_savings"]
+
+[resource]
+script = ExtResource("1_table")
+commendations = Array[Resource]([ExtResource("2_cmd_first_day"), ExtResource("3_cmd_sweeper"), ExtResource("4_cmd_snow_duty"), ExtResource("5_cmd_ground_lord"), ExtResource("6_cmd_halfway"), ExtResource("7_cmd_discharge"), ExtResource("8_cmd_reenlist"), ExtResource("9_cmd_veteran"), ExtResource("10_cmd_inspection"), ExtResource("11_cmd_no_accident"), ExtResource("12_cmd_handy"), ExtResource("13_cmd_savings")])

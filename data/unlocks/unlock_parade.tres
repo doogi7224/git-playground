@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnlockData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/unlock_data.gd" id="1_unlock"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 9
+threshold = 0.0
+
+[resource]
+script = ExtResource("1_unlock")
+id = &"unlock_parade"
+target = 1
+target_id = &"parade_ground"
+display_name = "연병장"
+description = "기본 훈련장. 탁 트여 있다."
+condition = SubResource("Resource_cond")
+price = 0

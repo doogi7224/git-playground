@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnlockData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/unlock_data.gd" id="1_unlock"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 7
+threshold = 1.0
+
+[resource]
+script = ExtResource("1_unlock")
+id = &"unlock_comms"
+target = 0
+target_id = &"comms_soldier"
+display_name = "통신병"
+description = "무전기를 들고 다닌다. 획득 범위가 넓다."
+condition = SubResource("Resource_cond")
+price = 600

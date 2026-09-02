@@ -1,0 +1,39 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://ui/meta/meta_root.gd" id="1_meta_root"]
+[ext_resource type="PackedScene" path="res://ui/meta/main_menu.tscn" id="2_main_menu"]
+[ext_resource type="PackedScene" path="res://ui/meta/character_select.tscn" id="3_select"]
+[ext_resource type="PackedScene" path="res://ui/meta/px_shop.tscn" id="4_shop"]
+[ext_resource type="PackedScene" path="res://ui/meta/commendation_board.tscn" id="5_board"]
+[ext_resource type="PackedScene" path="res://ui/options_panel.tscn" id="6_options"]
+
+[node name="MetaRoot" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_meta_root")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.156863, 0.188235, 0.121569, 1)
+
+[node name="MainMenu" parent="." instance=ExtResource("2_main_menu")]
+
+[node name="CharacterSelect" parent="." instance=ExtResource("3_select")]
+visible = false
+
+[node name="PxShop" parent="." instance=ExtResource("4_shop")]
+visible = false
+
+[node name="CommendationBoard" parent="." instance=ExtResource("5_board")]
+visible = false
+
+[node name="OptionsPanel" parent="." instance=ExtResource("6_options")]
+visible = false

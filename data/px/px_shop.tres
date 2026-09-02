@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PxShopTable" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_shop_table.gd" id="1_table"]
+[ext_resource type="Resource" path="res://data/px/px_ration.tres" id="2_px_ration"]
+[ext_resource type="Resource" path="res://data/px/px_boots.tres" id="3_px_boots"]
+[ext_resource type="Resource" path="res://data/px/px_whetstone.tres" id="4_px_whetstone"]
+[ext_resource type="Resource" path="res://data/px/px_stopwatch.tres" id="5_px_stopwatch"]
+[ext_resource type="Resource" path="res://data/px/px_insole.tres" id="6_px_insole"]
+[ext_resource type="Resource" path="res://data/px/px_vest.tres" id="7_px_vest"]
+[ext_resource type="Resource" path="res://data/px/px_diary.tres" id="8_px_diary"]
+[ext_resource type="Resource" path="res://data/px/px_charm.tres" id="9_px_charm"]
+[ext_resource type="Resource" path="res://data/px/px_coffee.tres" id="10_px_coffee"]
+[ext_resource type="Resource" path="res://data/px/px_chaltteok.tres" id="11_px_chaltteok"]
+
+[resource]
+script = ExtResource("1_table")
+items = Array[Resource]([ExtResource("2_px_ration"), ExtResource("3_px_boots"), ExtResource("4_px_whetstone"), ExtResource("5_px_stopwatch"), ExtResource("6_px_insole"), ExtResource("7_px_vest"), ExtResource("8_px_diary"), ExtResource("9_px_charm"), ExtResource("10_px_coffee"), ExtResource("11_px_chaltteok")])

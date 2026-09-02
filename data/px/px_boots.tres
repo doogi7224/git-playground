@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_boots"
+display_name = "신형 전투화"
+description = "밑창이 살아 있는 전투화. 발이 가벼워진다."
+stat = &"speed_mult"
+apply = 1
+per_level = 0.04
+max_level = 5
+base_cost = 150
+cost_growth = 1.6

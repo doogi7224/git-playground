@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_chaltteok"
+display_name = "찰떡파이 비축"
+description = "관물대에 하나 숨겨 둔다. 쓰러져도 한 번 일어난다."
+stat = &"revives"
+apply = 0
+per_level = 1.0
+max_level = 1
+base_cost = 1200
+cost_growth = 1.0

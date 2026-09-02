@@ -38,6 +38,11 @@
     카메라가 NaN이 되고 월드가 통째로 안 보인다. `vfx/screen_shake.gd` 가 직접 따라간다.
 11. **보스도 몸통은 배열 안에 있다.** 행동만 `BossController` 노드가 굴리고, 개체는
     `spawn_tracked()` 핸들로 지목한다. 인덱스는 swap-remove 때문에 프레임을 못 넘긴다.
+12. **세이브 딕셔너리 키는 전부 `String`.** Godot 4 의 Dictionary 는 `&"a"` 와 `"a"` 를
+    다른 키로 보고, 저장 파일을 한 번 왕복하면 StringName 이 String 이 된다. 섞으면
+    누적 통계가 조용히 0으로 리셋된다.
+13. **메타 정산은 `GameState.end_run` 한 곳에서만.** 결과 화면은 돌려받은 값을 찍기만
+    한다. 화면에서 `SaveSystem.record_run` 을 또 부르면 월급이 두 번 들어간다.
 
 ---
 
@@ -93,7 +98,7 @@
 ## 5. 콘텐츠 구조 요약
 
 무기 10·진화 10·패시브 10·적 20·보스 4·캐릭터 8·맵 3. 자세한 건 `docs/m3.md`
-(M1 코어 루프의 배경은 `docs/m1.md`).
+(M1 코어 루프의 배경은 `docs/m1.md`, M4 메타 진행은 `docs/m4.md`).
 
 - 무기 동작은 `WeaponData.behavior` 로 고른다(MELEE_ARC/PROJECTILE/AURA/GROUND_AREA/THROWN).
   같은 behavior면 **새 무기 = .tres 하나**. `WeaponFactory` 가 스크립트를 붙인다.
@@ -116,7 +121,10 @@
 | 캐릭터 기본 스탯 | `data/characters/*.tres` |
 | 보스 패턴·수치 | `data/bosses/*.tres` |
 | 맵 구성(적 목록·웨이브·톤) | `data/maps/*.tres` |
-| 한 판 길이·경험치 곡선·계급표 | `data/progression.tres` |
+| 한 판 길이·경험치 곡선·계급표·**월급 공식** | `data/progression.tres` |
+| PX 상점 항목·가격 | `data/px/*.tres` + `px_shop.tres` |
+| 표창장(도전과제) | `data/commendations/*.tres` + `commendation_table.tres` |
+| 캐릭터·맵 해금 조건/가격 | `data/unlocks/*.tres` + `unlock_table.tres` |
 
 **GDScript에 수치를 되돌려 넣지 말 것.** `EnemyManager`가 등록 시점에 Packed 배열로
 캐시하는 건 성능 때문이며, 원본은 언제나 `.tres`다.
@@ -174,7 +182,7 @@ res://
 ├── weapons/        base_weapon.gd + 10종
 ├── core/data/      Resource 스키마 (.gd)
 ├── data/           *.tres 값 — enemies/ weapons/ upgrades/ waves/ characters/ maps/
-├── ui/             hud/, level_up/, results/, meta/
+├── ui/             hud/, level_up/, results/, meta/  ← meta/ 가 main_scene
 ├── vfx/            shaders/, particles/
 ├── maps/
 ├── art/            raw/ processed/ atlas/
@@ -195,7 +203,7 @@ res://
 | **M5** | 2주 | 폴리시 | 사운드, 튜토리얼, 옵션, 한/영 로컬라이즈, 최적화 |
 | **M6** | 2주 | 출시 준비 | Steam 페이지, 데모 빌드, 트레일러 |
 
-**현재 상태: M3 콘텐츠 확장 완료(무기 10·패시브 10·적 20·보스 4·캐릭터 8·맵 3). 다음은 M4 = 메타 진행(저장·PX 상점·해금·표창장).**
+**현재 상태: M4 메타 진행 완료(저장·PX 상점 10종·해금 11건·표창장 12장·메타 UI 4종). 다음은 M5 = 폴리시(사운드·튜토리얼·옵션·로컬라이즈·밸런스·최적화).**
 
 한 번에 두 마일스톤 이상 진행하지 않는다. 기획서 8장의 프롬프트 팩을 순서대로 따른다.
 
@@ -209,6 +217,8 @@ tools/test.sh --gl     # Xvfb + OpenGL 실제 렌더러 (MultiMesh 버퍼 검사
 tools/screenshot.sh --out=/tmp/shot.png --seconds=80 --scale=6
 tools/bench.sh         # 적 수별 물리 1틱 비용 (500~4,000마리)
 tools/stress.sh --count=3000 --shot=/tmp/stress.png   # 3,000마리 유지 + 리포트
+tools/menu_shot.sh --out-dir=/tmp/menu --salary=99999 --fake-progress  # 메타 화면 4종
+tools/setup_godot.sh   # 컨테이너가 새로 뜨면 엔진부터 다시 받는다
 ```
 
 - 단위 테스트만으로는 안 잡히는 게 있다. `tests/run_tests.gd` 의 **아레나 스모크 테스트**는

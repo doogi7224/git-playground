@@ -25,10 +25,25 @@ func _ready() -> void:
 	_last_days_left = progression.total_days
 	set_process(false)
 	EventBus.enemy_died.connect(_on_enemy_died)
+	EventBus.boss_died.connect(_on_boss_died)
+	EventBus.weapon_evolved.connect(_on_weapon_evolved)
+	EventBus.player_leveled.connect(_on_player_leveled)
 
 
 func _on_enemy_died(_pos: Vector2, _xp: float, _enemy_type: StringName) -> void:
 	run_stats["kills"] = int(run_stats.get("kills", 0)) + 1
+
+
+func _on_boss_died(_boss_id: StringName) -> void:
+	run_stats["boss_kills"] = int(run_stats.get("boss_kills", 0)) + 1
+
+
+func _on_weapon_evolved(_from_id: StringName, _to_id: StringName) -> void:
+	run_stats["evolutions"] = int(run_stats.get("evolutions", 0)) + 1
+
+
+func _on_player_leveled(lv: int) -> void:
+	run_stats["level"] = lv
 
 
 func run_duration() -> float:
@@ -71,7 +86,15 @@ func start_run(character_id: StringName) -> void:
 	level = 1
 	xp = 0.0
 	rank_id = progression.rank_for_level(1)
-	run_stats = {"kills": 0, "damage_dealt": 0.0, "salary": 0}
+	run_stats = {
+		"kills": 0,
+		"damage_dealt": 0.0,
+		"boss_kills": 0,
+		"evolutions": 0,
+		"level": 1,
+		"survived_sec": 0.0,
+		"salary": 0,
+	}
 	_last_days_left = progression.total_days
 	set_process(true)
 	EventBus.run_started.emit(character_id)
@@ -82,4 +105,9 @@ func end_run(victory: bool) -> void:
 		return
 	phase = Phase.RESULTS
 	set_process(false)
+	run_stats["survived_sec"] = elapsed
+	run_stats["level"] = level
+	# 메타 정산은 여기 한 곳에서만 한다. 결과 화면에서 또 부르면 월급이 두 번 들어온다.
+	run_stats["meta"] = SaveSystem.record_run(victory, run_stats)
+	run_stats["salary"] = int((run_stats["meta"] as Dictionary).get("salary", 0))
 	EventBus.run_ended.emit(victory, run_stats)

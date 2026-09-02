@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_vest"
+display_name = "방탄복"
+description = "한 겹 더 껴입는다. 받는 피해가 줄어든다."
+stat = &"armor"
+apply = 0
+per_level = 1.0
+max_level = 5
+base_cost = 180
+cost_growth = 1.6

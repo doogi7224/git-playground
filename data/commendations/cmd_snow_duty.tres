@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CommendationData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/commendation_data.gd" id="1_cmd"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 0
+threshold = 10000.0
+
+[resource]
+script = ExtResource("1_cmd")
+id = &"cmd_snow_duty"
+display_name = "제설 유공"
+description = "누적 10,000마리를 치웠다. 눈은 계속 온다."
+condition = SubResource("Resource_cond")
+salary_reward = 500

@@ -8,6 +8,11 @@ run_duration_sec = 1200.0
 total_days = 100
 xp_base = 10.0
 xp_per_level = 8.0
+salary_per_kill = 0.06
+salary_per_level = 4.0
+salary_per_minute = 12.0
+salary_boss_bonus = 150
+salary_victory_bonus = 500
 ranks = Array[Dictionary]([{
 "id": &"private_2",
 "level": 1,

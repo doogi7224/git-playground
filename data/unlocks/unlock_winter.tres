@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnlockData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/unlock_data.gd" id="1_unlock"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 6
+threshold = 5.0
+
+[resource]
+script = ExtResource("1_unlock")
+id = &"unlock_winter"
+target = 1
+target_id = &"winter_field"
+display_name = "혹한기 설원"
+description = "눈보라가 시야를 가린다. 월급이 잘 나온다."
+condition = SubResource("Resource_cond")
+price = 2000

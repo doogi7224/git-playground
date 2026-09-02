@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_charm"
+display_name = "행운의 부적"
+description = "면회 때 받은 부적. 좋은 명령서가 잘 뜬다."
+stat = &"luck"
+apply = 0
+per_level = 0.04
+max_level = 3
+base_cost = 260
+cost_growth = 1.7

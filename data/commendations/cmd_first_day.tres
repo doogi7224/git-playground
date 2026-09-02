@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CommendationData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/commendation_data.gd" id="1_cmd"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 1
+threshold = 1.0
+
+[resource]
+script = ExtResource("1_cmd")
+id = &"cmd_first_day"
+display_name = "신병 수료"
+description = "첫 판을 끝까지 마쳤다. 여기서부터가 시작이다."
+condition = SubResource("Resource_cond")
+salary_reward = 100

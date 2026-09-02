@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_stopwatch"
+display_name = "초시계"
+description = "작업 속도를 잰다. 공격 간격이 짧아진다."
+stat = &"cooldown_mult"
+apply = 1
+per_level = -0.03
+max_level = 5
+base_cost = 220
+cost_growth = 1.7

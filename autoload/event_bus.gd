@@ -41,3 +41,4 @@ signal damage_number_requested(pos: Vector2, amount: float, is_crit: bool)
 # --- 메타 진행 ---
 signal salary_earned(amount: int)
 signal commendation_unlocked(id: StringName)   ## 표창장 = 도전과제
+signal meta_changed()                          ## 월급·PX·해금이 바뀌었다 (메타 UI 갱신용)

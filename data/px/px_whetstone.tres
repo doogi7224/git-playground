@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_whetstone"
+display_name = "숫돌"
+description = "삽날을 갈아 둔다. 모든 피해가 오른다."
+stat = &"damage_mult"
+apply = 1
+per_level = 0.05
+max_level = 5
+base_cost = 200
+cost_growth = 1.7

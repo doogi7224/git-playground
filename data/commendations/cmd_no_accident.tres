@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CommendationData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/commendation_data.gd" id="1_cmd"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 6
+threshold = 20.0
+
+[resource]
+script = ExtResource("1_cmd")
+id = &"cmd_no_accident"
+display_name = "무사고 표창"
+description = "보스 20마리. 검열이 무섭지 않다."
+condition = SubResource("Resource_cond")
+salary_reward = 900

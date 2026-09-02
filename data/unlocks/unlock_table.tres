@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UnlockTable" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://core/data/unlock_table.gd" id="1_table"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_kim.tres" id="2_unlock_kim"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_choi.tres" id="3_unlock_choi"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_comms.tres" id="4_unlock_comms"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_park.tres" id="5_unlock_park"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_cook.tres" id="6_unlock_cook"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_driver.tres" id="7_unlock_driver"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_medic.tres" id="8_unlock_medic"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_staff.tres" id="9_unlock_staff"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_parade.tres" id="10_unlock_parade"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_course.tres" id="11_unlock_course"]
+[ext_resource type="Resource" path="res://data/unlocks/unlock_winter.tres" id="12_unlock_winter"]
+
+[resource]
+script = ExtResource("1_table")
+unlocks = Array[Resource]([ExtResource("2_unlock_kim"), ExtResource("3_unlock_choi"), ExtResource("4_unlock_comms"), ExtResource("5_unlock_park"), ExtResource("6_unlock_cook"), ExtResource("7_unlock_driver"), ExtResource("8_unlock_medic"), ExtResource("9_unlock_staff"), ExtResource("10_unlock_parade"), ExtResource("11_unlock_course"), ExtResource("12_unlock_winter")])

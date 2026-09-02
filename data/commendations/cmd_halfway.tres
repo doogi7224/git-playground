@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CommendationData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/commendation_data.gd" id="1_cmd"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 4
+threshold = 600.0
+
+[resource]
+script = ExtResource("1_cmd")
+id = &"cmd_halfway"
+display_name = "반환점"
+description = "한 판에서 10분을 버텼다. D-50."
+condition = SubResource("Resource_cond")
+salary_reward = 300

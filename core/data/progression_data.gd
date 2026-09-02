@@ -14,6 +14,14 @@ class_name ProgressionData
 ## min_level 오름차순으로 두는 게 읽기 편하지만 순서에 의존하지는 않는다.
 @export var ranks: Array[Dictionary] = []
 
+@export_group("월급 (메타 화폐)")
+## 한 판이 끝나면 아래 공식으로 월급이 나온다. 값은 전부 .tres 에 있다.
+@export var salary_per_kill: float = 0.06
+@export var salary_per_level: float = 4.0
+@export var salary_per_minute: float = 12.0
+@export var salary_boss_bonus: int = 150
+@export var salary_victory_bonus: int = 500
+
 
 func xp_to_next(level: int) -> float:
 	return xp_base + xp_per_level * float(level - 1)
@@ -35,3 +43,15 @@ func rank_name(rank_id: StringName) -> String:
 		if entry.get("id", &"") == rank_id:
 			return String(entry.get("name", ""))
 	return ""
+
+
+## 한 판의 결과(run_stats)로 월급을 계산한다. 10원 단위로 끊는다.
+func salary_for(victory: bool, stats: Dictionary) -> int:
+	var total: float = 0.0
+	total += salary_per_kill * float(stats.get("kills", 0))
+	total += salary_per_level * float(int(stats.get("level", 1)) - 1)
+	total += salary_per_minute * (float(stats.get("survived_sec", 0.0)) / 60.0)
+	total += float(salary_boss_bonus) * float(stats.get("boss_kills", 0))
+	if victory:
+		total += float(salary_victory_bonus)
+	return maxi(0, int(round(total / 10.0)) * 10)

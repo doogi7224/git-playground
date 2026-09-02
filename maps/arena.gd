@@ -3,6 +3,8 @@ extends Node2D
 ## 어떤 적이 나오고 어떤 웨이브인지는 전부 MapData(.tres)가 정한다. 여기엔 수치가 없다.
 
 const ENEMY_CAPACITY: int = 4096
+const CHARACTER_PATH: String = "res://data/characters/%s.tres"
+const MAP_PATH: String = "res://data/maps/%s.tres"
 
 @export var map: MapData = null
 @export var character: CharacterData = null
@@ -24,6 +26,7 @@ const ENEMY_CAPACITY: int = 4096
 
 
 func _ready() -> void:
+	_apply_saved_selection()
 	assert(map != null, "Arena에 MapData가 없다")
 	assert(character != null, "Arena에 CharacterData가 없다")
 
@@ -50,6 +53,23 @@ func _ready() -> void:
 	canvas_modulate.color = map.ambient_tint
 
 	GameState.start_run(character.id)
+
+
+## 메타 화면에서 고른 캐릭터/맵을 싣는다.
+## 씬에 박아 둔 값은 기본값 겸 도구용 폴백이다 — tools/screenshot.sh 처럼
+## 아레나를 직접 여는 경우 저장된 선택이 기본값과 같아서 결과가 달라지지 않는다.
+## 파일 이름 = id 규약에 기대고 있고, tests/run_tests.gd 가 그걸 검사한다.
+func _apply_saved_selection() -> void:
+	var char_path: String = CHARACTER_PATH % SaveSystem.last_character()
+	if ResourceLoader.exists(char_path):
+		var picked: CharacterData = load(char_path) as CharacterData
+		if picked != null:
+			character = picked
+	var map_path: String = MAP_PATH % SaveSystem.last_map()
+	if ResourceLoader.exists(map_path):
+		var picked_map: MapData = load(map_path) as MapData
+		if picked_map != null:
+			map = picked_map
 
 
 ## 보물상자 = 진화. 진화할 게 없으면 빈손으로 보내지 않고 회복 + 경험치로 바꿔준다.

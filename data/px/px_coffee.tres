@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_coffee"
+display_name = "커피믹스"
+description = "한 잔이면 버틴다. 초당 체력이 조금씩 찬다."
+stat = &"regen"
+apply = 0
+per_level = 0.3
+max_level = 3
+base_cost = 240
+cost_growth = 1.6

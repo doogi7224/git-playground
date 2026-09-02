@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnlockData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/unlock_data.gd" id="1_unlock"]
+[ext_resource type="Script" path="res://core/data/meta_condition.gd" id="2_cond"]
+
+[sub_resource type="Resource" id="Resource_cond"]
+script = ExtResource("2_cond")
+kind = 6
+threshold = 3.0
+
+[resource]
+script = ExtResource("1_unlock")
+id = &"unlock_medic"
+target = 0
+target_id = &"medic_soldier"
+display_name = "의무병"
+description = "쓰러져도 한 번 일어난다."
+condition = SubResource("Resource_cond")
+price = 1200

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PxUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/px_upgrade_data.gd" id="1_px"]
+
+[resource]
+script = ExtResource("1_px")
+id = &"px_diary"
+display_name = "수양록"
+description = "하루를 기록하면 배우는 게 있다. 짬이 더 쌓인다."
+stat = &"xp_mult"
+apply = 1
+per_level = 0.05
+max_level = 4
+base_cost = 200
+cost_growth = 1.6
