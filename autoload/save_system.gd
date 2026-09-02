@@ -52,6 +52,7 @@ func _default_data() -> Dictionary:
 		"commendations": [],                      ## 받은 표창장 id
 		"last_character": "kim_private",
 		"last_map": "parade_ground",
+		"tutorial_done": false,
 		"stats": _default_stats(),
 		"settings": {},
 	}
@@ -133,6 +134,25 @@ func _ensure_shape() -> void:
 ## 세이브를 지운다. 옵션 화면의 "기록 초기화" 와 테스트가 쓴다.
 func reset() -> void:
 	data = _default_data()
+	save_game()
+	EventBus.meta_changed.emit()
+
+
+## 튜토리얼을 아직 안 봤는가. 첫 판에만 뜬다.
+func tutorial_pending() -> bool:
+	return not bool(data.get("tutorial_done", false))
+
+
+func mark_tutorial_done() -> void:
+	if bool(data.get("tutorial_done", false)):
+		return
+	data["tutorial_done"] = true
+	save_game()
+
+
+## 설정에서 "튜토리얼 다시 보기". 기록을 통째로 지우지 않고 이것만 되돌린다.
+func reset_tutorial() -> void:
+	data["tutorial_done"] = false
 	save_game()
 	EventBus.meta_changed.emit()
 

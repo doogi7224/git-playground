@@ -24,6 +24,7 @@
 [ext_resource type="Material" path="res://vfx/shaders/chromatic_material.tres" id="23_ca"]
 [ext_resource type="Environment" path="res://data/gfx_environment.tres" id="21_env"]
 [ext_resource type="PackedScene" path="res://ui/options_panel.tscn" id="22_options"]
+[ext_resource type="PackedScene" path="res://ui/tutorial_overlay.tscn" id="25_tutorial"]
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
@@ -116,5 +117,7 @@ layer = 10
 [node name="ResultsScreen" parent="UI" instance=ExtResource("9_results")]
 
 [node name="OptionsPanel" parent="UI" instance=ExtResource("22_options")]
+
+[node name="TutorialOverlay" parent="UI" instance=ExtResource("25_tutorial")]
 
 [node name="DebugOverlay" parent="UI" instance=ExtResource("10_debug")]

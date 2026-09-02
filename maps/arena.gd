@@ -20,6 +20,7 @@ const MAP_PATH: String = "res://data/maps/%s.tres"
 @onready var director: SpawnDirector = $SpawnDirector
 @onready var level_up: Control = $UI/LevelUpScreen
 @onready var debug_overlay: Control = $UI/DebugOverlay
+@onready var tutorial: TutorialOverlay = $UI/TutorialOverlay
 @onready var ground: Node2D = $Ground
 @onready var canvas_modulate: CanvasModulate = $CanvasModulate
 @onready var damage_numbers: DamageNumbers = $DamageNumbers
@@ -46,6 +47,7 @@ func _ready() -> void:
 
 	level_up.player = player
 	level_up.upgrade_table = upgrade_table
+	tutorial.player = player
 	debug_overlay.enemies = enemies
 	debug_overlay.pickups = pickups
 	ground.line_color = map.ground_color

@@ -19,6 +19,7 @@ FPS %5.1f   프레임 %5.2fms   최악 %5.2fms,FPS %5.1f   프레임 %5.2fms   �
 K-2식 소총,K-2식 소총,K-2 Rifle
 P X   보  급  품,P X   보  급  품,P X   S U P P L I E S
 P X   상 점,P X   상 점,P X   S T O R E
+WASD / 방향키로 이동,WASD / 방향키로 이동,Move with WASD / arrow keys
 t %.1fs (D-%d)   비디오메모리 %.1fMB,t %.1fs (D-%d)   비디오메모리 %.1fMB,t %.1fs (D-%d)   VRAM %.1fMB
 가격,가격,Price
 가장 가까운 적에게 알아서 나간다. 영점은 안 맞는다.,가장 가까운 적에게 알아서 나간다. 영점은 안 맞는다.,Fires at the nearest enemy on its own. Zeroing not included.
@@ -30,6 +31,7 @@ t %.1fs (D-%d)   비디오메모리 %.1fMB,t %.1fs (D-%d)   비디오메모리 %
 계급장,계급장,Rank Insignia
 공격 속도가 빠르다. 요령이 붙었다.,공격 속도가 빠르다. 요령이 붙었다.,Attacks faster. He's got the hang of it.
 공격력 +15%,공격력 +15%,Damage +15%
+공격은 자동이다. 적 쪽으로 붙기만 하면 된다.,공격은 자동이다. 적 쪽으로 붙기만 하면 된다.,Attacks are automatic. Just close in on the enemy.
 관물대,관물대,Footlocker
 관물대에 하나 숨겨 둔다. 쓰러져도 한 번 일어난다.,관물대에 하나 숨겨 둔다. 쓰러져도 한 번 일어난다.,One hidden in the footlocker. Get back up once when downed.
 국기하강식,국기하강식,Retreat Ceremony
@@ -72,6 +74,7 @@ Kills %d"
 뒤에 흘려두면 알아서 몰려든다. 그리고 아파한다.,뒤에 흘려두면 알아서 몰려든다. 그리고 아파한다.,Leave it behind and they gather on their own. Then they hurt.
 드로우콜 %d   오브젝트 %d   정점 %d,드로우콜 %d   오브젝트 %d   정점 %d,Draw calls %d   Objects %d   Verts %d
 떨구지 않고 그 자리에서 바로 회복시킨다.,떨구지 않고 그 자리에서 바로 회복시킨다.,Skips the drop and heals you on the spot.
+떨어진 '짬'을 주우면 진급한다,떨어진 '짬'을 주우면 진급한다,Pick up the dropped chow to get promoted
 말년 병장,말년 병장,Short-Timer Sergeant
 말년. 체력은 없고 한 방은 세다.,말년. 체력은 없고 한 방은 세다.,"Short-timer. Thin on health, heavy on damage."
 말년의 여유. 체력이 두껍다.,말년의 여유. 체력이 두껍다.,Short-timer's calm. Thick with health.
@@ -201,6 +204,7 @@ Kills %d"
 지나온 자리에 발자국 장판,지나온 자리에 발자국 장판,Leaves a trail of footprints
 직업군인. K-2식 소총으로 시작한다.,직업군인. K-2식 소총으로 시작한다.,Career soldier. Starts with the K-2 Rifle.
 직업군인. 전역해 본 사람만 고를 수 있다.,직업군인. 전역해 본 사람만 고를 수 있다.,Career soldier. Only for those who've been discharged.
+진급하면 명령서 3장 중 1장을 고른다,진급하면 명령서 3장 중 1장을 고른다,"On promotion, pick 1 of 3 orders"
 진화! %s,진화! %s,Evolved! %s
 짬통,짬통,Slop Bucket
 짬통으로 시작한다. 짬은 원래 취사병 관할이다.,짬통으로 시작한다. 짬은 원래 취사병 관할이다.,Starts with the Slop Bucket. Chow is the cook's domain.
@@ -226,6 +230,7 @@ Kills %d"
 통신병,통신병,Signaller
 퇴     소,퇴     소,D I S M I S S
 투사체 +1발,투사체 +1발,Projectiles +1
+튜토리얼 다시 보기,튜토리얼 다시 보기,Replay Tutorial
 트랙터,트랙터,Tractor
 페인트통,페인트통,Paint Can
 포물선 투척 폭발,포물선 투척 폭발,Lobbed throw that explodes

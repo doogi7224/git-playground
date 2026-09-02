@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 528
+const MIN_CHECKS: int = 540
 
 var _failures: int = 0
 var _checks: int = 0
@@ -71,6 +71,7 @@ func _run_all() -> void:
 	await test_results_screen_unpauses()
 	test_localization()
 	test_audio()
+	test_tutorial()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1783,3 +1784,91 @@ func test_audio() -> void:
 	AudioManager.apply_volumes()
 
 	AudioManager.enabled = was_enabled
+
+
+## 튜토리얼 — 첫 판에만, 게임을 멈추지 않고, 해낸 건 건너뛴다.
+func test_tutorial() -> void:
+	print("[튜토리얼]")
+	_sandbox_save_system()
+	_check(SaveSystem.tutorial_pending(), "새 세이브에서는 튜토리얼이 뜬다")
+
+	var overlay: TutorialOverlay = (load("res://ui/tutorial_overlay.tscn") as PackedScene).instantiate()
+	add_child(overlay)
+	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	add_child(player)
+	player.setup(null, load("res://data/characters/kim_private.tres") as CharacterData)
+	overlay.player = player
+
+	GameState.phase = GameState.Phase.PLAYING
+	GameState.elapsed = 0.0
+	_check(not overlay.visible, "시작하자마자 뜨지는 않는다")
+
+	# 첫 단계는 바로 뜬다. 늦게 띄우면 그 전에 움직여 버려서 한 번도 안 보인다.
+	GameState.elapsed = 0.1
+	overlay._process(0.0)
+	_check(overlay.visible, "첫 안내가 곧바로 뜬다")
+	_check(overlay.current_step() == 0, "1단계 (이동)")
+	_check(not get_tree().paused, "튜토리얼은 게임을 멈추지 않는다")
+
+	# 조건을 바로 채워도 읽을 시간은 준다
+	player.global_position += Vector2(400.0, 0.0)
+	GameState.elapsed = 0.5
+	overlay._process(0.0)
+	_check(overlay.current_step() == 0,
+			"움직이자마자 사라지지 않는다 (읽을 시간 %.1f초)" % overlay.MIN_SHOW)
+
+	GameState.elapsed = 3.5
+	overlay._process(0.0)
+	_check(overlay.current_step() == 1, "읽을 시간이 지나면 다음 단계로 (got %d)" % overlay.current_step())
+
+	# 이미 해낸 일은 건너뛴다
+	EventBus.enemy_died.emit(Vector2.ZERO, 1.0, &"shovel_mob")
+	EventBus.xp_gained.emit(1.0, 1.0, 10.0)
+	GameState.elapsed = 9.0
+	overlay._process(0.0)
+	GameState.elapsed = 12.0
+	overlay._process(0.0)
+	_check(overlay.current_step() == 3,
+			"이미 잡고 주웠으면 그 단계들을 건너뛴다 (got %d)" % overlay.current_step())
+
+	# 마지막 단계까지 끝나면 세이브에 남는다
+	EventBus.player_leveled.emit(2)
+	GameState.elapsed = 20.0
+	overlay._process(0.0)
+	_check(overlay.current_step() >= overlay.STEPS.size(), "전부 끝난다")
+	_check(not SaveSystem.tutorial_pending(), "끝나면 세이브에 남는다")
+
+	overlay.queue_free()
+	player.queue_free()
+
+	# 두 번째 판에는 안 뜬다
+	var again: TutorialOverlay = (load("res://ui/tutorial_overlay.tscn") as PackedScene).instantiate()
+	add_child(again)
+	_check(again._finished, "이미 본 뒤에는 아예 시작하지 않는다")
+	again.queue_free()
+
+	# 설정에서 되살릴 수 있다
+	SaveSystem.reset_tutorial()
+	_check(SaveSystem.tutorial_pending(), "다시 보기로 되살아난다")
+
+	# 조건을 안 채워도 시간이 지나면 넘어간다 (안 죽이는 사람에게 영원히 남으면 안 된다)
+	SaveSystem.data = SaveSystem._default_data()
+	var stuck: TutorialOverlay = (load("res://ui/tutorial_overlay.tscn") as PackedScene).instantiate()
+	add_child(stuck)
+	var idle: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	add_child(idle)
+	idle.setup(null, load("res://data/characters/kim_private.tres") as CharacterData)
+	stuck.player = idle
+	GameState.elapsed = 0.1
+	stuck._process(0.0)
+	var first: int = stuck.current_step()
+	GameState.elapsed = 1.0 + stuck.STEP_TIMEOUT + 1.0
+	stuck._process(0.0)
+	_check(stuck.current_step() > first,
+			"아무것도 안 해도 시간이 지나면 넘어간다 (%d → %d)" % [first, stuck.current_step()])
+	stuck.queue_free()
+	idle.queue_free()
+
+	GameState.phase = GameState.Phase.MENU
+	GameState.elapsed = 0.0
+	SaveSystem.data = SaveSystem._default_data()

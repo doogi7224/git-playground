@@ -71,6 +71,15 @@ func _build() -> void:
 	_add_language()
 
 	_box.add_child(MetaUI.rule())
+	var replay: Button = MetaUI.button("튜토리얼 다시 보기", 22)
+	replay.disabled = SaveSystem.tutorial_pending()
+	replay.pressed.connect(func() -> void:
+		AudioManager.play_sfx(&"ui_click")
+		SaveSystem.reset_tutorial()
+		replay.disabled = true)
+	_box.add_child(replay)
+
+	_box.add_child(MetaUI.rule())
 	var close: Button = MetaUI.button("닫기", 26)
 	close.pressed.connect(func() -> void:
 		AudioManager.play_sfx(&"ui_click")
