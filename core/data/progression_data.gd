@@ -26,6 +26,9 @@ class_name ProgressionData
 @export var xp_base: float = 10.0
 @export var xp_per_level: float = 8.0
 @export var xp_quadratic: float = 0.0
+## 적 몇 마리당 짬 오브 하나를 떨구는가. 총 경험치는 안 바뀌고 오브 개수만 줄어든다.
+## 1 이면 마리마다 하나 -- 7분이면 300개가 깔려 화면을 덮는다.
+@export var xp_kills_per_orb: int = 4
 
 @export_group("진급 = 계급")
 ## [{level = 1, id = &"private_2", name = "이등병"}, ...] 형태.

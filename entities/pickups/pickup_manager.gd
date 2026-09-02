@@ -107,11 +107,33 @@ func spawn(pos: Vector2, value: float) -> void:
 
 func clear() -> void:
 	_count = 0
+	_xp_carry = 0.0
+	_kills_since_drop = 0
+
+
+## 짬을 마리마다 떨구지 않고 뭉쳐서 떨군다.
+##
+## 짬은 사라지지 않고 맵 전체에 쌓인다. 플레이어는 계속 이동하니 자석 범위 밖에
+## 남은 건 영원히 남는다. 실측: 7분에 312개가 깔려 화면을 덮었고, 자석 반경을
+## 1.5배로 늘려도 "지나간 자리" 는 회수가 안 되니 소용없었다.
+##
+## 총 경험치는 그대로 두고 오브 개수만 줄인다. 남은 값은 다음 처치로 넘어가므로
+## 한 마리도 손해 보지 않는다. 값은 data/progression.tres 가 정한다.
+var _xp_carry: float = 0.0
+var _kills_since_drop: int = 0
 
 
 func _on_enemy_died(pos: Vector2, xp: float, _enemy_type: StringName) -> void:
-	if xp > 0.0:
-		spawn(pos, xp)
+	if xp <= 0.0:
+		return
+	_xp_carry += xp
+	_kills_since_drop += 1
+	var per_orb: int = maxi(1, GameState.progression.xp_kills_per_orb)
+	if _kills_since_drop < per_orb:
+		return
+	spawn(pos, _xp_carry)
+	_xp_carry = 0.0
+	_kills_since_drop = 0
 
 
 func _physics_process(delta: float) -> void:
