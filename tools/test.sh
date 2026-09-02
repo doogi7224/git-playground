@@ -6,6 +6,8 @@
 set -euo pipefail
 GODOT_BIN="${GODOT_BIN:-godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+ensure_class_cache
 SCENE="res://tests/test_runner.tscn"
 
 if [[ "${1:-}" == "--gl" ]]; then

@@ -3,4 +3,6 @@
 set -euo pipefail
 GODOT_BIN="${GODOT_BIN:-godot}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+ensure_class_cache
 exec "$GODOT_BIN" --headless --path "$PROJECT_DIR" res://tests/bench_runner.tscn
