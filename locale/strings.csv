@@ -3,6 +3,8 @@ keys,ko,en
 %s %d분,%s %d분,%s %d min
 '짬' 획득 범위 +25%,'짬' 획득 범위 +25%,Chow pickup range +25%
 '짬' 획득량 +20%,'짬' 획득량 +20%,Chow gain +20%
+1장을 선택하시오,1장을 선택하시오,Choose one
+1장을 선택하시오 (진급 %d회 대기),1장을 선택하시오 (진급 %d회 대기),Choose one (%d promotions pending)
 20분을 버텨 위병소를 통과했다.,20분을 버텨 위병소를 통과했다.,Survived 20 minutes and walked out the front gate.
 2D 라이팅,2D 라이팅,2D Lighting
 3점사 관통. 뒤에 있는 놈까지 뚫는다.,3점사 관통. 뒤에 있는 놈까지 뚫는다.,Three-round burst that punches through to the one behind.
@@ -108,7 +110,6 @@ Kills %d"
 범위가 넓다. 무전기 감도가 좋다.,범위가 넓다. 무전기 감도가 좋다.,Wide reach. Good radio reception.
 병      력,병      력,P E R S O N N E L
 병력 운용 명령서,병력 운용 명령서,Deployment Orders
-병력 운용 명령서 — 진급 %d회 대기,병력 운용 명령서 — 진급 %d회 대기,Deployment Orders — %d promotions pending
 병력 운용 및 전역 관리 시스템,병력 운용 및 전역 관리 시스템,Personnel & Discharge Management System
 보상 %s,보상 %s,Reward %s
 보스 20마리. 검열이 무섭지 않다.,보스 20마리. 검열이 무섭지 않다.,20 bosses. Inspections hold no fear.
@@ -138,6 +139,7 @@ Kills %d"
 수통,수통,Canteen
 숫돌,숫돌,Whetstone
 시계,시계,Wristwatch
+신 규,신 규,NEW
 신병,신병,Recruit
 신병 수료,신병 수료,Basic Training Complete
 신형 전투화,신형 전투화,New Combat Boots

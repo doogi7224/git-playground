@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 578
+const MIN_CHECKS: int = 581
 
 var _failures: int = 0
 var _checks: int = 0
@@ -74,6 +74,7 @@ func _run_all() -> void:
 	test_tutorial()
 	test_joystick()
 	await test_results_overlap()
+	await test_spawn_ring()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -759,6 +760,41 @@ func test_graphics_polish() -> void:
 	sprite.queue_free()
 
 	Settings.load_from(before)
+	await get_tree().process_frame
+
+
+## 스폰 링. 원 하나로 굴리던 시절에는 세로 화면에서 좌우로 나간 적이 화면 밖
+## 2.3배 거리에 떨어져 초반이 텅 비었다. 지금은 보이는 사각형을 따라간다.
+func test_spawn_ring() -> void:
+	print("[스폰 링 — 화면 가장자리 바로 밖]")
+	var director := SpawnDirector.new()
+	get_tree().root.add_child(director)
+	await get_tree().process_frame
+
+	var half: Vector2 = director.visible_half_extents()
+	_check(half.x > 1.0 and half.y > 1.0, "보이는 범위를 잰다 (%.0f x %.0f)" % [half.x, half.y])
+
+	# 어느 방향이든 화면 밖이되, 화면 한 변보다 훨씬 멀지는 않아야 한다.
+	var worst_ratio: float = 0.0
+	var inside: int = 0
+	for i in 64:
+		var angle: float = TAU * float(i) / 64.0
+		var p: Vector2 = director.ring_offset(angle)
+		# 그 축 기준으로 화면 밖인가 (사각형 밖이면 둘 중 하나는 1 을 넘는다)
+		var ratio: float = maxf(absf(p.x) / half.x, absf(p.y) / half.y)
+		if ratio <= 1.0:
+			inside += 1
+		worst_ratio = maxf(worst_ratio, ratio)
+	_check(inside == 0, "모든 각도에서 화면 밖이다 (안쪽 %d개)" % inside)
+	_check(worst_ratio < 1.5, "화면에서 지나치게 멀지 않다 (최대 %.2f배)" % worst_ratio)
+
+	# ★ 세로 화면이면 좌우가 위아래보다 가까워야 한다. 원이면 둘이 같아서 이게 깨진다.
+	if half.y > half.x * 1.2:
+		var side: float = director.ring_offset(0.0).length()
+		var top: float = director.ring_offset(PI * 0.5).length()
+		_check(side < top, "세로 화면에서 좌우 스폰이 위아래보다 가깝다 (%.0f < %.0f)" % [side, top])
+
+	director.queue_free()
 	await get_tree().process_frame
 
 

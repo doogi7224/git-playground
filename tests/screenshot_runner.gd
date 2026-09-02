@@ -82,6 +82,11 @@ func _run() -> void:
 			_auto_pick_upgrade()
 		if _until_enemies > 0 and (_arena.get_node("Enemies") as EnemyManager).get_count() >= _until_enemies:
 			break
+		# 판이 끝나면 결과 화면이 트리를 멈춘다 -- GameState.elapsed 가 안 흐르니
+		# --seconds 로는 영원히 못 끝나고 _max_frames 까지 헛돈다. 실제로 --no-drive
+		# 한 판이 그렇게 20,000 프레임을 돌면서 몇 분을 잡아먹었다.
+		if GameState.phase != GameState.Phase.PLAYING:
+			break
 		if _drive:
 			_auto.drive(_arena.get_node("Player"), GameState.elapsed)
 

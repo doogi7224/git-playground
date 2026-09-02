@@ -3,11 +3,19 @@ class_name SpawnDirector
 ## 웨이브 디렉터. 1분 구간 테이블(WaveTable.tres)만 보고 돈다. (기획서 5.4)
 ## 밀도 곡선을 바꾸고 싶으면 코드가 아니라 .tres를 고친다.
 
-## 화면 밖 링에서 스폰.
-## 세로 1080x1920 + 줌 1.8 이면 보이는 범위가 600x1067, 반대각선이 약 612 다.
-## 그 1.15배쯤에서 내보내면 화면에 안 튀어나오면서도 금방 도착한다.
-## 1920x1080 시절 값(980)을 그대로 두면 적이 오는 데만 한참 걸려 초반이 텅 빈다.
-@export var spawn_ring_radius: float = 700.0
+## 화면 밖에서 스폰. **원이 아니라 화면 사각형을 따라간다.**
+##
+## 예전에는 반지름 하나(700)짜리 원이었다. 반대각선(612)에 맞춘 값이라 대각선
+## 방향은 맞았지만, 세로 화면에서 보이는 가로 반경은 300밖에 안 된다 -- 좌우로
+## 스폰된 적은 화면 밖 2.3배 거리에서 걸어와야 했다. 실제로 초반 스크린샷이
+## "적 7마리인데 전부 화면 밖"이라 빈 격자만 나왔다.
+##
+## 지금은 각도를 받아서 **보이는 사각형과 만나는 점**까지 쏜다. 어느 방향이든
+## 화면 가장자리 바로 밖이다. 각도를 균등하게 뽑으면 긴 변(세로 화면의 좌우)에
+## 더 많이 떨어지는데, 그게 둘레 비율(64%)과도 거의 맞는다.
+@export var spawn_ring_margin: float = 1.12
+## 카메라를 못 찾을 때 쓰는 값(헤드리스 도구). 원래의 원 반지름이다.
+@export var spawn_ring_fallback: float = 700.0
 @export var wave_table: WaveTable = null
 
 var enemies: EnemyManager = null
@@ -82,8 +90,7 @@ func _spawn_one() -> void:
 		_type_cache[id] = type_index
 
 	var angle: float = _angle_for_pattern()
-	var r: float = spawn_ring_radius * randf_range(0.95, 1.15)
-	enemies.spawn(type_index, target.global_position + Vector2(cos(angle), sin(angle)) * r)
+	enemies.spawn(type_index, target.global_position + ring_offset(angle, randf_range(0.98, 1.10)))
 
 
 func _spawn_boss() -> void:
@@ -97,10 +104,38 @@ func _spawn_boss() -> void:
 	boss.name = "Boss_%s" % _current.boss_id
 	boss_container.add_child(boss)
 	var angle: float = randf() * TAU
-	var pos: Vector2 = target.global_position + Vector2(cos(angle), sin(angle)) * 620.0
+	# 보스는 덩치가 커서 경계에 딱 붙이면 스폰 순간 반쯤 보인다. 조금 더 밖에서.
+	var pos: Vector2 = target.global_position + ring_offset(angle, 1.3)
 	var minion: StringName = _current.enemy_ids[0] if not _current.enemy_ids.is_empty() else &""
 	if not boss.setup(enemies, target, pickups, hazards, boss_data, minion, pos):
 		boss.queue_free()
+
+
+## 그 각도로 화면 밖까지 나가는 벡터. 보이는 사각형의 경계에 margin 을 곱한 점이다.
+func ring_offset(angle: float, jitter: float = 1.0) -> Vector2:
+	var dir := Vector2(cos(angle), sin(angle))
+	var half: Vector2 = visible_half_extents()
+	# 그 방향으로 사각형 경계에 닿을 때까지의 배율. 0 나눗셈을 피하려고 축을 나눠 본다.
+	var scale: float = INF
+	if absf(dir.x) > 0.0001:
+		scale = minf(scale, half.x / absf(dir.x))
+	if absf(dir.y) > 0.0001:
+		scale = minf(scale, half.y / absf(dir.y))
+	if not is_finite(scale):
+		scale = spawn_ring_fallback
+	return dir * scale * spawn_ring_margin * jitter
+
+
+## 카메라 줌까지 반영한, 지금 실제로 보이는 범위의 절반.
+func visible_half_extents() -> Vector2:
+	var vp: Viewport = get_viewport()
+	if vp == null:
+		return Vector2.ONE * spawn_ring_fallback
+	var cam: Camera2D = vp.get_camera_2d()
+	var zoom: Vector2 = cam.zoom if cam != null else Vector2.ONE
+	if zoom.x <= 0.0 or zoom.y <= 0.0:
+		zoom = Vector2.ONE
+	return (vp.get_visible_rect().size / zoom) * 0.5
 
 
 func _angle_for_pattern() -> float:
