@@ -40,9 +40,9 @@ func _build() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side: StringName in [&"margin_left", &"margin_right"]:
-		margin.add_theme_constant_override(side, 120)
+		margin.add_theme_constant_override(side, MetaUI.SIDE_MARGIN)
 	for side: StringName in [&"margin_top", &"margin_bottom"]:
-		margin.add_theme_constant_override(side, 50)
+		margin.add_theme_constant_override(side, 48)
 	add_child(margin)
 
 	var panel: PanelContainer = MetaUI.panel()
@@ -52,15 +52,18 @@ func _build() -> void:
 	col.add_theme_constant_override(&"separation", 12)
 	panel.add_child(col)
 
-	col.add_child(MetaUI.title("출  두  신  고", 40))
-	_salary_label = MetaUI.label("", 22, MetaUI.INK)
+	col.add_child(MetaUI.title("출  두  신  고"))
+	_salary_label = MetaUI.label("", MetaUI.FS_SUB, MetaUI.INK)
 	_salary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_salary_label)
 	col.add_child(MetaUI.rule())
 
-	var columns := HBoxContainer.new()
+	# ★ 세로 화면에서는 두 칸을 좌우로 못 놓는다. 1080 폭을 반으로 가르면
+	#   캐릭터 이름과 가격 버튼이 같은 줄에 안 들어간다. 위아래로 쌓는다.
+	#   병력이 8종, 훈련장이 3종이라 높이도 2:1 로 나눈다.
+	var columns := VBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override(&"separation", 24)
+	columns.add_theme_constant_override(&"separation", 20)
 	col.add_child(columns)
 	_char_list = _column(columns, "병      력", 2)
 	_map_list = _column(columns, "훈  련  장", 1)
@@ -70,12 +73,12 @@ func _build() -> void:
 	footer.add_theme_constant_override(&"separation", 16)
 	col.add_child(footer)
 
-	var back: Button = MetaUI.button("돌아가기", 26)
+	var back: Button = MetaUI.button("돌아가기")
 	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back.pressed.connect(func() -> void: back_requested.emit())
 	footer.add_child(back)
 
-	_start_button = MetaUI.button("출  두", 30)
+	_start_button = MetaUI.button("출  두", MetaUI.FS_HEAD)
 	_start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_start_button.pressed.connect(_on_start)
 	footer.add_child(_start_button)
@@ -83,14 +86,15 @@ func _build() -> void:
 	reload_selection()
 
 
-func _column(parent: HBoxContainer, heading: String, stretch: int) -> VBoxContainer:
+func _column(parent: BoxContainer, heading: String, stretch: int) -> VBoxContainer:
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.size_flags_stretch_ratio = float(stretch)
 	col.add_theme_constant_override(&"separation", 8)
 	parent.add_child(col)
 
-	var head: Label = MetaUI.label(heading, 24, MetaUI.INK)
+	var head: Label = MetaUI.label(heading, MetaUI.FS_HEAD, MetaUI.INK)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(head)
 
@@ -144,33 +148,33 @@ func _row(u: UnlockData, stats: Dictionary, dark: bool) -> Control:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(text)
 	var name_color: Color = MetaUI.INK if unlocked else MetaUI.INK_FADED
-	text.add_child(MetaUI.label(("▶ " if chosen else "") + tr(u.display_name), 24, name_color))
+	text.add_child(MetaUI.label(("▶ " if chosen else "") + tr(u.display_name), MetaUI.FS_BODY, name_color))
 	if unlocked:
-		text.add_child(MetaUI.label(u.description, 17, MetaUI.INK_FADED))
+		text.add_child(MetaUI.label(u.description, MetaUI.FS_TINY, MetaUI.INK_FADED))
 	else:
-		text.add_child(MetaUI.label(tr("조건 — %s") % u.condition.describe(), 17, MetaUI.INK_FADED))
+		text.add_child(MetaUI.label(tr("조건 — %s") % u.condition.describe(), MetaUI.FS_TINY, MetaUI.INK_FADED))
 
 	if unlocked:
 		if chosen:
-			h.add_child(MetaUI.stamp("선  택", 24))
+			h.add_child(MetaUI.stamp("선  택", MetaUI.FS_SUB))
 		else:
-			var pick: Button = MetaUI.button("선택", 22)
-			pick.custom_minimum_size = Vector2(120.0, 44.0)
+			var pick: Button = MetaUI.button("선택", MetaUI.FS_SUB)
+			pick.custom_minimum_size = Vector2(160.0, MetaUI.TOUCH_MIN_SMALL)
 			var id: StringName = u.target_id
 			pick.pressed.connect(func() -> void: _choose(is_char, id))
 			h.add_child(pick)
 	elif u.is_free():
 		# 조건만 채우면 열린다. 아직 못 채웠다는 뜻이므로 진행률만 보여 준다.
 		h.add_child(MetaUI.label("%d%%" % int(round(u.condition.ratio(stats) * 100.0)),
-				22, MetaUI.INK_FADED))
+				MetaUI.FS_SUB, MetaUI.INK_FADED))
 	else:
 		# 구매형. 조건을 아직 못 채웠으면 값만 흐리게 띄우지 말고 얼마나 남았는지도 보여 준다 —
 		# 값이 없어서 못 사는 건지 조건이 모자라서 못 사는 건지 구분이 안 됐다.
 		var right := VBoxContainer.new()
-		right.custom_minimum_size = Vector2(140.0, 0.0)
+		right.custom_minimum_size = Vector2(190.0, 0.0)
 		h.add_child(right)
-		var buy: Button = MetaUI.button(MetaUI.won(u.price), 22)
-		buy.custom_minimum_size = Vector2(140.0, 44.0)
+		var buy: Button = MetaUI.button(MetaUI.won(u.price), MetaUI.FS_SUB)
+		buy.custom_minimum_size = Vector2(190.0, MetaUI.TOUCH_MIN_SMALL)
 		buy.disabled = not SaveSystem.can_buy_unlock(u.id)
 		var unlock_id: StringName = u.id
 		buy.pressed.connect(func() -> void: SaveSystem.buy_unlock(unlock_id))
@@ -178,7 +182,7 @@ func _row(u: UnlockData, stats: Dictionary, dark: bool) -> Control:
 		if not u.condition_met(stats):
 			var note: Label = MetaUI.label(
 					tr("조건 %d%%") % int(round(u.condition.ratio(stats) * 100.0)),
-					16, MetaUI.INK_FADED)
+					MetaUI.FS_TINY, MetaUI.INK_FADED)
 			note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			right.add_child(note)
 	return row

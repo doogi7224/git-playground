@@ -31,34 +31,36 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	_box.add_child(MetaUI.title("설     정", 40))
+	_box.add_child(MetaUI.title("설     정"))
 	_box.add_child(MetaUI.rule())
 
 	for entry: Dictionary in TOGGLES:
 		var check := CheckBox.new()
 		check.text = tr(String(entry["label"]))
 		check.button_pressed = bool(Settings.get(entry["key"]))
-		check.add_theme_font_size_override(&"font_size", 24)
+		check.add_theme_font_size_override(&"font_size", MetaUI.FS_BODY)
+		check.custom_minimum_size = Vector2(0.0, MetaUI.TOUCH_MIN_SMALL)
 		_ink(check)
 		var key: StringName = entry["key"]
 		check.toggled.connect(func(on: bool) -> void: Settings.set_option(key, on))
 		_box.add_child(check)
 
-	_box.add_child(MetaUI.label("화면 흔들림 강도", 24))
+	_box.add_child(MetaUI.label("화면 흔들림 강도"))
 
 	var slider := HSlider.new()
 	slider.min_value = 0.0
 	slider.max_value = 1.5
 	slider.step = 0.05
 	slider.value = Settings.screen_shake
-	slider.custom_minimum_size = Vector2(360, 28)
+	slider.custom_minimum_size = Vector2(0, 48)
 	slider.value_changed.connect(func(v: float) -> void: Settings.set_option(&"screen_shake", v))
 	_box.add_child(slider)
 
 	var low := CheckBox.new()
 	low.text = tr("저사양 프리셋")
 	low.button_pressed = Settings.low_spec
-	low.add_theme_font_size_override(&"font_size", 24)
+	low.add_theme_font_size_override(&"font_size", MetaUI.FS_BODY)
+	low.custom_minimum_size = Vector2(0.0, MetaUI.TOUCH_MIN_SMALL)
 	_ink(low)
 	low.toggled.connect(_on_low_spec)
 	_box.add_child(low)
@@ -71,7 +73,7 @@ func _build() -> void:
 	_add_language()
 
 	_box.add_child(MetaUI.rule())
-	var replay: Button = MetaUI.button("튜토리얼 다시 보기", 22)
+	var replay: Button = MetaUI.button("튜토리얼 다시 보기", MetaUI.FS_SUB)
 	replay.disabled = SaveSystem.tutorial_pending()
 	replay.pressed.connect(func() -> void:
 		AudioManager.play_sfx(&"ui_click")
@@ -80,7 +82,7 @@ func _build() -> void:
 	_box.add_child(replay)
 
 	_box.add_child(MetaUI.rule())
-	var close: Button = MetaUI.button("닫기", 26)
+	var close: Button = MetaUI.button("닫기")
 	close.pressed.connect(func() -> void:
 		AudioManager.play_sfx(&"ui_click")
 		_close())
@@ -104,8 +106,8 @@ func _add_volume(key: StringName, label_text: String) -> void:
 	row.add_theme_constant_override(&"separation", 16)
 	_box.add_child(row)
 
-	var label: Label = MetaUI.label(label_text, 24)
-	label.custom_minimum_size = Vector2(160.0, 0.0)
+	var label: Label = MetaUI.label(label_text)
+	label.custom_minimum_size = Vector2(200.0, 0.0)
 	row.add_child(label)
 
 	var slider := HSlider.new()
@@ -113,12 +115,13 @@ func _add_volume(key: StringName, label_text: String) -> void:
 	slider.max_value = 1.0
 	slider.step = 0.05
 	slider.value = float(Settings.get(key))
-	slider.custom_minimum_size = Vector2(280.0, 28.0)
+	slider.custom_minimum_size = Vector2(0.0, 48.0)
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(slider)
 
 	# 지금 몇인지 숫자로도 보여 준다. 슬라이더만 있으면 0.05 단위가 안 읽힌다.
-	var value_label: Label = MetaUI.label("%d%%" % int(round(slider.value * 100.0)), 22)
-	value_label.custom_minimum_size = Vector2(60.0, 0.0)
+	var value_label: Label = MetaUI.label("%d%%" % int(round(slider.value * 100.0)), MetaUI.FS_SUB)
+	value_label.custom_minimum_size = Vector2(96.0, 0.0)
 	row.add_child(value_label)
 
 	slider.value_changed.connect(func(v: float) -> void:
@@ -133,12 +136,13 @@ func _add_language() -> void:
 	row.add_theme_constant_override(&"separation", 16)
 	_box.add_child(row)
 
-	var label: Label = MetaUI.label("언어", 24)
-	label.custom_minimum_size = Vector2(160.0, 0.0)
+	var label: Label = MetaUI.label("언어")
+	label.custom_minimum_size = Vector2(200.0, 0.0)
 	row.add_child(label)
 
 	var option := OptionButton.new()
-	option.add_theme_font_size_override(&"font_size", 22)
+	option.add_theme_font_size_override(&"font_size", MetaUI.FS_SUB)
+	option.custom_minimum_size = Vector2(240.0, MetaUI.TOUCH_MIN_SMALL)
 	_ink(option)
 	# 기본 회색 배경이 갱지 위에서 튄다.
 	for state: StringName in [&"normal", &"hover", &"pressed", &"focus", &"disabled"]:

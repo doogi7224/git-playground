@@ -19,9 +19,9 @@ func _build() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side: StringName in [&"margin_left", &"margin_right"]:
-		margin.add_theme_constant_override(side, 180)
+		margin.add_theme_constant_override(side, MetaUI.SIDE_MARGIN)
 	for side: StringName in [&"margin_top", &"margin_bottom"]:
-		margin.add_theme_constant_override(side, 60)
+		margin.add_theme_constant_override(side, 48)
 	add_child(margin)
 
 	var panel: PanelContainer = MetaUI.panel()
@@ -31,8 +31,8 @@ func _build() -> void:
 	col.add_theme_constant_override(&"separation", 12)
 	panel.add_child(col)
 
-	col.add_child(MetaUI.title("표     창     장", 40))
-	_summary = MetaUI.label("", 24, MetaUI.INK)
+	col.add_child(MetaUI.title("표     창     장"))
+	_summary = MetaUI.label("", MetaUI.FS_SUB, MetaUI.INK)
 	_summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_summary)
 	col.add_child(MetaUI.rule())
@@ -48,7 +48,7 @@ func _build() -> void:
 	scroll.add_child(_list)
 
 	col.add_child(MetaUI.rule())
-	var back: Button = MetaUI.button("돌아가기", 26)
+	var back: Button = MetaUI.button("돌아가기")
 	back.pressed.connect(func() -> void: back_requested.emit())
 	col.add_child(back)
 
@@ -84,27 +84,27 @@ func _row(c: CommendationData, has: bool, stats: Dictionary, dark: bool) -> Cont
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(text)
-	text.add_child(MetaUI.label(c.display_name, 26, MetaUI.INK if has else MetaUI.INK_FADED))
+	text.add_child(MetaUI.label(c.display_name, MetaUI.FS_BODY, MetaUI.INK if has else MetaUI.INK_FADED))
 	# 아직 못 받은 표창장은 설명 대신 조건을 보여 준다. 뭘 하면 되는지가 먼저다.
 	if has:
-		text.add_child(MetaUI.label(c.description, 18, MetaUI.INK_FADED))
+		text.add_child(MetaUI.label(c.description, MetaUI.FS_TINY, MetaUI.INK_FADED))
 	elif c.condition != null:
 		text.add_child(MetaUI.label(tr("조건 — %s (%d%%)") % [
 				c.condition.describe(),
-				int(round(c.condition.ratio(stats) * 100.0))], 18, MetaUI.INK_FADED))
+				int(round(c.condition.ratio(stats) * 100.0))], MetaUI.FS_TINY, MetaUI.INK_FADED))
 
 	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(200.0, 0.0)
+	right.custom_minimum_size = Vector2(190.0, 0.0)
 	h.add_child(right)
 	if has:
-		right.add_child(MetaUI.stamp("발  급", 30))
+		right.add_child(MetaUI.stamp("발  급", MetaUI.FS_BODY))
 	elif c.condition != null:
 		var bar := ProgressBar.new()
 		bar.max_value = 1.0
 		bar.value = c.condition.ratio(stats)
 		bar.show_percentage = false
-		bar.custom_minimum_size = Vector2(0.0, 22.0)
+		bar.custom_minimum_size = Vector2(0.0, 26.0)
 		right.add_child(bar)
 	if c.salary_reward > 0:
-		right.add_child(MetaUI.label(tr("보상 %s") % MetaUI.won(c.salary_reward), 18, MetaUI.INK_FADED))
+		right.add_child(MetaUI.label(tr("보상 %s") % MetaUI.won(c.salary_reward), MetaUI.FS_TINY, MetaUI.INK_FADED))
 	return row

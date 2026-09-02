@@ -25,17 +25,17 @@ func _build() -> void:
 	center.add_child(panel)
 
 	_box = VBoxContainer.new()
-	_box.custom_minimum_size = Vector2(600.0, 0.0)
-	_box.add_theme_constant_override(&"separation", 14)
+	_box.custom_minimum_size = Vector2(880.0, 0.0)
+	_box.add_theme_constant_override(&"separation", 20)
 	panel.add_child(_box)
 
 	_box.add_child(MetaUI.title("전역까지 D-100"))
-	var sub: Label = MetaUI.label("병력 운용 및 전역 관리 시스템", 20, MetaUI.INK_FADED)
+	var sub: Label = MetaUI.label("병력 운용 및 전역 관리 시스템", MetaUI.FS_SUB, MetaUI.INK_FADED)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_box.add_child(sub)
 	_box.add_child(MetaUI.rule())
 
-	_salary_label = MetaUI.label("", 26, MetaUI.INK)
+	_salary_label = MetaUI.label("", MetaUI.FS_SUB, MetaUI.INK)
 	_salary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_box.add_child(_salary_label)
 	_box.add_child(MetaUI.spacer(12.0))
@@ -49,7 +49,7 @@ func _build() -> void:
 
 
 func _add_button(text: String, screen: StringName) -> void:
-	var b: Button = MetaUI.button(text, 30)
+	var b: Button = MetaUI.button(text, MetaUI.FS_HEAD)
 	b.pressed.connect(func() -> void: open_requested.emit(screen))
 	_box.add_child(b)
 

@@ -20,9 +20,9 @@ func _build() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side: StringName in [&"margin_left", &"margin_right"]:
-		margin.add_theme_constant_override(side, 180)
+		margin.add_theme_constant_override(side, MetaUI.SIDE_MARGIN)
 	for side: StringName in [&"margin_top", &"margin_bottom"]:
-		margin.add_theme_constant_override(side, 60)
+		margin.add_theme_constant_override(side, 48)
 	add_child(margin)
 
 	var panel: PanelContainer = MetaUI.panel()
@@ -32,8 +32,8 @@ func _build() -> void:
 	col.add_theme_constant_override(&"separation", 12)
 	panel.add_child(col)
 
-	col.add_child(MetaUI.title("P X   보  급  품", 40))
-	_salary_label = MetaUI.label("", 24, MetaUI.INK)
+	col.add_child(MetaUI.title("P X   보  급  품"))
+	_salary_label = MetaUI.label("", MetaUI.FS_SUB, MetaUI.INK)
 	_salary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_salary_label)
 	col.add_child(MetaUI.rule())
@@ -49,7 +49,7 @@ func _build() -> void:
 	scroll.add_child(_list)
 
 	col.add_child(MetaUI.rule())
-	var back: Button = MetaUI.button("돌아가기", 26)
+	var back: Button = MetaUI.button("돌아가기")
 	back.pressed.connect(func() -> void: back_requested.emit())
 	col.add_child(back)
 
@@ -83,17 +83,17 @@ func _row(item: PxUpgradeData, dark: bool) -> Control:
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(text)
-	text.add_child(MetaUI.label(item.display_name, 26))
-	text.add_child(MetaUI.label(item.description, 18, MetaUI.INK_FADED))
+	text.add_child(MetaUI.label(item.display_name, MetaUI.FS_BODY))
+	text.add_child(MetaUI.label(item.description, MetaUI.FS_TINY, MetaUI.INK_FADED))
 
 	var status := VBoxContainer.new()
-	status.custom_minimum_size = Vector2(220.0, 0.0)
+	status.custom_minimum_size = Vector2(180.0, 0.0)
 	h.add_child(status)
-	status.add_child(MetaUI.label(_pips(level, item.max_level), 22))
-	status.add_child(MetaUI.label(tr("현재 %s") % item.describe_level(level), 18, MetaUI.INK_FADED))
+	status.add_child(MetaUI.label(_pips(level, item.max_level), MetaUI.FS_SUB))
+	status.add_child(MetaUI.label(tr("현재 %s") % item.describe_level(level), MetaUI.FS_TINY, MetaUI.INK_FADED))
 
-	var buy: Button = MetaUI.button("완료" if maxed else MetaUI.won(cost), 24)
-	buy.custom_minimum_size = Vector2(200.0, 52.0)
+	var buy: Button = MetaUI.button("완료" if maxed else MetaUI.won(cost), MetaUI.FS_SUB)
+	buy.custom_minimum_size = Vector2(210.0, MetaUI.TOUCH_MIN_SMALL)
 	buy.disabled = maxed or not SaveSystem.can_buy_px(item.id)
 	if not maxed:
 		var id: StringName = item.id
