@@ -68,7 +68,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _spawn_one() -> void:
-	if enemies.get_count() >= enemies.get_capacity():
+	# 배열 용량과 품질 설정 상한 둘 다 지킨다.
+	# 용량은 절대 넘으면 안 되는 선이고, 설정 상한은 기기가 감당할 수 있는 선이다.
+	if enemies.get_count() >= mini(enemies.get_capacity(), Settings.max_enemies):
 		return
 	var id: StringName = _current.enemy_ids[randi() % _current.enemy_ids.size()]
 	var type_index: int = _type_cache.get(id, -1)

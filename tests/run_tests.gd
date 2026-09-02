@@ -351,6 +351,12 @@ func test_arena_smoke() -> void:
 
 	var saw_pickup: bool = false
 	var saw_level_up: bool = false
+	# 접촉을 "최종 HP" 로 재면 안 된다. 회복(건빵/커피믹스/리젠)이 피해를 덮으면
+	# 맞고도 100/100 으로 끝나서 없는 회귀를 만들어 낸다. 실제로 flaky 했다.
+	# 맞았다는 사실 자체를 센다.
+	var hits_taken: Array[float] = []
+	var on_hit := func(amount: float, _ratio: float) -> void: hits_taken.append(amount)
+	EventBus.player_damaged.connect(on_hit)
 
 	# 프레임 수로 돌리면 머신 속도에 따라 진행 시간이 달라진다(헤드리스는 170fps씩 나온다).
 	# 게임 시간 기준으로 돈다.
@@ -386,7 +392,10 @@ func test_arena_smoke() -> void:
 	_check(not player.upgrade_levels.is_empty(),
 			"고른 명령서가 실제로 반영된다 (기록 %s, 무기 %d종)" % [
 				player.upgrade_levels, player.weapon_ids().size()])
-	_check(player.hp < player.max_hp, "접촉 피해를 받는다 (HP %.0f/%.0f)" % [player.hp, player.max_hp])
+	_check(not hits_taken.is_empty(),
+			"적이 실제로 플레이어에게 닿는다 (피격 %d회, HP %.0f/%.0f)"
+			% [hits_taken.size(), player.hp, player.max_hp])
+	EventBus.player_damaged.disconnect(on_hit)
 
 	arena.queue_free()
 	await get_tree().process_frame

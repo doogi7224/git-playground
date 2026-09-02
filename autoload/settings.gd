@@ -24,6 +24,18 @@ var master_volume: float = 1.0
 var bgm_volume: float = 0.8
 var sfx_volume: float = 1.0
 
+@export_group("성능")
+## 화면에 동시에 존재할 수 있는 적 수 상한.
+##
+## 데스크톱 시절 목표는 3,000마리였다. 모바일에서는 적 시뮬만으로 예산을 넘긴다
+## (컨테이너 실측 7.8ms x 폰 2.5배 = 19.5ms > 16.67ms).
+## 1,500 은 폰에서 적 시뮬이 예산의 절반 안에 들어오는 선이고, 나머지 절반은
+## 무기·투사체·해저드·렌더·GC 몫이다. 자세한 건 docs/performance.md.
+##
+## 보통 플레이에서는 이 상한에 잘 안 닿는다 (완주 판의 최대 동시 적이 1,000 남짓).
+## 밸런스를 바꾸려는 값이 아니라 최악의 순간에 프레임이 무너지지 않게 하는 안전선이다.
+var max_enemies: int = 1500
+
 @export_group("언어")
 ## "ko" / "en". 번역 키는 한국어 원문이라 ko 는 표를 안 거쳐도 그대로 나온다.
 var locale: String = "ko"
@@ -35,7 +47,7 @@ const LOCALE_NAMES: Dictionary = {"ko": "한국어", "en": "English"}
 const KEYS: Array[StringName] = [
 	&"screen_shake", &"hit_stop", &"damage_numbers", &"glow", &"vignette",
 	&"chromatic_aberration", &"lighting", &"particle_density", &"low_spec",
-	&"master_volume", &"bgm_volume", &"sfx_volume", &"locale",
+	&"master_volume", &"bgm_volume", &"sfx_volume", &"locale", &"max_enemies",
 ]
 
 
@@ -86,12 +98,14 @@ func apply_low_spec(enabled: bool) -> void:
 		damage_numbers = false
 		particle_density = 0.35
 		lighting = false
+		max_enemies = 800
 	else:
 		glow = true
 		chromatic_aberration = true
 		damage_numbers = true
 		particle_density = 1.0
 		lighting = true
+		max_enemies = 1500
 	notify_changed()
 
 
