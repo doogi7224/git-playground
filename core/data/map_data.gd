@@ -7,6 +7,8 @@ class_name MapData
 ## 이 맵에 나오는 적 전부. EnemyManager가 시작할 때 통째로 등록한다.
 @export var enemies: Array[EnemyData] = []
 @export var wave_table: WaveTable = null
+## 이 맵의 적 그림. 없으면 화이트박스 도형으로 그린다 — 아트가 없어도 게임은 돈다.
+@export var sprite_atlas: SpriteAtlas = null
 
 @export_group("분위기")
 ## 기획서 3.3: CanvasModulate로 맵별 전역 톤. 야간 위병소는 짙은 남색.

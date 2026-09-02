@@ -16,6 +16,9 @@ const BUFFER_STRIDE: int = 16   ## transform_2d(8) + color(4) + custom_data(4)
 ## 분리는 적 1마리마다 매번 돌기 때문이다. 실측(3,000마리 기준 이동+분리 ms):
 ##   32px → 5.38 / 48px → 5.73 / 64px → 6.65 / 96px → 8.97
 ## 기획서 6.2는 64px이라고 적었지만 32px이 20% 빠르다.
+const WHITEBOX_MATERIAL: String = "res://vfx/shaders/enemy_multimesh_material.tres"
+const ATLAS_MATERIAL: String = "res://vfx/shaders/enemy_atlas_material.tres"
+
 const CELL_SIZE: float = 32.0
 const HIT_FLASH_TIME: float = 0.08
 
@@ -58,11 +61,14 @@ var _t_contact_dps: PackedFloat32Array = PackedFloat32Array()
 var _t_xp: PackedFloat32Array = PackedFloat32Array()
 var _t_color: PackedColorArray = PackedColorArray()
 var _t_atlas: PackedInt32Array = PackedInt32Array()
+var _t_draw_size: PackedFloat32Array = PackedFloat32Array()   ## 그릴 높이(px)
+var _t_aspect: PackedFloat32Array = PackedFloat32Array()      ## 가로/세로 비
 var _type_count: int = 0
 var _max_radius: float = 0.0
 
 ## --- 렌더 / 질의 ---
 var hash_grid: SpatialHash = null
+var atlas: SpriteAtlas = null
 var _renderer: MultiMeshInstance2D = null
 var _buffer: PackedFloat32Array = PackedFloat32Array()
 var _reap_list: PackedInt32Array = PackedInt32Array()
@@ -124,7 +130,9 @@ func register_enemy(data: EnemyData) -> int:
 	_t_contact_dps.append(data.contact_dps)
 	_t_xp.append(data.xp)
 	_t_color.append(data.color)
-	_t_atlas.append(data.atlas_index)
+	_t_atlas.append(0)
+	_t_draw_size.append(data.radius * 2.0)
+	_t_aspect.append(1.0)
 	_max_radius = maxf(_max_radius, data.radius)
 	_type_count += 1
 	return _type_count - 1
@@ -134,6 +142,41 @@ func register_enemy(data: EnemyData) -> int:
 func register_map(map: MapData) -> void:
 	for e: EnemyData in map.enemies:
 		register_enemy(e)
+	set_atlas(map.sprite_atlas)
+
+
+## 맵의 스프라이트 아틀라스를 물린다. null 이거나 비어 있으면 화이트박스 도형으로 남는다 —
+## 아트가 아직 없어도 게임은 돌아야 한다.
+func set_atlas(p_atlas: SpriteAtlas) -> void:
+	atlas = p_atlas
+	_ensure_renderer()
+	if atlas == null or not atlas.is_valid():
+		_renderer.material = load(WHITEBOX_MATERIAL)
+		return
+
+	var material: ShaderMaterial = (load(ATLAS_MATERIAL) as ShaderMaterial).duplicate()
+	material.set_shader_parameter(&"atlas", atlas.texture)
+	material.set_shader_parameter(&"regions", atlas.regions)
+	if atlas.normal_texture != null:
+		material.set_shader_parameter(&"normal_atlas", atlas.normal_texture)
+		material.set_shader_parameter(&"use_normal", true)
+	_renderer.material = material
+
+	# 타입별로 아틀라스 어느 칸을 쓰는지 풀어둔다. 이름이 안 맞으면 화이트박스로 남겨야
+	# "그림이 없다"가 눈에 보인다 — 조용히 0번 칸을 쓰면 전부 같은 그림이 된다.
+	for t in _type_count:
+		var data: EnemyData = _t_data[t]
+		var index: int = atlas.index_of(data.sprite_name())
+		if index < 0:
+			push_warning("아틀라스에 '%s' 그림이 없다 — 화이트박스로 그린다" % data.sprite_name())
+			_t_atlas[t] = 0
+			_t_draw_size[t] = data.radius * 2.0
+			_t_aspect[t] = 1.0
+			continue
+		_t_atlas[t] = index
+		var pixel: Vector2 = atlas.size_of(index)
+		_t_draw_size[t] = data.radius * 2.0 * data.sprite_scale
+		_t_aspect[t] = 1.0 if pixel.y <= 0.0 else pixel.x / pixel.y
 
 
 func data_of_type(type_index: int) -> EnemyData:
@@ -142,6 +185,10 @@ func data_of_type(type_index: int) -> EnemyData:
 
 func type_count() -> int:
 	return _type_count
+
+
+func atlas_index_of(type_index: int) -> int:
+	return _t_atlas[type_index]
 
 
 func type_index_of(id: StringName) -> int:
@@ -404,7 +451,7 @@ func _ensure_renderer() -> void:
 	_renderer = MultiMeshInstance2D.new()
 	_renderer.name = "EnemyMultiMesh"
 	_renderer.multimesh = mm
-	_renderer.material = load("res://vfx/shaders/enemy_multimesh_material.tres")
+	_renderer.material = load(WHITEBOX_MATERIAL)
 	add_child(_renderer)
 
 
@@ -417,18 +464,20 @@ func _update_buffer() -> void:
 	var buf: PackedFloat32Array = _buffer
 	_buffer = PackedFloat32Array()
 
+	var textured: bool = atlas != null and atlas.is_valid()
 	for i in _count:
 		var t: int = _type[i]
-		var r: float = _t_radius[t]
-		var d: float = r * 2.0
+		var h: float = _t_draw_size[t]
+		var w: float = h * _t_aspect[t]
 		var b: int = i * BUFFER_STRIDE
-		var c: Color = _t_color[t]
-		buf[b + 0] = d
+		# 그림이 있으면 틴트를 흰색으로 둔다. 타입 색을 곱하면 그림이 갈색으로 물든다.
+		var c: Color = Color.WHITE if textured else _t_color[t]
+		buf[b + 0] = w
 		buf[b + 1] = 0.0
 		buf[b + 2] = 0.0
 		buf[b + 3] = _px[i]
 		buf[b + 4] = 0.0
-		buf[b + 5] = d
+		buf[b + 5] = h
 		buf[b + 6] = 0.0
 		buf[b + 7] = _py[i]
 		buf[b + 8] = c.r

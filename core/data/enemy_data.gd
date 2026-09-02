@@ -17,5 +17,14 @@ class_name EnemyData
 @export_group("표시")
 ## 기획서 3.2: 적은 갈색·회색 계열. 시안/금색은 플레이어 전용이라 절대 쓰지 않는다.
 @export var color: Color = Color("#8A7B5E")
-## M2에서 텍스처 아틀라스의 몇 번째 칸을 쓸지. 셰이더에 CUSTOM_DATA로 넘어간다.
+## 아틀라스 안에서 쓸 그림 이름. 비우면 id 를 그대로 쓴다.
+## 아트 파이프라인이 파일 이름을 그대로 이름으로 쓰므로, art/raw/shovel_mob.png 면 자동으로 붙는다.
+@export var sprite: StringName = &""
+## 그림은 보통 판정 원보다 크다. 판정 반경 대비 몇 배로 그릴지.
+@export var sprite_scale: float = 2.2
+## 아틀라스가 없을 때(화이트박스) 쓰는 색.
 @export var atlas_index: int = 0
+
+
+func sprite_name() -> StringName:
+	return id if sprite == &"" else sprite

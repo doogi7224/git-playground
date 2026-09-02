@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/enemy_data.gd" id="1_enemy"]
+
+[resource]
+script = ExtResource("1_enemy")
+id = &"snowball"
+display_name = "눈덩이"
+max_hp = 34.0
+contact_dps = 7.0
+xp = 2.0
+speed = 118.0
+radius = 16.0
+color = Color(0.80, 0.82, 0.85, 1)
+sprite = &""
+sprite_scale = 2.0
+atlas_index = 0

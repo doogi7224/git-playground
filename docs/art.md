@@ -21,8 +21,23 @@ AI로 캐릭터 1장(정지) 고해상도 생성
 ```bash
 pip install -r tools/requirements.txt
 
-python3 tools/art_pipeline.py --input art/raw --palette core --normal --atlas main
+tools/build_art.sh                      # 적 + 플레이어 전체 빌드 (보통 이것만 쓰면 된다)
 python3 tools/test_art_pipeline.py      # 자체 검증 (19개 검사)
+```
+
+`build_art.sh` 는 적과 플레이어를 **따로** 돌린다. 팔레트가 다르기 때문이다 —
+적은 시안·금색을 못 쓰고(플레이어 이펙트 독점색), 플레이어는 진홍을 못 쓴다(위험 표시 독점색).
+
+```
+art/raw/enemies/*.png  → art/atlas/enemies.png + enemies_n.png + enemies_atlas.tres
+art/raw/player/*.png   → art/atlas/player.png  + player_n.png  + player_atlas.tres
+                         + 파츠별 AtlasTexture .tres
+```
+
+낱장으로 돌리고 싶으면:
+
+```bash
+python3 tools/art_pipeline.py --input art/raw/enemies --palette enemy --normal --atlas enemies
 ```
 
 | 옵션 | 뜻 |
@@ -35,7 +50,26 @@ python3 tools/test_art_pipeline.py      # 자체 검증 (19개 검사)
 | `--atlas 이름` | 아틀라스로 묶고 AtlasTexture `.tres` 자동 생성 |
 
 입력 `art/raw/` → 출력 `art/processed/`, `art/atlas/`.
-**`art/raw/` 만 커밋한다.** 나머지는 생성물이라 `.gitignore` 대상이다.
+
+**`art/raw/` 와 `art/atlas/` 를 커밋한다.** 기획서는 "raw 만 커밋"이라고 했지만,
+`art/atlas/` 는 게임이 **실행 중에 직접 읽는 데이터**다. 이게 없으면 클론 직후 그림이 안 나온다.
+중간 산출물인 `art/processed/` 만 `.gitignore` 대상이다.
+
+## 게임에 어떻게 붙는가
+
+- **적**: `MapData.sprite_atlas` 에 `enemies_atlas.tres` 를 물린다. `EnemyManager` 가
+  적 종류별로 아틀라스의 몇 번째 칸인지를 풀어서 셰이더에 넘긴다.
+  **적이 20종이어도 MultiMesh 하나, 드로우콜 1개다.**
+  아틀라스 안의 이름은 **파일 이름 = 적 id** 로 맞춘다 (`art/raw/enemies/weed.png` → `&"weed"`).
+  이름이 안 맞으면 경고를 띄우고 그 적만 화이트박스로 남는다 — 조용히 엉뚱한 그림이 붙지 않는다.
+- **플레이어**: `CharacterData.parts` 에 파츠별 AtlasTexture 를 넣는다.
+  리깅 템플릿의 `<파츠>Sprite` 슬롯에 들어간다 (`docs/rigging.md`).
+
+## 플레이스홀더
+
+`tools/gen_placeholder_art.py` 가 `art/raw/` 에 임시 도형 그림을 만든다.
+**AI로 뽑은 진짜 그림을 같은 파일 이름으로 덮어쓰면** 파이프라인과 게임이 그대로 돌아간다.
+아트가 없으면 "아틀라스 → MultiMesh → 게임" 배선이 실제로 되는지 확인할 방법이 없어서 둔 것이다.
 
 ### 팔레트가 철칙을 강제한다
 

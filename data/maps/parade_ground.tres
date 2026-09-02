@@ -1,15 +1,21 @@
-[gd_resource type="Resource" script_class="MapData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="MapData" load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://core/data/map_data.gd" id="1_map"]
-[ext_resource type="Resource" path="res://data/enemies/shovel_mob.tres" id="2_mob"]
-[ext_resource type="Resource" path="res://data/enemies/battalion_commander.tres" id="4_boss"]
-[ext_resource type="Resource" path="res://data/waves/parade_ground_waves.tres" id="3_waves"]
+[ext_resource type="Resource" path="res://data/enemies/shovel_mob.tres" id="2_shovel_mob"]
+[ext_resource type="Resource" path="res://data/enemies/weed.tres" id="3_weed"]
+[ext_resource type="Resource" path="res://data/enemies/leaf_pile.tres" id="4_leaf_pile"]
+[ext_resource type="Resource" path="res://data/enemies/snowball.tres" id="5_snowball"]
+[ext_resource type="Resource" path="res://data/enemies/blanket.tres" id="6_blanket"]
+[ext_resource type="Resource" path="res://data/enemies/battalion_commander.tres" id="7_battalion_commander"]
+[ext_resource type="Resource" path="res://data/waves/parade_ground_waves.tres" id="8_waves"]
+[ext_resource type="Resource" path="res://art/atlas/enemies_atlas.tres" id="9_atlas"]
 
 [resource]
 script = ExtResource("1_map")
 id = &"parade_ground"
 display_name = "연병장"
-enemies = Array[Resource]([ExtResource("2_mob"), ExtResource("4_boss")])
-wave_table = ExtResource("3_waves")
+enemies = Array[Resource]([ExtResource("2_shovel_mob"), ExtResource("3_weed"), ExtResource("4_leaf_pile"), ExtResource("5_snowball"), ExtResource("6_blanket"), ExtResource("7_battalion_commander")])
+wave_table = ExtResource("8_waves")
+sprite_atlas = ExtResource("9_atlas")
 ambient_tint = Color(0.9, 0.92, 0.86, 1)
 ground_color = Color(0.243137, 0.290196, 0.196078, 1)

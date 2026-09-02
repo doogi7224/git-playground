@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://maps/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://maps/ground_grid.gd" id="2_ground"]
@@ -19,7 +19,8 @@
 [ext_resource type="Script" path="res://vfx/damage_numbers.gd" id="17_damage"]
 [ext_resource type="Script" path="res://vfx/gfx_director.gd" id="18_gfx"]
 [ext_resource type="Script" path="res://vfx/post_process.gd" id="19_post"]
-[ext_resource type="Material" path="res://vfx/post_process_material.tres" id="20_postmat"]
+[ext_resource type="Material" path="res://vfx/shaders/vignette_material.tres" id="20_vig"]
+[ext_resource type="Material" path="res://vfx/shaders/chromatic_material.tres" id="23_ca"]
 [ext_resource type="Environment" path="res://data/gfx_environment.tres" id="21_env"]
 [ext_resource type="PackedScene" path="res://ui/options_panel.tscn" id="22_options"]
 
@@ -77,15 +78,29 @@ damage_numbers = NodePath("../DamageNumbers")
 [node name="PostFX" type="CanvasLayer" parent="."]
 layer = 5
 
-[node name="PostProcess" type="ColorRect" parent="PostFX"]
-material = ExtResource("20_postmat")
+[node name="Chromatic" type="ColorRect" parent="PostFX"]
+material = ExtResource("23_ca")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="Vignette" type="ColorRect" parent="PostFX"]
+material = ExtResource("20_vig")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="PostProcess" type="Node" parent="PostFX"]
 script = ExtResource("19_post")
+vignette = NodePath("../Vignette")
+chromatic = NodePath("../Chromatic")
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 10

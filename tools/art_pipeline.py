@@ -379,6 +379,34 @@ def _res_path(path: Path) -> str:
         return f"res://{path.as_posix().lstrip('/')}"
 
 
+def write_sprite_atlas(out_dir: Path, name: str, atlas_res_path: str,
+                       normal_res_path: str | None, placed: list[Placed],
+                       canvas_size: tuple[int, int]) -> None:
+    """Godot 이 읽는 SpriteAtlas 리소스. 적 MultiMesh 셰이더가 이 UV 표를 그대로 받는다."""
+    width, height = canvas_size
+    ordered = sorted(placed, key=lambda p: p.name)
+    names = ", ".join(f'&"{p.name}"' for p in ordered)
+    regions = ", ".join(
+        f"{p.x / width:.6f}, {p.y / height:.6f}, {p.w / width:.6f}, {p.h / height:.6f}"
+        for p in ordered)
+    sizes = ", ".join(f"{p.w}, {p.h}" for p in ordered)
+
+    steps = 3 if normal_res_path else 2
+    lines = [f'[gd_resource type="Resource" script_class="SpriteAtlas" load_steps={steps + 1} format=3]', ""]
+    lines.append('[ext_resource type="Script" path="res://core/data/sprite_atlas.gd" id="1_script"]')
+    lines.append(f'[ext_resource type="Texture2D" path="{atlas_res_path}" id="2_tex"]')
+    if normal_res_path:
+        lines.append(f'[ext_resource type="Texture2D" path="{normal_res_path}" id="3_normal"]')
+    lines += ["", "[resource]", 'script = ExtResource("1_script")',
+              'texture = ExtResource("2_tex")']
+    if normal_res_path:
+        lines.append('normal_texture = ExtResource("3_normal")')
+    lines += [f"names = Array[StringName]([{names}])",
+              f"regions = PackedVector4Array({regions})",
+              f"sizes = PackedVector2Array({sizes})", ""]
+    (out_dir / f"{name}_atlas.tres").write_text("\n".join(lines), encoding="utf-8")
+
+
 def write_atlas_tres(out_dir: Path, atlas_res_path: str, placed: list[Placed]) -> None:
     for spot in placed:
         (out_dir / f"{spot.name}.tres").write_text(
@@ -438,6 +466,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"팔레트 '{args.palette}' — {len(palette)}색 (명암 단계 포함)")
     packed: list[tuple[str, np.ndarray]] = []
+    normals: dict[str, np.ndarray] = {}
 
     for path in sources:
         name = path.stem
@@ -456,6 +485,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.normal:
             normal = make_normal_map(rgba, args.normal_strength, args.normal_blur)
             Image.fromarray(normal).save(processed_dir / f"{name}_n.png")
+            normals[name] = normal
             line += "  (+노멀맵)"
         print(line)
         packed.append((name, rgba))
@@ -468,6 +498,25 @@ def main(argv: list[str] | None = None) -> int:
         Image.fromarray(canvas).save(atlas_png)
         res_path = _res_path(atlas_png)
         write_atlas_tres(atlas_dir, res_path, placed)
+
+        # 노멀맵도 같은 자리에 굽는다. 배치가 같아야 UV 표를 공유할 수 있다.
+        normal_res: str | None = None
+        if normals:
+            normal_canvas = np.zeros_like(canvas)
+            # 노멀맵의 "평평한" 기본값은 (128, 128, 255) 다. 빈 칸을 0으로 두면 조명이 깨진다.
+            normal_canvas[..., 0] = 128
+            normal_canvas[..., 1] = 128
+            normal_canvas[..., 2] = 255
+            normal_canvas[..., 3] = 0
+            for spot in placed:
+                if spot.name in normals:
+                    normal_canvas[spot.y:spot.y + spot.h, spot.x:spot.x + spot.w] = normals[spot.name]
+            normal_png = atlas_dir / f"{args.atlas}_n.png"
+            Image.fromarray(normal_canvas).save(normal_png)
+            normal_res = _res_path(normal_png)
+
+        write_sprite_atlas(atlas_dir, args.atlas, res_path, normal_res, placed,
+                           (canvas.shape[1], canvas.shape[0]))
         (atlas_dir / f"{args.atlas}.json").write_text(
             json.dumps({p.name: {"x": p.x, "y": p.y, "w": p.w, "h": p.h} for p in placed},
                        indent=2, ensure_ascii=False), encoding="utf-8")
@@ -475,7 +524,7 @@ def main(argv: list[str] | None = None) -> int:
         total = canvas.shape[0] * canvas.shape[1]
         print(f"아틀라스 {atlas_png}  {canvas.shape[1]}x{canvas.shape[0]}  "
               f"({len(placed)}장, 채움률 {100.0 * used / max(total, 1):.1f}%)")
-        print(f"AtlasTexture .tres {len(placed)}개를 {atlas_dir} 에 썼습니다.")
+        print(f"AtlasTexture .tres {len(placed)}개 + {args.atlas}_atlas.tres (SpriteAtlas) 저장.")
 
     print(f"완료 — {len(sources)}장")
     return 0

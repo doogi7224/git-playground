@@ -14,14 +14,17 @@ const PARTS: Array[StringName] = [
 
 ## 파츠 이름 → 텍스처. 에디터에서 채우거나 set_part()로 넣는다.
 @export var part_textures: Dictionary = {}
-## 파츠 텍스처를 넣었을 때 폴리곤을 텍스처 크기에 맞춰 다시 만들지 여부.
-## 끄면 폴리곤은 그대로 두고 텍스처만 입힌다(직접 다듬은 실루엣을 지키고 싶을 때).
-@export var fit_polygon_to_texture: bool = true
+## 그림 크기를 뼈대 스케일에 맞춰 자동 조정할지. 끄면 원본 픽셀 크기 그대로 붙는다.
+@export var fit_texture_to_slot: bool = true
 
 signal animation_done(name: StringName)
 
 @onready var skeleton: Skeleton2D = $Skeleton2D
 @onready var anim: AnimationPlayer = $AnimationPlayer
+
+## 걷기/대기는 낮은 우선순위다. 공격이나 피격 중에 이동한다고 애니메이션을 끊으면
+## 공격 모션이 매 프레임 처음으로 돌아가서 아무것도 안 보인다.
+const LOW_PRIORITY: Array[StringName] = [&"walk"]
 
 var _current: StringName = &""
 var _locked: bool = false   ## 사망 중에는 다른 애니메이션으로 못 넘어간다
@@ -36,47 +39,53 @@ func _ready() -> void:
 
 ## --- 파츠 교체 ---------------------------------------------------------
 
+## 플레이스홀더 도형 (텍스처가 없을 때 보이는 것)
 func part_node(part: StringName) -> Polygon2D:
-	var found: Node = find_child("%sPart" % part, true, false)
-	return found as Polygon2D
+	return find_child("%sPart" % part, true, false) as Polygon2D
 
 
+## 실제 그림이 붙는 슬롯
+func part_sprite(part: StringName) -> Sprite2D:
+	return find_child("%sSprite" % part, true, false) as Sprite2D
+
+
+## ★ 그림은 Sprite2D 에 붙인다.
+##   Polygon2D 에 AtlasTexture 를 물리면 텍스처가 갈래갈래 찢어진다 —
+##   AtlasTexture.get_rid() 가 region 이 아니라 **전체 아틀라스**의 RID를 돌려주는데
+##   Polygon2D 의 UV 는 get_size()(= region 크기) 기준이라 배율이 안 맞기 때문이다.
+##   Sprite2D 는 region 을 스스로 처리하므로 이 문제가 없다.
 func set_part(part: StringName, texture: Texture2D) -> void:
-	var node: Polygon2D = part_node(part)
-	if node == null:
+	var placeholder: Polygon2D = part_node(part)
+	var sprite: Sprite2D = part_sprite(part)
+	if sprite == null or placeholder == null:
 		push_warning("그런 파츠가 없다: %s" % part)
 		return
-	node.texture = texture
+
+	sprite.texture = texture
+	sprite.visible = texture != null
+	# 그림이 붙으면 플레이스홀더 도형은 감춘다
+	placeholder.visible = texture == null
 	if texture == null:
 		return
-	# 텍스처를 넣으면 색은 흰색으로 — 안 그러면 플레이스홀더 색이 곱해진다
-	node.color = Color.WHITE
-	if fit_polygon_to_texture:
-		_fit(node, texture)
+
+	if fit_texture_to_slot:
+		# 슬롯(플레이스홀더 폴리곤)의 높이에 맞춰 비율을 지키며 줄인다.
+		# 파츠마다 원본 해상도가 달라도 뼈대 비율이 유지된다.
+		var slot_height: float = _slot_height(placeholder)
+		var tex_height: float = float(maxi(texture.get_height(), 1))
+		if slot_height > 0.0:
+			sprite.scale = Vector2.ONE * (slot_height / tex_height)
 
 
-## 텍스처 크기에 맞춘 사각형 폴리곤 + UV. 파츠는 이미 배경이 제거된 PNG라
-## 사각형으로 붙여도 실루엣은 텍스처 알파가 만든다.
-func _fit(node: Polygon2D, texture: Texture2D) -> void:
-	var size := Vector2(texture.get_width(), texture.get_height())
-	var center: Vector2 = _center_of(node.polygon)
-	var half := size * 0.5
-	node.polygon = PackedVector2Array([
-		center + Vector2(-half.x, -half.y), center + Vector2(half.x, -half.y),
-		center + Vector2(half.x, half.y), center + Vector2(-half.x, half.y),
-	])
-	node.uv = PackedVector2Array([
-		Vector2(0, 0), Vector2(size.x, 0), Vector2(size.x, size.y), Vector2(0, size.y),
-	])
-
-
-func _center_of(points: PackedVector2Array) -> Vector2:
-	if points.is_empty():
-		return Vector2.ZERO
-	var sum := Vector2.ZERO
-	for p: Vector2 in points:
-		sum += p
-	return sum / float(points.size())
+func _slot_height(node: Polygon2D) -> float:
+	if node.polygon.is_empty():
+		return 0.0
+	var min_y: float = node.polygon[0].y
+	var max_y: float = min_y
+	for p: Vector2 in node.polygon:
+		min_y = minf(min_y, p.y)
+		max_y = maxf(max_y, p.y)
+	return max_y - min_y
 
 
 ## --- 애니메이션 --------------------------------------------------------
@@ -126,8 +135,14 @@ func set_facing(direction: float) -> void:
 func _play(name: StringName) -> bool:
 	if _locked:
 		return false
+	# 낮은 우선순위는 높은 우선순위 애니메이션이 도는 중에는 무시한다
+	if LOW_PRIORITY.has(name) and anim.is_playing() and not LOW_PRIORITY.has(_current):
+		return false
 	anim.speed_scale = 1.0
-	if _current == name and anim.is_playing() and name == &"walk":
+	# 이미 같은 애니메이션이 돌고 있으면 다시 시작하지 않는다.
+	# 접촉 피해처럼 매 프레임 들어오는 신호로 hit 을 재시작하면 첫 프레임에 멈춰서
+	# (오버브라이트 modulate 구간) 캐릭터가 하얗게 굳어버린다.
+	if _current == name and anim.is_playing():
 		return true
 	_current = name
 	anim.play(String(name))

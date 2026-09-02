@@ -97,7 +97,7 @@ ANIMATIONS = {
         "length": 0.28,
         "loop": False,
         "tracks": [
-            (":modulate", [(0.0, "Color(1, 1, 1, 1)"), (0.04, "Color(4, 4, 4, 1)"),
+            (":modulate", [(0.0, "Color(1, 1, 1, 1)"), (0.04, "Color(2.2, 2.2, 2.2, 1)"),
                            (0.12, "Color(1, 1, 1, 1)")]),
             (f"{bone_path('Torso')}:rotation", [(0.0, 0.0), (0.06, 0.26), (0.28, 0.0)]),
             (f"{bone_path('Head')}:rotation", [(0.0, 0.0), (0.06, 0.34), (0.28, 0.0)]),
@@ -176,10 +176,21 @@ def main() -> None:
                   ""]
         if polygon is not None:
             pts = ", ".join(f"{x}, {y}" for x, y in polygon)
+            cx = sum(px for px, _ in polygon) / len(polygon)
+            cy = sum(py for _, py in polygon) / len(polygon)
+            # 플레이스홀더 도형 — 텍스처가 없을 때 보인다
             nodes += [f'[node name="{name}Part" type="Polygon2D" parent="{bone_path(name)}"]',
                       f"z_index = {z}",
                       f"color = {color_literal(color)}",
                       f"polygon = PackedVector2Array({pts})",
+                      ""]
+            # 실제 그림 슬롯. Polygon2D 에 AtlasTexture 를 물리면 UV 공간이 어긋나
+            # 텍스처가 갈래갈래 찢어진다(AtlasTexture 가 전체 아틀라스 RID를 넘기기 때문).
+            # Sprite2D 는 region 을 스스로 처리하므로 그림은 이쪽에 붙인다.
+            nodes += [f'[node name="{name}Sprite" type="Sprite2D" parent="{bone_path(name)}"]',
+                      f"z_index = {z}",
+                      f"position = Vector2({cx:.1f}, {cy:.1f})",
+                      "visible = false",
                       ""]
         if name == "Weapon":
             pts = ", ".join(f"{x}, {y}" for x, y in WEAPON_BLADE[0])

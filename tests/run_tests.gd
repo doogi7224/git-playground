@@ -7,6 +7,12 @@ extends Node
 ## --script 가 아니라 씬으로 도는 이유: --script 로 SceneTree를 갈아끼우면
 ## 오토로드(EventBus/GameState)가 등록되지 않아 게임 코드가 컴파일조차 안 된다.
 
+## ★ 검사 수 하한.
+## 스크립트 하나가 컴파일에 실패하면 그걸 쓰는 테스트 함수가 런타임 에러로 중간에 끊긴다.
+## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 40개쯤 안 돌았다. 실제로 겪었다.
+## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
+const MIN_CHECKS: int = 250
+
 var _failures: int = 0
 var _checks: int = 0
 var _skipped: int = 0
@@ -39,7 +45,13 @@ func _run_all() -> void:
 	await test_boss()
 	await test_graphics_polish()
 	await test_rigging_template()
+	await test_camera_stability()
+	await test_sprite_atlas()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
+	if _checks < MIN_CHECKS:
+		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
+				% [_checks, MIN_CHECKS])
+		_failures += 1
 	get_tree().quit(1 if _failures > 0 else 0)
 
 
@@ -777,4 +789,86 @@ func test_rigging_template() -> void:
 	_check(rig.skeleton.scale.x > 0.0, "오른쪽을 보면 되돌아온다")
 
 	rig.queue_free()
+	await get_tree().process_frame
+
+
+## ★ 실제로 겪은 버그의 회귀 테스트.
+## Godot 내장 Camera2D position_smoothing 은 보간 가중치(speed * delta)를 클램프하지 않는다.
+## 프레임이 한 번 크게 튀면 진동하다 발산해서 카메라 변환이 -10,000,000 → NaN 이 되고,
+## 화면에서 월드가 통째로 사라진다. UI 는 CanvasLayer 라 그대로 남아서 더 헷갈렸다.
+func test_camera_stability() -> void:
+	print("[카메라 — 큰 프레임 델타에서 발산하지 않는가]")
+	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	get_tree().root.add_child(player)
+	await get_tree().process_frame
+
+	var cam: ScreenShake = player.get_node("Camera2D") as ScreenShake
+	_check(cam != null, "카메라에 ScreenShake 가 붙어 있다")
+	if cam == null:
+		player.queue_free()
+		return
+	_check(not cam.position_smoothing_enabled,
+			"내장 position_smoothing 은 꺼져 있다 (발산하기 때문)")
+	_check(cam.top_level, "카메라가 top_level 이라 지연 추적을 직접 한다")
+
+	# 0.9초짜리 프레임 = 저사양 기기의 히치 또는 배속 테스트
+	player.global_position = Vector2(1500.0, -900.0)
+	for _i in 80:
+		cam._process(0.9)
+	_check(cam.global_position.is_finite(),
+			"큰 델타를 계속 먹여도 좌표가 유한하다 (got %s)" % cam.global_position)
+	_check(cam.global_position.distance_to(player.global_position) < 5.0,
+			"오히려 즉시 따라붙는다 (거리 %.2f)" % cam.global_position.distance_to(player.global_position))
+
+	# 정상 프레임에서는 지연이 있어야 한다 (즉시 스냅이 아니라)
+	cam.snap_to_target()
+	player.global_position = Vector2(3000.0, 0.0)
+	cam._process(1.0 / 60.0)
+	var moved: float = cam.global_position.distance_to(Vector2(1500.0, -900.0))
+	_check(moved > 0.0 and cam.global_position.distance_to(player.global_position) > 100.0,
+			"보통 프레임에서는 부드럽게 따라간다")
+
+	player.queue_free()
+	await get_tree().process_frame
+
+
+## 아틀라스 기반 렌더링 (M2). 적 20종이어도 드로우콜 1개여야 한다.
+func test_sprite_atlas() -> void:
+	print("[스프라이트 아틀라스]")
+	var map: MapData = load("res://data/maps/parade_ground.tres") as MapData
+	_check(map != null and map.sprite_atlas != null, "맵에 아틀라스가 붙어 있다")
+	if map == null or map.sprite_atlas == null:
+		return
+	var atlas: SpriteAtlas = map.sprite_atlas
+	_check(atlas.is_valid(), "아틀라스에 텍스처와 UV 표가 있다")
+	_check(atlas.normal_texture != null, "노멀맵 아틀라스도 같이 구워졌다")
+	_check(atlas.names.size() == atlas.regions.size(), "이름 수와 UV 수가 맞는다")
+	_check(atlas.names.size() == atlas.sizes.size(), "이름 수와 크기 수가 맞는다")
+
+	# 맵의 모든 적이 아틀라스에 그림을 갖고 있는가 — 이름 오타를 잡는다
+	var missing: Array[StringName] = []
+	for e: EnemyData in map.enemies:
+		if atlas.index_of(e.sprite_name()) < 0:
+			missing.append(e.sprite_name())
+	_check(missing.is_empty(), "모든 적이 아틀라스에 그림이 있다 (없는 것: %s)" % [missing])
+
+	# UV 사각형이 0~1 안에 들어오는가
+	var out_of_range: int = 0
+	for r: Vector4 in atlas.regions:
+		if r.x < 0.0 or r.y < 0.0 or r.x + r.z > 1.001 or r.y + r.w > 1.001:
+			out_of_range += 1
+	_check(out_of_range == 0, "UV 사각형이 전부 0~1 범위 (벗어난 것 %d개)" % out_of_range)
+
+	# EnemyManager 가 아틀라스를 물면 타입별로 서로 다른 칸을 쓴다
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(64)
+	em.register_map(map)
+	_check(em.atlas == atlas, "EnemyManager 가 아틀라스를 받았다")
+	var used: Dictionary = {}
+	for t in em.type_count():
+		used[em.atlas_index_of(t)] = true
+	_check(used.size() == em.type_count(),
+			"적 %d종이 서로 다른 칸을 쓴다 (고유 %d개)" % [em.type_count(), used.size()])
+	em.queue_free()
 	await get_tree().process_frame

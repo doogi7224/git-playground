@@ -58,8 +58,7 @@ func _run() -> void:
 			if not _rigs[i].anim.is_playing():
 				_rigs[i].revive()
 				_play(_rigs[i], ANIMS[i])
-		await RenderingServer.frame_post_draw
-		var image: Image = get_viewport().get_texture().get_image()
+		var image: Image = await ScreenGrab.grab(self)
 		image.save_png("%s_%d.png" % [_out, shot])
 		print("  컷 %d 저장" % shot)
 

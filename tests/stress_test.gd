@@ -96,8 +96,8 @@ func _top_up() -> void:
 
 func _report() -> void:
 	if not _shot_path.is_empty():
-		await RenderingServer.frame_post_draw
-		get_viewport().get_texture().get_image().save_png(_shot_path)
+		var img: Image = await ScreenGrab.grab(self)
+		img.save_png(_shot_path)
 		print("  스크린샷: %s" % _shot_path)
 	print("=== 스트레스 테스트 ===")
 	print("  목표 %d마리 / 실제 %d마리" % [_target_count, _enemies.get_count()])

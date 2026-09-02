@@ -25,6 +25,7 @@ func _fire() -> void:
 	if enemies == null or player == null:
 		return
 
+	player.on_attack()
 	var facing: Vector2 = player.facing
 	_swipe_dir = -facing if (_swing_back and data.alternate_direction) else facing
 	_swing_back = not _swing_back

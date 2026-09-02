@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SpriteAtlas" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/data/sprite_atlas.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://art/atlas/player.png" id="2_tex"]
+[ext_resource type="Texture2D" path="res://art/atlas/player_n.png" id="3_normal"]
+
+[resource]
+script = ExtResource("1_script")
+texture = ExtResource("2_tex")
+normal_texture = ExtResource("3_normal")
+names = Array[StringName]([&"kim_arm_l", &"kim_arm_r", &"kim_head", &"kim_leg_l", &"kim_leg_r", &"kim_torso", &"kim_weapon"])
+regions = PackedVector4Array(0.316406, 0.000000, 0.091797, 0.511719, 0.412109, 0.000000, 0.091797, 0.511719, 0.730469, 0.000000, 0.232422, 0.449219, 0.507812, 0.000000, 0.107422, 0.488281, 0.619141, 0.000000, 0.107422, 0.488281, 0.095703, 0.000000, 0.216797, 0.589844, 0.000000, 0.000000, 0.091797, 0.667969)
+sizes = PackedVector2Array(47, 131, 47, 131, 119, 115, 55, 125, 55, 125, 111, 151, 47, 171)

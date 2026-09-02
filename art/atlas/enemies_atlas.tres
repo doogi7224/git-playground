@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SpriteAtlas" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/data/sprite_atlas.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://art/atlas/enemies.png" id="2_tex"]
+[ext_resource type="Texture2D" path="res://art/atlas/enemies_n.png" id="3_normal"]
+
+[resource]
+script = ExtResource("1_script")
+texture = ExtResource("2_tex")
+normal_texture = ExtResource("3_normal")
+names = Array[StringName]([&"battalion_commander", &"blanket", &"leaf_pile", &"shovel_mob", &"snowball", &"weed"])
+regions = PackedVector4Array(0.000000, 0.000000, 0.237305, 0.582031, 0.597656, 0.000000, 0.155273, 0.228516, 0.434570, 0.000000, 0.161133, 0.292969, 0.239258, 0.000000, 0.081055, 0.384766, 0.754883, 0.000000, 0.065430, 0.041016, 0.322266, 0.000000, 0.110352, 0.371094)
+sizes = PackedVector2Array(243, 298, 159, 117, 165, 150, 83, 197, 67, 21, 113, 190)

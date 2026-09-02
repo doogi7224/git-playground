@@ -47,10 +47,7 @@ func _run() -> void:
 			_auto.drive(_arena.get_node("Player"), GameState.elapsed)
 
 	Engine.time_scale = 1.0
-	await get_tree().process_frame
-	await RenderingServer.frame_post_draw
-
-	var img: Image = get_viewport().get_texture().get_image()
+	var img: Image = await ScreenGrab.grab(self)
 	var err: int = img.save_png(_out)
 
 	var enemies: EnemyManager = _arena.get_node("Enemies")

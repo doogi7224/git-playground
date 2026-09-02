@@ -6,6 +6,8 @@ class_name Player
 ## 기본 스탯은 CharacterData(.tres), 경험치 곡선은 ProgressionData(.tres)에서 온다.
 
 const COLOR_HIGHLIGHT: Color = Color("#FFFFFF")
+## 피격 연출 최소 간격(초). 접촉 피해가 매 프레임 들어와도 연출은 이 간격으로만.
+const HIT_ANIM_INTERVAL: float = 0.35
 
 var character: CharacterData = null
 
@@ -40,11 +42,14 @@ var xp_to_next: float = 10.0
 ## 고른 업그레이드/무기 레벨. UpgradeTable이 최대 레벨 체크에 쓴다.
 var upgrade_levels: Dictionary = {}
 
+var _hit_anim_cooldown: float = 0.0
+
 var enemies: EnemyManager = null
 var projectiles: ProjectileManager = null
 var areas: AreaManager = null
 
 @onready var weapons: Node2D = $Weapons
+@onready var rig: RiggedCharacter = $Rig
 
 
 func _ready() -> void:
@@ -73,7 +78,16 @@ func setup(p_enemies: EnemyManager, p_character: CharacterData,
 	hp = max_hp
 	xp_to_next = GameState.xp_to_next(level)
 	_bind_weapons()
+	_dress_rig()
 	queue_redraw()
+
+
+## 캐릭터 파츠 텍스처를 리깅 슬롯에 끼운다. 없으면 템플릿 플레이스홀더가 그대로 보인다.
+func _dress_rig() -> void:
+	if rig == null or character == null:
+		return
+	for part: Variant in character.parts:
+		rig.set_part(part, character.parts[part])
 
 
 func add_weapon(data: WeaponData) -> BaseWeapon:
@@ -153,6 +167,7 @@ func _physics_process(delta: float) -> void:
 	_contact_damage(delta)
 	if regen > 0.0 and hp < max_hp:
 		heal(regen * delta)
+	_hit_anim_cooldown = maxf(0.0, _hit_anim_cooldown - delta)
 
 
 func _move(delta: float) -> void:
@@ -161,6 +176,11 @@ func _move(delta: float) -> void:
 		dir = dir.normalized()
 		facing = dir
 		position += dir * move_speed * speed_mult * delta
+		if rig != null:
+			rig.play_walk()
+			rig.set_facing(dir.x)
+	elif rig != null:
+		rig.play_idle()
 
 
 ## 겹친 적 중 가장 아픈 놈의 DPS만 받는다. 500마리에 둘러싸였다고 500배 아프면
@@ -187,7 +207,13 @@ func take_damage(amount: float) -> void:
 		return
 	hp = maxf(0.0, hp - amount)
 	EventBus.player_damaged.emit(amount, hp / max_hp)
+	# 접촉 피해는 매 프레임 들어온다. 연출은 그 속도로 재생하면 안 된다.
+	if rig != null and _hit_anim_cooldown <= 0.0:
+		_hit_anim_cooldown = HIT_ANIM_INTERVAL
+		rig.play_hit()
 	if hp <= 0.0:
+		if rig != null:
+			rig.play_die()
 		EventBus.player_died.emit()
 		GameState.end_run(false)
 
@@ -249,8 +275,13 @@ func apply_upgrade(upgrade: UpgradeData) -> void:
 	EventBus.upgrade_picked.emit(upgrade.id)
 
 
+## 무기가 발사할 때 부른다.
+func on_attack() -> void:
+	if rig != null:
+		rig.play_attack()
+
+
 func _draw() -> void:
-	# 화이트박스: 몸통 원 + 밝은 하이라이트. 기획서 3.2 — 플레이어가 화면에서 가장 밝다.
-	draw_circle(Vector2.ZERO, body_radius, body_color)
-	draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 24, Color(0.1, 0.12, 0.08), 3.0, true)
-	draw_circle(Vector2(-body_radius * 0.3, -body_radius * 0.35), body_radius * 0.22, COLOR_HIGHLIGHT)
+	# 발밑 그림자. 몸통은 리깅 캐릭터가 그린다.
+	# 기획서 3.2 — 플레이어는 항상 화면에서 가장 밝아야 하므로 그림자는 옅게만.
+	draw_circle(Vector2(0, 4), body_radius * 0.9, Color(0.06, 0.07, 0.05, 0.35))

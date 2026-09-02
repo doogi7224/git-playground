@@ -14,5 +14,10 @@ class_name CharacterData
 @export var damage_mult: float = 1.0
 @export var color: Color = Color("#B7C77A")
 
+@export_group("겉모습")
+## 컷아웃 리깅 파츠 텍스처. {&"Head": ..., &"Torso": ...}
+## 비워두면 리깅 템플릿의 플레이스홀더 폴리곤이 그대로 보인다 — 아트가 없어도 게임은 돈다.
+@export var parts: Dictionary = {}
+
 @export_group("시작 장비")
 @export var starting_weapon: WeaponData = null

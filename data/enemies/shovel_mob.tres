@@ -12,4 +12,6 @@ xp = 1.0
 speed = 130.0
 radius = 13.0
 color = Color(0.541176, 0.482353, 0.368627, 1)
+sprite = &""
+sprite_scale = 2.2
 atlas_index = 0

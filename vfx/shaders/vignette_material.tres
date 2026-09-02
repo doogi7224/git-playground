@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://vfx/shaders/vignette.gdshader" id="1_vig"]
+
+[resource]
+shader = ExtResource("1_vig")
+shader_parameter/strength = 0.55
+shader_parameter/softness = 0.45
+shader_parameter/tint = Color(0.0196078, 0.0313726, 0.0196078, 1)

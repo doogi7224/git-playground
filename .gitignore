@@ -14,11 +14,13 @@
 *.aab
 export_presets.cfg
 
-# 아트 파이프라인 (원본은 커밋, 중간 산출물은 제외)
+# 아트 파이프라인
+#   art/raw/     AI 원본 — 커밋한다
+#   art/atlas/   게임이 실제로 읽는 데이터(아틀라스 + .tres) — 커밋한다.
+#                기획서는 "raw만 커밋"이라고 했지만, 이게 없으면 클론 직후 게임에 그림이 안 나온다.
+#   art/processed/  중간 산출물 — 제외. 아틀라스에 이미 들어가 있다.
 art/processed/*
 !art/processed/.gitkeep
-art/atlas/*
-!art/atlas/.gitkeep
 *.psd
 *.kra
 *.blend1

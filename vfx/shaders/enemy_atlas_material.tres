@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://vfx/shaders/enemy_atlas.gdshader" id="1_atlas"]
+
+[resource]
+shader = ExtResource("1_atlas")
+shader_parameter/use_normal = false
+shader_parameter/bob_speed = 6.0
+shader_parameter/bob_amount = 0.05
