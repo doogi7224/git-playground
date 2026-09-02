@@ -52,6 +52,9 @@ func _ready() -> void:
 	EventBus.xp_gained.connect(func(_a: float, _t: float, _n: float) -> void:
 		_done[&"picked"] = true)
 	EventBus.player_leveled.connect(func(_lv: int) -> void: _done[&"leveled"] = true)
+	# 판이 끝나면 즉시 사라진다. _process 는 phase 로 막히지만 이미 떠 있던 건
+	# 그대로 남아서 결과 화면 위에 겹쳐 보인다. 실제로 그랬다.
+	EventBus.run_ended.connect(func(_v: bool, _s: Dictionary) -> void: _dismiss())
 
 
 func _build() -> void:
@@ -140,6 +143,13 @@ func _advance(t: float) -> void:
 		show()
 		modulate.a = 0.0
 	create_tween().tween_property(self, ^"modulate:a", 1.0, FADE)
+
+
+## 판이 끝나서 치운다. 세이브에는 손대지 않는다 --
+## 안내를 다 못 봤는데 죽었다고 "봤다" 로 기록하면 안 된다.
+func _dismiss() -> void:
+	_finished = true
+	hide()
 
 
 func _finish() -> void:

@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 555
+const MIN_CHECKS: int = 565
 
 var _failures: int = 0
 var _checks: int = 0
@@ -73,6 +73,7 @@ func _run_all() -> void:
 	test_audio()
 	test_tutorial()
 	test_joystick()
+	await test_results_overlap()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1967,3 +1968,53 @@ func _drag(pos: Vector2, index: int) -> InputEventScreenDrag:
 	e.position = pos
 	e.index = index
 	return e
+
+
+## 결과 화면과 튜토리얼이 겹치지 않는가 + 버튼 글자가 읽히는가.
+##
+## 둘 다 화면을 찍어 보고서야 나온 것들이다.
+## - 「재입대」 는 열리자마자 포커스를 받는데 font_focus_color 를 빼먹어서
+##   기본 흰색이 갱지 위에 얹혀 글자가 안 읽혔다.
+## - 튜토리얼은 _process 가 phase 로 막히지만, 이미 떠 있던 건 그대로 남아
+##   결과 화면 위에 겹쳐 보였다.
+func test_results_overlap() -> void:
+	print("[결과 화면 — 겹침과 글자 대비]")
+	_sandbox_save_system()
+
+	var results: Control = (load("res://ui/results/results_screen.tscn") as PackedScene).instantiate()
+	add_child(results)
+	var tutorial: TutorialOverlay = (load("res://ui/tutorial_overlay.tscn") as PackedScene).instantiate()
+	add_child(tutorial)
+	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	add_child(player)
+	player.setup(null, load("res://data/characters/kim_private.tres") as CharacterData)
+	tutorial.player = player
+	await get_tree().process_frame
+
+	# 튜토리얼을 띄운다
+	GameState.phase = GameState.Phase.PLAYING
+	GameState.elapsed = 0.1
+	tutorial._process(0.0)
+	_check(tutorial.visible, "튜토리얼이 떠 있다")
+
+	# 판이 끝나면 사라져야 한다
+	EventBus.run_ended.emit(false, {"kills": 10, "meta": {"salary": 0}})
+	_check(results.visible, "결과 화면이 뜬다")
+	_check(not tutorial.visible, "튜토리얼이 결과 화면 위에 안 남는다")
+	_check(SaveSystem.tutorial_pending(),
+			"다 못 보고 죽었으면 '봤다' 로 기록하지 않는다")
+
+	# 갱지 위에서 버튼 글자가 읽혀야 한다. 특히 포커스 상태.
+	for b: Button in [results.again, results._to_menu]:
+		for state: StringName in [&"font_color", &"font_focus_color", &"font_pressed_color"]:
+			var c: Color = b.get_theme_color(state)
+			# 갱지(#E4DCC4)와의 밝기 차. 너무 밝으면 안 읽힌다.
+			var lum: float = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+			_check(lum < 0.6, "%s 의 %s 가 갱지 위에서 읽힌다 (밝기 %.2f)"
+					% [b.text, state, lum])
+
+	get_tree().paused = false
+	results.queue_free()
+	tutorial.queue_free()
+	player.queue_free()
+	GameState.phase = GameState.Phase.MENU

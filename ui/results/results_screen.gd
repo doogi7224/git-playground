@@ -17,7 +17,35 @@ var _to_menu: Button = null
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
+	_dress()
 	_build_meta_rows()
+
+
+## 메타 화면과 같은 갱지 톤. 결과 화면만 검은 대화상자로 남아 있으면
+## 「전역증 발급」 이라는 컨셉이 안 산다 -- 서류인데 서류처럼 안 보인다.
+func _dress() -> void:
+	var panel: PanelContainer = $Center/Panel
+	panel.add_theme_stylebox_override(&"panel", MetaUI.paper_box())
+	body.add_theme_color_override(&"font_color", MetaUI.INK)
+	body.add_theme_font_size_override(&"font_size", MetaUI.FS_BODY)
+	title.add_theme_font_size_override(&"font_size", MetaUI.FS_TITLE)
+	_style_button(again)
+
+
+func _style_button(b: Button) -> void:
+	b.add_theme_font_size_override(&"font_size", MetaUI.FS_HEAD)
+	b.add_theme_color_override(&"font_color", MetaUI.INK)
+	b.add_theme_color_override(&"font_hover_color", MetaUI.STAMP)
+	b.add_theme_color_override(&"font_pressed_color", MetaUI.INK)
+	# ★ 포커스 색을 빼먹으면 기본 흰색이 갱지 위에 얹혀 글자가 안 읽힌다.
+	#   결과 화면은 열리자마자 「재입대」에 포커스를 주므로 바로 드러난다.
+	b.add_theme_color_override(&"font_focus_color", MetaUI.INK)
+	b.add_theme_stylebox_override(&"normal", MetaUI._button_box(MetaUI.PAPER, MetaUI.INK))
+	b.add_theme_stylebox_override(&"hover", MetaUI._button_box(MetaUI.PAPER_DARK, MetaUI.STAMP))
+	b.add_theme_stylebox_override(&"pressed", MetaUI._button_box(MetaUI.PAPER_DARK, MetaUI.STAMP, 3))
+	b.add_theme_stylebox_override(&"focus", MetaUI._button_box(Color(0, 0, 0, 0), MetaUI.STAMP))
+	b.custom_minimum_size = Vector2(0.0, MetaUI.TOUCH_MIN)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	EventBus.run_ended.connect(_on_run_ended)
 	again.pressed.connect(_on_again)
 
@@ -25,22 +53,24 @@ func _ready() -> void:
 func _build_meta_rows() -> void:
 	var box: VBoxContainer = again.get_parent()
 	_rewards = Label.new()
-	_rewards.add_theme_font_size_override(&"font_size", 22)
-	_rewards.add_theme_color_override(&"font_color", MetaUI.GOLD)
+	_rewards.add_theme_font_size_override(&"font_size", MetaUI.FS_SUB)
+	# 갱지 위에서는 금색이 안 읽힌다. 보상은 인장색(진홍)으로 -- 도장 찍힌 느낌이다.
+	_rewards.add_theme_color_override(&"font_color", MetaUI.STAMP)
 	_rewards.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_rewards)
 	box.move_child(_rewards, again.get_index())
 
 	_to_menu = Button.new()
 	_to_menu.text = tr("부대 복귀")
-	_to_menu.custom_minimum_size = Vector2(280.0, 64.0)
-	_to_menu.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_to_menu.add_theme_font_size_override(&"font_size", 28)
+	_style_button(_to_menu)
 	_to_menu.pressed.connect(_on_to_menu)
 	box.add_child(_to_menu)
 
 
 func _on_run_ended(victory: bool, stats: Dictionary) -> void:
+	# 전역증은 금색 도장, 전역 연기는 빨간 도장. 서류에 찍히는 색 그대로다.
+	title.add_theme_color_override(&"font_color",
+			MetaUI.GOLD if victory else MetaUI.STAMP)
 	if victory:
 		title.text = tr("전 역 증")
 		body.text = tr("귀하는 위 기간 성실히 복무하였기에\n이 증서를 수여함.\n\n처치 %d") % int(stats.get("kills", 0))
