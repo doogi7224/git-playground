@@ -19,6 +19,8 @@ func _ready() -> void:
 	hide()
 	_dress()
 	_build_meta_rows()
+	EventBus.run_ended.connect(_on_run_ended)
+	again.pressed.connect(_on_again)
 
 
 ## 메타 화면과 같은 갱지 톤. 결과 화면만 검은 대화상자로 남아 있으면
@@ -46,8 +48,6 @@ func _style_button(b: Button) -> void:
 	b.add_theme_stylebox_override(&"focus", MetaUI._button_box(Color(0, 0, 0, 0), MetaUI.STAMP))
 	b.custom_minimum_size = Vector2(0.0, MetaUI.TOUCH_MIN)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	EventBus.run_ended.connect(_on_run_ended)
-	again.pressed.connect(_on_again)
 
 
 func _build_meta_rows() -> void:
