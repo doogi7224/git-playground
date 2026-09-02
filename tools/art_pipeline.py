@@ -304,6 +304,23 @@ def make_normal_map(rgba: np.ndarray, strength: float, blur: float) -> np.ndarra
     return out
 
 
+def downscale(rgba: np.ndarray, max_size: int) -> np.ndarray:
+    """긴 변을 max_size 로 맞춘다. 키우지는 않는다.
+
+    배경 제거 직후, 팔레트 스냅과 외곽선보다 먼저 부른다. 순서가 중요하다 —
+    외곽선 두께가 px 단위라서, 큰 그림에 외곽선을 그린 뒤 줄이면 선이 같이 얇아진다.
+    """
+    if max_size <= 0:
+        return rgba
+    h, w = rgba.shape[:2]
+    longest = max(h, w)
+    if longest <= max_size:
+        return rgba
+    scale = max_size / float(longest)
+    size = (max(1, int(round(w * scale))), max(1, int(round(h * scale))))
+    return np.array(Image.fromarray(rgba).resize(size, Image.LANCZOS))
+
+
 def trim(rgba: np.ndarray, padding: int = 2) -> np.ndarray:
     """투명한 여백을 잘라낸다. 아틀라스 낭비를 막는다."""
     alpha = rgba[..., 3]
@@ -335,6 +352,10 @@ class Placed:
     h: int
 
 
+## 흔한 GPU 최대 텍스처가 16384 다. 절반을 상한으로 둔다 — 모바일은 더 낮다.
+MAX_ATLAS_SIDE = 8192
+
+
 def pack_atlas(images: list[tuple[str, np.ndarray]], width: int, gap: int
                ) -> tuple[np.ndarray, list[Placed]]:
     """선반(shelf) 패킹. 높이 내림차순으로 줄을 채운다.
@@ -361,6 +382,12 @@ def pack_atlas(images: list[tuple[str, np.ndarray]], width: int, gap: int
     height = 1
     while height < total:
         height *= 2
+    # 실기에서 안 뜨는 아틀라스를 조용히 만들어 두지 않는다.
+    # 1024px 원본을 안 줄이고 24장 packing 했더니 1024x32768 이 나온 적이 있다.
+    if height > MAX_ATLAS_SIDE:
+        raise SystemExit(
+            f"아틀라스가 {width}x{height} 로 너무 크다 (한 변 {MAX_ATLAS_SIDE} 초과). "
+            "--max-size 로 원본을 줄이거나 --atlas-width 를 키우세요.")
     canvas = np.zeros((max(height, 1), width, 4), dtype=np.uint8)
     lookup = {name: image for name, image in images}
     for spot in placed:
@@ -442,6 +469,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--atlas", metavar="이름", help="아틀라스로 묶어서 저장")
     parser.add_argument("--atlas-width", type=int, default=2048)
     parser.add_argument("--atlas-gap", type=int, default=2)
+    parser.add_argument("--max-size", type=int, default=0,
+                        help="긴 변이 이 픽셀을 넘으면 줄인다 (0이면 안 줄임). "
+                             "AI 원본은 1024~2048px 로 나오는데 그대로 아틀라스에 박으면 "
+                             "GPU 최대 텍스처 크기를 넘긴다.")
     parser.add_argument("--no-trim", action="store_true", help="투명 여백을 자르지 않음")
     parser.add_argument("--bg-tolerance", type=int, default=42,
                         help="rembg 없을 때 모서리 색 허용오차")
@@ -472,6 +503,7 @@ def main(argv: list[str] | None = None) -> int:
         name = path.stem
         rgba = load_rgba(path)
         rgba = remove_background(rgba, args.bg_tolerance, args.force_cutout)
+        rgba = downscale(rgba, args.max_size)
         rgba = clean_alpha(rgba)
         rgba = snap_palette(rgba, palette, args.snap_strength)
         rgba = add_outline(rgba, args.outline, args.contour)

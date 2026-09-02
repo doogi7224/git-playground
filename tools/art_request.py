@@ -22,37 +22,48 @@ OUT_PROMPTS = Path("docs/art_prompts.txt")
 STYLE_ENEMY = ("Korean webtoon art style, thick black ink outlines, cel shaded flat colors, "
                "muted brown and grey palette, top-down 3/4 view, transparent background, "
                "centered, no text, sharp clean lineart")
+# 시안 rim light 를 넣지 않는다. 시안은 플레이어 '공격 이펙트' 독점색이라
+# 몸에 구워 넣으면 지금 공격 중인지가 화면에서 안 보인다. 한 번 그렇게 뽑았다가 다시 뽑았다.
 STYLE_PLAYER = ("Korean webtoon art style, thick black ink outlines, cel shaded flat colors, "
-                "muted olive and khaki palette with bright cyan rim light, top-down 3/4 view, "
+                "muted olive and khaki palette, no glow, no rim light, top-down 3/4 view, "
                 "transparent background, centered, no text, sharp clean lineart")
 
 # 적 id → 영어 묘사. 기획서 5.3 의 "사물·상황의 의인화" 를 영어로 옮긴 것.
 DESCRIPTIONS = {
-    "shovel_mob": "a military field shovel standing upright, come to life, with simple cartoon eyes",
+    "shovel_mob": ("a military field shovel standing upright, come to life, with big simple cartoon "
+                   "eyes clearly drawn on the blade"),
     "weed": "a tuft of stubborn weeds with cartoon eyes, sprouting from cracked dirt",
     "leaf_pile": "a pile of dry fallen leaves bound together into a creature, cartoon eyes",
     "snowball": "a lumpy rolled snowball with cartoon eyes, bits of gravel stuck in it",
     "blanket": "a folded army wool blanket, creased into sharp corners, with cartoon eyes",
     "locker": "a tall steel military footlocker cabinet with cartoon eyes",
     "mosquito": "an oversized mosquito, ragged wings, military green tint",
-    "night_watch": "a pale translucent ghost of a night-duty soldier, faint uniform outline",
-    "recruit": "a nervous fresh army recruit in oversized fatigues, cartoon eyes",
+    "night_watch": ("a pale translucent ghost of a night-duty soldier, faint uniform outline, "
+                    "wispy trailing bottom instead of legs, narrow drifting silhouette"),
+    "recruit": ("a tiny hunched army recruit with an oversized backpack bigger than the body "
+                "and a helmet too big, cartoon eyes, small round silhouette"),
     "plank": "a heavy wooden plank of lumber, splintered edges, cartoon eyes",
     "paint_can": "a dented paint can with a drip running down its side, cartoon eyes",
     "supplies": "a stack of tied supply bundles and sacks, cartoon eyes",
     "crate": "a large wooden storage crate with rope handles, cartoon eyes",
     "gas_mask": "an army CBRN gas mask floating upright, round filter cheeks",
     "slop_can": "a battered mess-hall slop bucket, lid ajar, cartoon eyes",
-    "duty_officer": "an imposing duty officer in dark fatigues with an armband, arms crossed",
-    "sergeant_major": "a heavyset company sergeant major with a clipboard and a whistle",
-    "drill_instructor": "a lean shouting drill instructor in a field cap, whistle in mouth",
+    "duty_officer": ("a thin duty officer holding a large clipboard flat in front of the chest "
+                     "so the board is the widest part of the silhouette, garrison cap, narrow body"),
+    "sergeant_major": ("a short stocky bald company sergeant major, extremely broad square body, "
+                       "hands on hips forming two triangular gaps at the waist, no hat"),
+    "drill_instructor": ("a lean shouting drill instructor, wide-brimmed campaign hat as the widest "
+                         "part of the silhouette, whistle, one arm pointing straight out sideways"),
     "cs_gas": "a rolling cloud of pale CS tear gas with faint glaring eyes inside",
     "blizzard": "a swirling blizzard squall with faint cold eyes inside",
-    "battalion_commander": ("an imposing battalion commander on inspection, peaked cap, "
-                            "long coat, hands behind back, looming"),
-    "inspector": ("a division inspector figure built from stacked paperwork and clipboards, "
+    "battalion_commander": ("a huge barrel-chested battalion commander on inspection, very wide "
+                            "shoulders, oversized peaked cap, long coat flaring out to a wide "
+                            "triangular silhouette, hands behind back, looming"),
+    "inspector": ("a spindly division inspector buried under a tall stack of paper folders held "
+                  "in both arms, the paper stack taller than the head, thin legs, "
                   "red official stamps floating around, glowing crimson eyes"),
-    "drill_week3": ("a monstrous drill instructor of the third obstacle-course week, "
+    "drill_week3": ("a monstrous drill instructor of the third obstacle-course week, blocky armored "
+                    "bulk built from stacked ammo crates and webbing, hulking rectangular silhouette, "
                     "whistle, stopwatch, exhausted rage"),
     "discharge_delay": ("a towering official discharge-delay notice document, red seal stamp, "
                         "crimson glow, looming like a monolith"),
@@ -61,8 +72,10 @@ DESCRIPTIONS = {
 PARTS = {
     "kim_head": "head only, front-facing, short army haircut, tired expression",
     "kim_torso": "torso only, olive drab field jacket, no arms, no head",
-    "kim_arm_l": "single left arm only, olive drab sleeve, hand open",
-    "kim_arm_r": "single right arm only, olive drab sleeve, hand gripping",
+    # 좌우 팔은 반전만 다른 같은 형태여야 한다. 한쪽만 손목부터 그려 오면
+    # 리깅이 좌우 팔을 대칭으로 돌릴 때 어깨 회전이 어긋난다.
+    "kim_arm_l": "single left arm only, from shoulder joint down to a closed fist, olive drab sleeve",
+    "kim_arm_r": "single right arm only, from shoulder joint down to a closed fist, olive drab sleeve",
     "kim_leg_l": "single left leg only, fatigue trousers and combat boot",
     "kim_leg_r": "single right leg only, fatigue trousers and combat boot",
     "kim_weapon": "a small military field shovel (entrenching tool), seen from the side",

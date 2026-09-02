@@ -30,11 +30,11 @@ AI로 그림을 뽑을 때 쓰는 목록이다. 규칙은 세 가지.
 | `leaf_pile.png` | 낙엽 | a pile of dry fallen leaves bound together into a creature, cartoon eyes |
 | `locker.png` | 관물대 | a tall steel military footlocker cabinet with cartoon eyes |
 | `mosquito.png` | 모기 | an oversized mosquito, ragged wings, military green tint |
-| `night_watch.png` | 불침번 유령 | a pale translucent ghost of a night-duty soldier, faint uniform outline |
+| `night_watch.png` | 불침번 유령 | a pale translucent ghost of a night-duty soldier, faint uniform outline, wispy trailing bottom instead of legs, narrow drifting silhouette |
 | `paint_can.png` | 페인트통 | a dented paint can with a drip running down its side, cartoon eyes |
 | `plank.png` | 각목 | a heavy wooden plank of lumber, splintered edges, cartoon eyes |
-| `recruit.png` | 신병 | a nervous fresh army recruit in oversized fatigues, cartoon eyes |
-| `shovel_mob.png` | 삽 | a military field shovel standing upright, come to life, with simple cartoon eyes |
+| `recruit.png` | 신병 | a tiny hunched army recruit with an oversized backpack bigger than the body and a helmet too big, cartoon eyes, small round silhouette |
+| `shovel_mob.png` | 삽 | a military field shovel standing upright, come to life, with big simple cartoon eyes clearly drawn on the blade |
 | `slop_can.png` | 짬통 | a battered mess-hall slop bucket, lid ajar, cartoon eyes |
 | `snowball.png` | 눈덩이 | a lumpy rolled snowball with cartoon eyes, bits of gravel stuck in it |
 | `supplies.png` | 자재 | a stack of tied supply bundles and sacks, cartoon eyes |
@@ -55,9 +55,9 @@ AI로 그림을 뽑을 때 쓰는 목록이다. 규칙은 세 가지.
 |---|---|---|
 | `blizzard.png` | 눈보라 | a swirling blizzard squall with faint cold eyes inside |
 | `cs_gas.png` | CS가스 구름 | a rolling cloud of pale CS tear gas with faint glaring eyes inside |
-| `drill_instructor.png` | 유격조교 | a lean shouting drill instructor in a field cap, whistle in mouth |
-| `duty_officer.png` | 당직사관 | an imposing duty officer in dark fatigues with an armband, arms crossed |
-| `sergeant_major.png` | 행보관 | a heavyset company sergeant major with a clipboard and a whistle |
+| `drill_instructor.png` | 유격조교 | a lean shouting drill instructor, wide-brimmed campaign hat as the widest part of the silhouette, whistle, one arm pointing straight out sideways |
+| `duty_officer.png` | 당직사관 | a thin duty officer holding a large clipboard flat in front of the chest so the board is the widest part of the silhouette, garrison cap, narrow body |
+| `sergeant_major.png` | 행보관 | a short stocky bald company sergeant major, extremely broad square body, hands on hips forming two triangular gaps at the waist, no hat |
 
 <details><summary>프롬프트 템플릿</summary>
 
@@ -72,10 +72,10 @@ AI로 그림을 뽑을 때 쓰는 목록이다. 규칙은 세 가지.
 
 | 파일 | 이름 | 프롬프트에 넣을 묘사 |
 |---|---|---|
-| `battalion_commander.png` | 대대장 순시 | an imposing battalion commander on inspection, peaked cap, long coat, hands behind back, looming |
+| `battalion_commander.png` | 대대장 순시 | a huge barrel-chested battalion commander on inspection, very wide shoulders, oversized peaked cap, long coat flaring out to a wide triangular silhouette, hands behind back, looming |
 | `discharge_delay.png` | 전역 연기 통보서 | a towering official discharge-delay notice document, red seal stamp, crimson glow, looming like a monolith |
-| `drill_week3.png` | 유격 3주차 | a monstrous drill instructor of the third obstacle-course week, whistle, stopwatch, exhausted rage |
-| `inspector.png` | 사단 검열관 | a division inspector figure built from stacked paperwork and clipboards, red official stamps floating around, glowing crimson eyes |
+| `drill_week3.png` | 유격 3주차 | a monstrous drill instructor of the third obstacle-course week, blocky armored bulk built from stacked ammo crates and webbing, hulking rectangular silhouette, whistle, stopwatch, exhausted rage |
+| `inspector.png` | 사단 검열관 | a spindly division inspector buried under a tall stack of paper folders held in both arms, the paper stack taller than the head, thin legs, red official stamps floating around, glowing crimson eyes |
 
 <details><summary>프롬프트 템플릿</summary>
 
@@ -93,8 +93,8 @@ AI로 그림을 뽑을 때 쓰는 목록이다. 규칙은 세 가지.
 |---|---|
 | `kim_head.png` | head only, front-facing, short army haircut, tired expression |
 | `kim_torso.png` | torso only, olive drab field jacket, no arms, no head |
-| `kim_arm_l.png` | single left arm only, olive drab sleeve, hand open |
-| `kim_arm_r.png` | single right arm only, olive drab sleeve, hand gripping |
+| `kim_arm_l.png` | single left arm only, from shoulder joint down to a closed fist, olive drab sleeve |
+| `kim_arm_r.png` | single right arm only, from shoulder joint down to a closed fist, olive drab sleeve |
 | `kim_leg_l.png` | single left leg only, fatigue trousers and combat boot |
 | `kim_leg_r.png` | single right leg only, fatigue trousers and combat boot |
 | `kim_weapon.png` | a small military field shovel (entrenching tool), seen from the side |
@@ -102,7 +102,7 @@ AI로 그림을 뽑을 때 쓰는 목록이다. 규칙은 세 가지.
 <details><summary>프롬프트 템플릿</summary>
 
 ```
-Isolated body part of a Korean army conscript soldier: {묘사}, Korean webtoon art style, thick black ink outlines, cel shaded flat colors, muted olive and khaki palette with bright cyan rim light, top-down 3/4 view, transparent background, centered, no text, sharp clean lineart, 512x512
+Isolated body part of a Korean army conscript soldier: {묘사}, Korean webtoon art style, thick black ink outlines, cel shaded flat colors, muted olive and khaki palette, no glow, no rim light, top-down 3/4 view, transparent background, centered, no text, sharp clean lineart, 512x512
 ```
 </details>
 
