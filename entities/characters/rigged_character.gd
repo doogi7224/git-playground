@@ -63,8 +63,17 @@ func set_part(part: StringName, texture: Texture2D) -> void:
 
 	sprite.texture = texture
 	sprite.visible = texture != null
-	# 그림이 붙으면 플레이스홀더 도형은 감춘다
-	placeholder.visible = texture == null
+	# 그림이 붙으면 플레이스홀더 도형은 감춘다.
+	#
+	# ★ 슬롯 하나에 도형이 여러 개일 수 있다. 삽은 자루(WeaponPart)와 날(WeaponBlade)
+	#   두 폴리곤으로 그려 놨는데, %sPart 하나만 감추면 **날이 그대로 남는다**.
+	#   실제로 실아트를 넣은 뒤에도 플레이어 손 옆에 밝은 회색 사각형이 계속 따라다녔고,
+	#   글로우까지 먹어서 화면에서 제일 밝은 물건이 돼 있었다. 같은 뼈에 달린
+	#   플레이스홀더 도형은 전부 같이 처리한다.
+	for sibling: Node in placeholder.get_parent().get_children():
+		var poly := sibling as Polygon2D
+		if poly != null:
+			poly.visible = texture == null
 	if texture == null:
 		return
 

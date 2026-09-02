@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 565
+const MIN_CHECKS: int = 578
 
 var _failures: int = 0
 var _checks: int = 0
@@ -825,6 +825,23 @@ func test_rigging_template() -> void:
 	_check(rig.skeleton.scale.x < 0.0, "왼쪽을 보면 뼈대가 뒤집힌다")
 	rig.set_facing(1.0)
 	_check(rig.skeleton.scale.x > 0.0, "오른쪽을 보면 되돌아온다")
+
+	# ★ 그림을 끼우면 그 슬롯의 플레이스홀더 도형이 **하나도** 안 남아야 한다.
+	#   삽은 자루와 날 두 폴리곤이라, %sPart 만 감추던 시절에는 날이 그대로 남아서
+	#   실아트 위에 밝은 회색 사각형이 계속 따라다녔다. 스크린샷으로만 보이던 버그다.
+	var dummy := PlaceholderTexture2D.new()
+	dummy.size = Vector2(32, 32)
+	for part: StringName in RiggedCharacter.PARTS:
+		rig.set_part(part, dummy)
+		var slot: Node = rig.part_node(part).get_parent()
+		var left: Array[String] = []
+		for child: Node in slot.get_children():
+			if child is Polygon2D and (child as Polygon2D).visible:
+				left.append(child.name)
+		_check(left.is_empty(), "%s 에 그림을 끼우면 도형이 안 남는다 (남은 것: %s)" % [part, left])
+	# 텍스처를 빼면 도형이 다시 나온다 — 화이트박스 폴백이 살아 있어야 한다
+	rig.set_part(&"Weapon", null)
+	_check((rig.part_node(&"Weapon") as Polygon2D).visible, "그림을 빼면 도형이 돌아온다")
 
 	rig.queue_free()
 	await get_tree().process_frame
