@@ -37,6 +37,23 @@ except ImportError:  # pragma: no cover
 
 TERRAIN = ["#3E4A32", "#7A6E4E", "#2A3222", "#5C5438"]        # 국방색 / 카키
 ENEMY = ["#8A7B5E", "#6B5E48", "#5A5A52", "#3A3730", "#241F19"]  # 갈색·회색
+# 위 다섯 색만으로 스냅하면 적 24종이 전부 같은 진흙색이 된다. 눈보라의 푸른 흰색,
+# 잡초의 초록, 서류의 크림색이 통째로 갈색이 됐다 -- 원본은 다 달랐는데 파이프라인이
+# 뭉갠 것이다. 규칙 6이 금지하는 건 시안(#3FE0D0)·금색(#FFC94A) 두 색이지
+# "갈색만 써라" 가 아니다. 그 둘에서 충분히 먼 저채도 색을 넓혀 둔다.
+ENEMY_EXTRA = [
+    "#B9C0C4",  # 눈·서리 (차가운 밝은 회색)
+    "#7E8A93",  # 철제 (푸른 회색)
+    "#4A545C",  # 짙은 철회
+    "#5E6B3A",  # 탁한 초록 (잡초·위장)
+    "#3B4A26",  # 짙은 초록
+    "#D8CDA9",  # 종이·서류 크림
+    "#A8916A",  # 밝은 목재
+    "#6E4B32",  # 녹·가죽 (붉은 갈색)
+]
+# 적 20종 중 절반이 사람이다(조교·행보관·불침번…). 살색이 팔레트에 없으면
+# 얼굴이 전부 국방색이 된다 -- 플레이어도 같은 이유로 초록 얼굴이 됐었다.
+SKIN = ["#E8C4A0", "#C99B72", "#8A5F42"]
 PLAYER = ["#B7C77A", "#8C9B58", "#E8F0C8", "#FFFFFF"]         # 밝은 올리브 + 흰 하이라이트
 PLAYER_FX = ["#3FE0D0", "#FFC94A"]                            # 시안 / 금색 — 적은 절대 금지
 DANGER = ["#C8102E", "#7A0C1C"]                               # 진홍 — 무조건 피해야 함
@@ -45,13 +62,13 @@ INK = "#1B2016"                                               # 외곽선 잉크
 
 PALETTES: dict[str, list[str]] = {
     # 적은 시안/금색을 쓰지 않는다 (CLAUDE.md 규칙 6) — 아예 후보에서 뺀다.
-    "enemy": ENEMY + TERRAIN + [INK],
+    "enemy": ENEMY + ENEMY_EXTRA + SKIN + TERRAIN + [INK],
     # 플레이어 이펙트는 붉은색을 쓰지 않는다 — DANGER 를 뺀다.
-    "player": PLAYER + PLAYER_FX + TERRAIN + [INK],
+    "player": PLAYER + SKIN + PLAYER_FX + TERRAIN + [INK],
     "fx": PLAYER_FX + HEAL + [INK],
     "danger": DANGER + [INK],
     "terrain": TERRAIN + [INK],
-    "core": TERRAIN + ENEMY + PLAYER + PLAYER_FX + DANGER + HEAL + [INK],
+    "core": TERRAIN + ENEMY + ENEMY_EXTRA + SKIN + PLAYER + PLAYER_FX + DANGER + HEAL + [INK],
 }
 
 # 같은 색을 명암 단계로 펼친다. 6색으로 통짜 스냅하면 음영이 다 날아간다.
