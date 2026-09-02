@@ -6,8 +6,14 @@ class_name ProgressionData
 @export var total_days: int = 100              ## D-100 → D-DAY
 
 @export_group("경험치 곡선")
+## xp_to_next(lv) = base + per*(lv-1) + quad*(lv-1)^2
+##
+## 2차항이 없으면(선형) 후반에 레벨이 폭주한다. 적의 짬은 후반에 급증하는데
+## 요구치는 일정하게만 늘기 때문이다. 실측: 20분 완주에 Lv.237 이 나왔는데
+## 명령서로 실제 뽑을 수 있는 횟수는 124회뿐이라, 110번 넘는 진급이 빈 화면이었다.
 @export var xp_base: float = 10.0
 @export var xp_per_level: float = 8.0
+@export var xp_quadratic: float = 0.0
 
 @export_group("진급 = 계급")
 ## [{level = 1, id = &"private_2", name = "이등병"}, ...] 형태.
@@ -24,7 +30,8 @@ class_name ProgressionData
 
 
 func xp_to_next(level: int) -> float:
-	return xp_base + xp_per_level * float(level - 1)
+	var n: float = float(level - 1)
+	return xp_base + xp_per_level * n + xp_quadratic * n * n
 
 
 func rank_for_level(level: int) -> StringName:
