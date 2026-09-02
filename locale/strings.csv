@@ -97,6 +97,7 @@ Kills %d"
 방어 오라 + 근접 반사,방어 오라 + 근접 반사,Defensive aura + melee reflect
 방탄모,방탄모,Helmet
 방탄복,방탄복,Body Armor
+배경음,배경음,Music
 밸런스형. 아무 특징이 없다는 게 특징.,밸런스형. 아무 특징이 없다는 게 특징.,All-rounder. Being unremarkable is the trait.
 밸런스형. 처음부터 함께한다.,밸런스형. 처음부터 함께한다.,All-rounder. With you from day one.
 범위 2배. 예초기가 탈것이 됐다.,범위 2배. 예초기가 탈것이 됐다.,Double the radius. The brush cutter became a vehicle.
@@ -143,6 +144,7 @@ Kills %d"
 야전삽,야전삽,Field Shovel
 야전삽 강화,야전삽 강화,Field Shovel Upgrade
 야전삽 숙련,야전삽 숙련,Field Shovel Mastery
+언어,언어,Language
 연막탄,연막탄,Smoke Grenade
 연병장,연병장,Parade Ground
 연병장의 주인,연병장의 주인,Lord of the Parade Ground
@@ -184,6 +186,7 @@ Kills %d"
 전역 연기 통보서,전역 연기 통보서,Notice of Deferred Discharge
 전역까지 D-100,전역까지 D-100,D-100 to Discharge
 전역증,전역증,Discharge Certificate
+전체 음량,전체 음량,Master Volume
 전투화,전투화,Combat Boots
 제설 유공,제설 유공,Snow Removal Service
 조건 %d%%,조건 %d%%,Req. %d%%
@@ -248,6 +251,7 @@ Kills %d"
 화면 흔들림 강도,화면 흔들림 강도,Screen Shake Strength
 화생방 마스크,화생방 마스크,Gas Mask
 효과,효과,Effect
+효과음,효과음,Sound Effects
 훈  련  장,훈  련  장,T R A I N I N G   G R O U N D
 휴가증,휴가증,Leave Pass
 히트스톱,히트스톱,Hit Stop

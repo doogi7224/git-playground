@@ -309,6 +309,10 @@ func damage(i: int, amount: float, is_crit: bool = false) -> void:
 		return
 	_hp[i] -= amount
 	_flash[i] = HIT_FLASH_TIME
+	# 피격 사실과 그걸 어떻게 연출하느냐는 다른 이야기다.
+	# damage_number_requested 는 데미지 넘버 전용 훅이라 설정으로 꺼진다 --
+	# 거기에 소리를 얹으면 "데미지 넘버 끔" 이 "타격음 끔" 이 돼 버린다.
+	EventBus.enemy_damaged.emit(Vector2(_px[i], _py[i]), amount, is_crit)
 	if Settings.damage_numbers:
 		EventBus.damage_number_requested.emit(Vector2(_px[i], _py[i]), amount, is_crit)
 	if _hp[i] <= 0.0:

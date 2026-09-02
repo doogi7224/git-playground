@@ -10,6 +10,7 @@ const SHOTS: Array[Dictionary] = [
 	{"screen": &"select", "name": "select"},
 	{"screen": &"shop", "name": "shop"},
 	{"screen": &"board", "name": "board"},
+	{"screen": &"options", "name": "options"},
 ]
 
 var _out_dir: String = "user://menu"

@@ -25,6 +25,10 @@ SaveSystem="*res://autoload/save_system.gd"
 Settings="*res://autoload/settings.gd"
 ObjectPool="*res://autoload/object_pool.gd"
 
+[audio]
+
+buses/default_bus_layout="res://audio/default_bus_layout.tres"
+
 [display]
 
 window/size/viewport_width=1920

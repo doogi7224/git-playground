@@ -106,4 +106,9 @@ func _report() -> void:
 	print("  FPS %.1f  드로우콜 %d" % [
 		Engine.get_frames_per_second(),
 		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
+	print("  효과음 재생 %d회 / 요청 %d회 (%.1f%% 걸러냄)" % [
+		AudioManager.played_count,
+		AudioManager.played_count + AudioManager.dropped_count,
+		100.0 * float(AudioManager.dropped_count)
+				/ maxf(1.0, float(AudioManager.played_count + AudioManager.dropped_count))])
 	get_tree().quit(0)

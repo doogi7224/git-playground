@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 514
+const MIN_CHECKS: int = 524
 
 var _failures: int = 0
 var _checks: int = 0
@@ -70,6 +70,7 @@ func _run_all() -> void:
 	test_level_up_screen()
 	await test_results_screen_unpauses()
 	test_localization()
+	test_audio()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1667,3 +1668,92 @@ func _has_hangul(text: String) -> bool:
 		if c >= 0xAC00 and c <= 0xD7A3:
 			return true
 	return false
+
+
+## 사운드 — 배선과 스로틀링.
+##
+## 이 게임에서 오디오의 문제는 "소리가 나느냐" 가 아니라 "안 나야 할 때 안 나느냐" 다.
+## 적이 3,000마리고 초당 수백 마리가 죽는다. 죽을 때마다 틀면 플레이어는 소리가 아니라
+## 잡음을 듣고 AudioStreamPlayer 도 즉시 바닥난다.
+func test_audio() -> void:
+	print("[사운드 — 배선과 스로틀링]")
+	var was_enabled: bool = AudioManager.enabled
+	AudioManager.enabled = true
+
+	_check(AudioServer.get_bus_index(&"BGM") >= 0, "BGM 버스가 있다")
+	_check(AudioServer.get_bus_index(&"SFX") >= 0, "SFX 버스가 있다")
+
+	var missing: Array[String] = []
+	for id: StringName in [&"hit", &"crit", &"kill", &"player_hurt", &"pickup", &"heal",
+			&"level_up", &"evolve", &"chest", &"boss_spawn", &"boss_die",
+			&"ui_click", &"ui_move", &"victory", &"defeat"]:
+		if not AudioManager._streams.has(id):
+			missing.append(String(id))
+	_check(missing.is_empty(), "효과음 15종이 전부 로드된다 (없는 것: %s)" % [missing])
+
+	# --- 스로틀링 ---
+	# 같은 소리를 한 프레임에 1,000번 요청해도 한 번만 나야 한다.
+	AudioManager._last_played.clear()
+	var played: int = 0
+	for _i in 1000:
+		if AudioManager.play_sfx(&"hit"):
+			played += 1
+	_check(played == 1, "같은 소리를 1,000번 요청해도 간격 안에서는 한 번만 난다 (got %d)" % played)
+	_check(AudioManager.active_voices() <= AudioManager.VOICE_COUNT,
+			"플레이어 수를 넘지 않는다")
+
+	# 서로 다른 소리는 각각 난다 (스로틀은 소리별이다)
+	AudioManager._last_played.clear()
+	var distinct: int = 0
+	for id: StringName in [&"hit", &"kill", &"crit", &"pickup", &"heal"]:
+		if AudioManager.play_sfx(id):
+			distinct += 1
+	_check(distinct == 5, "다른 소리는 각각 난다 (got %d)" % distinct)
+
+	# 플레이어가 다 차면 조용히 버린다 (남의 소리를 자르지 않는다)
+	AudioManager._last_played.clear()
+	for p: AudioStreamPlayer in AudioManager._voices:
+		p.stream = AudioManager._streams[&"boss_spawn"]
+		p.play()
+	AudioManager._last_played.clear()
+	_check(not AudioManager.play_sfx(&"kill"),
+			"플레이어가 다 차면 새 소리를 버린다")
+	for p: AudioStreamPlayer in AudioManager._voices:
+		p.stop()
+
+	# --- 배선 ---
+	# 적 피격음은 데미지 넘버 설정에 묶이면 안 된다.
+	# damage_number_requested 에 소리를 얹었다가 "데미지 넘버 끔" 이 "타격음 끔" 이
+	# 되는 사고가 있었다. enemy_damaged 는 설정과 무관하게 나와야 한다.
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(4)
+	em.register_enemy(_make_enemy(0.0, 100.0, 12.0))
+	em.spawn(0, Vector2.ZERO)
+
+	# GDScript 람다는 값으로 캡처한다. int 를 세면 사본이 늘어나고 바깥은 0 그대로다.
+	# 배열은 참조라서 append 가 바깥에 보인다.
+	var hits: Array[float] = []
+	var cb := func(_p: Vector2, amount: float, _c: bool) -> void: hits.append(amount)
+	EventBus.enemy_damaged.connect(cb)
+	var before_setting: bool = Settings.damage_numbers
+	Settings.damage_numbers = false
+	em.damage(0, 5.0)
+	_check(hits.size() == 1, "데미지 넘버를 꺼도 피격 신호는 나온다 (got %d)" % hits.size())
+	Settings.damage_numbers = true
+	em.damage(0, 5.0)
+	_check(hits.size() == 2, "켜도 한 번만 나온다 (got %d)" % hits.size())
+	Settings.damage_numbers = before_setting
+	EventBus.enemy_damaged.disconnect(cb)
+	em.queue_free()
+
+	# 볼륨 0 이 음소거가 되는지 (linear_to_db(0) = -inf)
+	var before_sfx: float = Settings.sfx_volume
+	Settings.sfx_volume = 0.0
+	AudioManager.apply_volumes()
+	_check(AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"SFX")) < -60.0,
+			"볼륨 0 이면 사실상 음소거된다")
+	Settings.sfx_volume = before_sfx
+	AudioManager.apply_volumes()
+
+	AudioManager.enabled = was_enabled
