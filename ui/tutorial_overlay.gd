@@ -10,7 +10,7 @@ class_name TutorialOverlay
 ## 한 단계 = {id, 언제 띄우나(초), 무엇을 하면 지워지나}
 ## 문구는 번역 표를 타므로 여기 한국어가 그대로 키다.
 const STEPS: Array[Dictionary] = [
-	{"id": &"move", "at": 0.0, "text": "WASD / 방향키로 이동", "clear": &"moved"},
+	{"id": &"move", "at": 0.0, "text": "화면 아래쪽을 눌러 끌면 움직인다", "clear": &"moved"},
 	{"id": &"attack", "at": 3.0, "text": "공격은 자동이다. 적 쪽으로 붙기만 하면 된다.", "clear": &"killed"},
 	{"id": &"xp", "at": 8.0, "text": "떨어진 '짬'을 주우면 진급한다", "clear": &"picked"},
 	{"id": &"orders", "at": 0.0, "text": "진급하면 명령서 3장 중 1장을 고른다", "clear": &"leveled"},

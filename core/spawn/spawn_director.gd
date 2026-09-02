@@ -3,7 +3,11 @@ class_name SpawnDirector
 ## 웨이브 디렉터. 1분 구간 테이블(WaveTable.tres)만 보고 돈다. (기획서 5.4)
 ## 밀도 곡선을 바꾸고 싶으면 코드가 아니라 .tres를 고친다.
 
-@export var spawn_ring_radius: float = 980.0   ## 화면 밖 링에서 스폰
+## 화면 밖 링에서 스폰.
+## 세로 1080x1920 + 줌 1.8 이면 보이는 범위가 600x1067, 반대각선이 약 612 다.
+## 그 1.15배쯤에서 내보내면 화면에 안 튀어나오면서도 금방 도착한다.
+## 1920x1080 시절 값(980)을 그대로 두면 적이 오는 데만 한참 걸려 초반이 텅 빈다.
+@export var spawn_ring_radius: float = 700.0
 @export var wave_table: WaveTable = null
 
 var enemies: EnemyManager = null

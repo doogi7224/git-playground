@@ -57,6 +57,18 @@ func _ready() -> void:
 	GameState.start_run(character.id)
 
 
+## 안드로이드 뒤로가기. 판 도중에는 옵션(일시정지)을 연다.
+## 실수로 눌러서 판이 날아가면 안 되므로 여기서 바로 나가지는 않는다.
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	var options: Control = get_node_or_null("UI/OptionsPanel")
+	if options == null:
+		return
+	options.visible = not options.visible
+	get_tree().paused = options.visible
+
+
 ## 메타 화면에서 고른 캐릭터/맵을 싣는다.
 ## 씬에 박아 둔 값은 기본값 겸 도구용 폴백이다 — tools/screenshot.sh 처럼
 ## 아레나를 직접 여는 경우 저장된 선택이 기본값과 같아서 결과가 달라지지 않는다.

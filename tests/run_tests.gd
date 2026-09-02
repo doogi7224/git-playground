@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 540
+const MIN_CHECKS: int = 555
 
 var _failures: int = 0
 var _checks: int = 0
@@ -72,6 +72,7 @@ func _run_all() -> void:
 	test_localization()
 	test_audio()
 	test_tutorial()
+	test_joystick()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1872,3 +1873,88 @@ func test_tutorial() -> void:
 	GameState.phase = GameState.Phase.MENU
 	GameState.elapsed = 0.0
 	SaveSystem.data = SaveSystem._default_data()
+
+
+## 플로팅 조이스틱 — 터치가 실제 이동으로 이어지는가.
+##
+## Player 를 건드리지 않고 move_* 액션을 눌러 Input.get_vector 경로를 그대로 태운다.
+## 그래서 키보드/자동플레이/터치가 같은 코드로 흐른다. 여기서는 그 배선을 확인한다.
+func test_joystick() -> void:
+	print("[플로팅 조이스틱]")
+	var joy: FloatingJoystick = (load("res://ui/touch/floating_joystick.tscn") as PackedScene).instantiate()
+	add_child(joy)
+	joy.size = Vector2(1080.0, 1920.0)
+
+	_check(not joy.is_active(), "가만히 있으면 안 잡혀 있다")
+
+	# 화면 위쪽은 UI 몫이다. 여기를 눌러도 조이스틱이 안 잡혀야 한다.
+	joy._unhandled_input(_touch(Vector2(540.0, 200.0), true, 0))
+	_check(not joy.is_active(), "위쪽(UI 영역)에서는 안 잡힌다")
+
+	# 아래쪽을 누르면 그 자리가 중심이 된다
+	var origin := Vector2(300.0, 1500.0)
+	joy._unhandled_input(_touch(origin, true, 0))
+	_check(joy.is_active(), "아래쪽을 누르면 잡힌다")
+	_check(joy._origin == origin, "누른 자리가 중심이 된다 (플로팅)")
+
+	# 데드존 안에서는 입력이 없다
+	joy._unhandled_input(_drag(origin + Vector2(8.0, 0.0), 0))
+	_check(not Input.is_action_pressed(&"move_right"),
+			"데드존 안에서는 입력이 안 나간다")
+
+	# 오른쪽으로 끌면 오른쪽 액션이 눌린다
+	joy._unhandled_input(_drag(origin + Vector2(joy.max_radius, 0.0), 0))
+	_check(Input.is_action_pressed(&"move_right"), "오른쪽으로 끌면 move_right")
+	_check(not Input.is_action_pressed(&"move_left"), "반대쪽은 안 눌린다")
+	_check(is_equal_approx(Input.get_action_strength(&"move_right"), 1.0),
+			"최대 반경에서 세기 1.0 (got %.2f)" % Input.get_action_strength(&"move_right"))
+
+	# 실제 이동 방향과 맞는가 (Player 가 읽는 그 벡터)
+	var dir: Vector2 = Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+	_check(dir.x > 0.9 and absf(dir.y) < 0.1, "Player 가 읽는 벡터가 오른쪽이다 (got %s)" % dir)
+
+	# 절반만 끌면 절반 세기
+	joy._unhandled_input(_drag(origin + Vector2(joy.max_radius * 0.5, 0.0), 0))
+	_check(absf(Input.get_action_strength(&"move_right") - 0.5) < 0.1,
+			"절반 끌면 절반 세기 (got %.2f)" % Input.get_action_strength(&"move_right"))
+
+	# 최대 반경을 넘겨도 1.0 을 안 넘는다
+	joy._unhandled_input(_drag(origin + Vector2(joy.max_radius * 4.0, 0.0), 0))
+	_check(Input.get_action_strength(&"move_right") <= 1.001,
+			"더 끌어도 1.0 을 안 넘는다 (got %.2f)" % Input.get_action_strength(&"move_right"))
+
+	# 대각선
+	joy._unhandled_input(_drag(origin + Vector2(0.0, -joy.max_radius), 0))
+	_check(Input.is_action_pressed(&"move_up") and not Input.is_action_pressed(&"move_down"),
+			"위로 끌면 move_up")
+
+	# 떼면 전부 풀린다. 안 풀리면 플레이어가 계속 달린다.
+	joy._unhandled_input(_touch(origin, false, 0))
+	_check(not joy.is_active(), "떼면 놓인다")
+	for action: StringName in joy.ACTIONS:
+		_check(not Input.is_action_pressed(action), "떼면 %s 가 풀린다" % action)
+
+	# 화면이 사라져도 눌린 채로 남으면 안 된다 (레벨업 창이 뜰 때 실제로 겪는 상황)
+	joy._unhandled_input(_touch(origin, true, 0))
+	joy._unhandled_input(_drag(origin + Vector2(200.0, 0.0), 0))
+	_check(Input.is_action_pressed(&"move_right"), "다시 잡힌다")
+	joy._notification(Node.NOTIFICATION_EXIT_TREE)
+	_check(not Input.is_action_pressed(&"move_right"),
+			"트리에서 빠질 때 입력을 놓는다 (안 놓으면 계속 달린다)")
+
+	joy.queue_free()
+
+
+func _touch(pos: Vector2, pressed: bool, index: int) -> InputEventScreenTouch:
+	var e := InputEventScreenTouch.new()
+	e.position = pos
+	e.pressed = pressed
+	e.index = index
+	return e
+
+
+func _drag(pos: Vector2, index: int) -> InputEventScreenDrag:
+	var e := InputEventScreenDrag.new()
+	e.position = pos
+	e.index = index
+	return e

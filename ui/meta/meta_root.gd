@@ -32,6 +32,17 @@ func show_screen_for_options() -> void:
 	_show(_options)
 
 
+## 안드로이드 뒤로가기. Esc 와 같은 뜻으로 흘려보내면 이미 있는 처리가 그대로 동작한다.
+## 메인 메뉴에서 뒤로가기를 또 누르면 앱을 닫는다 -- 안 그러면 나갈 방법이 없다.
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	if _main_menu != null and _main_menu.visible:
+		get_tree().quit()
+	else:
+		_go_main()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"pause_game") and not _main_menu.visible:
 		_go_main()

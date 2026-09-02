@@ -11,6 +11,7 @@ z_index = 10
 script = ExtResource("1_player")
 
 [node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.8, 1.8)
 script = ExtResource("2_shake")
 
 [node name="FootLight" type="PointLight2D" parent="."]
