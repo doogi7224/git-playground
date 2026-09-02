@@ -1,0 +1,89 @@
+[gd_resource type="Resource" script_class="WaveTable" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://core/data/wave_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://core/data/wave_data.gd" id="2_wave"]
+
+[sub_resource type="Resource" id="Wave_00"]
+script = ExtResource("2_wave")
+minute = 0
+enemy_ids = Array[StringName]([&"snowball"])
+spawns_per_second = 1.4
+pattern = 0
+elite_chance = 0.0
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_02"]
+script = ExtResource("2_wave")
+minute = 2
+enemy_ids = Array[StringName]([&"snowball", &"shovel_mob"])
+spawns_per_second = 2.8
+pattern = 0
+elite_chance = 0.0
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_05"]
+script = ExtResource("2_wave")
+minute = 5
+enemy_ids = Array[StringName]([&"snowball", &"blanket", &"shovel_mob"])
+spawns_per_second = 5.5
+pattern = 1
+elite_chance = 0.02
+boss_id = &"battalion_commander"
+
+[sub_resource type="Resource" id="Wave_08"]
+script = ExtResource("2_wave")
+minute = 8
+enemy_ids = Array[StringName]([&"blanket", &"night_watch", &"locker"])
+spawns_per_second = 10.0
+pattern = 0
+elite_chance = 0.05
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_10"]
+script = ExtResource("2_wave")
+minute = 10
+enemy_ids = Array[StringName]([&"blanket", &"locker", &"blizzard"])
+spawns_per_second = 14.0
+pattern = 2
+elite_chance = 0.07
+boss_id = &"inspector"
+
+[sub_resource type="Resource" id="Wave_13"]
+script = ExtResource("2_wave")
+minute = 13
+enemy_ids = Array[StringName]([&"crate", &"locker", &"blizzard", &"gas_mask"])
+spawns_per_second = 21.0
+pattern = 1
+elite_chance = 0.08
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_15"]
+script = ExtResource("2_wave")
+minute = 15
+enemy_ids = Array[StringName]([&"crate", &"blizzard", &"sergeant_major"])
+spawns_per_second = 28.0
+pattern = 2
+elite_chance = 0.1
+boss_id = &"drill_week3"
+
+[sub_resource type="Resource" id="Wave_18"]
+script = ExtResource("2_wave")
+minute = 18
+enemy_ids = Array[StringName]([&"blizzard", &"sergeant_major", &"crate"])
+spawns_per_second = 34.0
+pattern = 1
+elite_chance = 0.12
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_19"]
+script = ExtResource("2_wave")
+minute = 19
+enemy_ids = Array[StringName]([&"snowball"])
+spawns_per_second = 5.5
+pattern = 0
+elite_chance = 0.0
+boss_id = &"discharge_delay"
+
+[resource]
+script = ExtResource("1_table")
+waves = Array[Resource]([SubResource("Wave_00"), SubResource("Wave_02"), SubResource("Wave_05"), SubResource("Wave_08"), SubResource("Wave_10"), SubResource("Wave_13"), SubResource("Wave_15"), SubResource("Wave_18"), SubResource("Wave_19")])

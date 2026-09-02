@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/boss_data.gd" id="1_boss"]
+[ext_resource type="Resource" path="res://data/enemies/discharge_delay.tres" id="2_enemy"]
+
+[resource]
+script = ExtResource("1_boss")
+enemy = ExtResource("2_enemy")
+id = &"discharge_delay"
+display_name = "전역 연기 통보서"
+pattern = 3
+minion = &""
+approach_speed = 100.0
+approach_time = 2.8
+telegraph_time = 0.7
+charge_speed = 820.0
+charge_time = 0.6
+summon_count = 20
+bullets_per_volley = 20
+bullet_speed = 270.0
+bullet_dps = 22.0
+bullet_radius = 18.0
+volley_interval = 1.4
+field_radius = 340.0
+field_slow = 0.5
+field_dps = 5.0
+shockwave_interval = 2.8
+shockwave_dps = 26.0
+shockwave_grow = 460.0
+fake_death_hp_ratio = 0.5
+fake_death_time = 2.2

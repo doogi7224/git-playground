@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"medevac"
+display_name = "의무후송 헬기"
+description = "떨구지 않고 그 자리에서 바로 회복시킨다."
+behavior = 8
+cooldown = 5.5
+damage = 0.0
+reach = 0.0
+half_angle_deg = 0.0
+projectiles = 1
+knockback = 0.0
+alternate_direction = false
+heal_amount = 30.0
+per_level_damage = 0.0
+per_level_cooldown = -0.35
+per_level_reach = 0.0
+per_level_projectiles = 0.0
+max_level = 8
+evolves_into = &""
+evolution_passive = &""

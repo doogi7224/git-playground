@@ -9,6 +9,11 @@ const SCRIPTS: Dictionary = {
 	WeaponData.Behavior.AURA: preload("res://weapons/aura_weapon.gd"),
 	WeaponData.Behavior.GROUND_AREA: preload("res://weapons/ground_area_weapon.gd"),
 	WeaponData.Behavior.THROWN: preload("res://weapons/thrown_weapon.gd"),
+	WeaponData.Behavior.TRAIL: preload("res://weapons/trail_weapon.gd"),
+	WeaponData.Behavior.LURE: preload("res://weapons/lure_weapon.gd"),
+	WeaponData.Behavior.SUPPORT: preload("res://weapons/support_weapon.gd"),
+	WeaponData.Behavior.GUARD: preload("res://weapons/guard_weapon.gd"),
+	WeaponData.Behavior.SHOUT: preload("res://weapons/shout_weapon.gd"),
 }
 
 

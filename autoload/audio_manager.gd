@@ -30,7 +30,7 @@ func duck_sfx(_enabled: bool) -> void:
 	pass  ## TODO(M2)
 
 
-func _on_boss_spawned(_boss_id: StringName) -> void:
+func _on_boss_spawned(_boss_id: StringName, _display_name: String) -> void:
 	duck_sfx(true)
 
 

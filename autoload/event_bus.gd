@@ -22,7 +22,7 @@ signal xp_gained(amount: float, total: float, to_next: float)
 # --- 적 ---
 signal enemy_died(pos: Vector2, xp: float, enemy_type: StringName)
 signal enemy_damaged(pos: Vector2, amount: float, is_crit: bool)
-signal boss_spawned(boss_id: StringName)
+signal boss_spawned(boss_id: StringName, display_name: String)
 signal boss_hp_changed(ratio: float)
 signal boss_died(boss_id: StringName)
 signal chest_dropped(pos: Vector2)

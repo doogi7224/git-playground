@@ -90,14 +90,18 @@
 
 ---
 
-## 5. M1 구조 요약
+## 5. 콘텐츠 구조 요약
 
-무기 5종·진화 5종·패시브 5종·보스 1종. 자세한 건 `docs/m1.md`.
+무기 10·진화 10·패시브 10·적 20·보스 4·캐릭터 8·맵 3. 자세한 건 `docs/m3.md`
+(M1 코어 루프의 배경은 `docs/m1.md`).
 
 - 무기 동작은 `WeaponData.behavior` 로 고른다(MELEE_ARC/PROJECTILE/AURA/GROUND_AREA/THROWN).
   같은 behavior면 **새 무기 = .tres 하나**. `WeaponFactory` 가 스크립트를 붙인다.
 - 진화: 무기 Lv8 + 지정 패시브 → 보스가 떨군 보물상자를 밟으면 발동 (`EvolutionRules`).
-- `ProjectileManager` / `AreaManager` 도 적과 같은 SoA + MultiMesh.
+- `ProjectileManager` / `AreaManager` / `HazardManager` 도 적과 같은 SoA + MultiMesh.
+  앞의 둘은 적을 때리고, `HazardManager` 는 **플레이어를 때린다**(탄막·장판·충격파, 전부 진홍색).
+- 보스는 `BossData.pattern` 4종(CHARGER/BARRAGE/FIELD/FINALE)을 `BossController` 하나가 굴린다.
+- 스턴/넉백은 `EnemyManager` 에 있다. **넉백 힘이 음수면 흡인**이다(잔반차).
 
 ## 6. 데이터 위치
 
@@ -110,6 +114,8 @@
 | 무기 수치·레벨 곡선·진화 | `data/weapons/*.tres` |
 | 명령서(업그레이드) | `data/upgrades/*.tres` + `upgrade_table.tres` |
 | 캐릭터 기본 스탯 | `data/characters/*.tres` |
+| 보스 패턴·수치 | `data/bosses/*.tres` |
+| 맵 구성(적 목록·웨이브·톤) | `data/maps/*.tres` |
 | 한 판 길이·경험치 곡선·계급표 | `data/progression.tres` |
 
 **GDScript에 수치를 되돌려 넣지 말 것.** `EnemyManager`가 등록 시점에 Packed 배열로
@@ -134,6 +140,7 @@ AI로 캐릭터 1장(정지) 고해상도 생성
 pip install -r tools/requirements.txt
 tools/build_art.sh                     # 적 + 플레이어 전체 빌드
 python3 tools/test_art_pipeline.py     # 자체 검증 19개
+python3 tools/art_request.py           # 필요한 그림 목록 → docs/art_request.md
 ```
 
 **적 그림은 아틀라스 한 장.** `MapData.sprite_atlas` 를 물리면 `EnemyManager` 가 종류별
@@ -188,7 +195,7 @@ res://
 | **M5** | 2주 | 폴리시 | 사운드, 튜토리얼, 옵션, 한/영 로컬라이즈, 최적화 |
 | **M6** | 2주 | 출시 준비 | Steam 페이지, 데모 빌드, 트레일러 |
 
-**현재 상태: M2 아트 1차 패스 완료(아틀라스 렌더링·적 5종·리깅 플레이어). 다음은 M3 = 콘텐츠 확장(무기 10·적 20·보스 4·캐릭터 8·맵 3).**
+**현재 상태: M3 콘텐츠 확장 완료(무기 10·패시브 10·적 20·보스 4·캐릭터 8·맵 3). 다음은 M4 = 메타 진행(저장·PX 상점·해금·표창장).**
 
 한 번에 두 마일스톤 이상 진행하지 않는다. 기획서 8장의 프롬프트 팩을 순서대로 따른다.
 

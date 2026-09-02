@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/enemy_data.gd" id="1_enemy"]
+
+[resource]
+script = ExtResource("1_enemy")
+id = &"slop_can"
+display_name = "짬통"
+max_hp = 44.0
+contact_dps = 7.0
+xp = 3.0
+aura_dps = 0.0
+aura_radius = 0.0
+is_elite = false
+speed = 100.0
+radius = 17.0
+color = Color(0.42, 0.41, 0.31, 1)
+sprite = &""
+sprite_scale = 2.1
+atlas_index = 0

@@ -5,12 +5,14 @@ class_name PickupManager
 ## 픽업은 플레이어 한 명하고만 상호작용하므로 공간 해시가 필요 없다. 선형 스캔이면 충분하다.
 
 const BUFFER_STRIDE: int = 16
-enum Kind { XP, CHEST }
+enum Kind { XP, CHEST, HEAL }
 
 const RADIUS: float = 7.0
 const CHEST_RADIUS: float = 18.0
 const COLOR_XP: Color = Color("#8FE388")     ## 기획서 3.2: 회복/획득 = 연녹
 const COLOR_CHEST: Color = Color("#FFC94A")  ## 보물상자는 금색
+const HEAL_RADIUS: float = 11.0
+const COLOR_HEAL: Color = Color("#8FE388")   ## 회복도 연녹 (기획서 3.2)
 
 @export var magnet_accel: float = 1800.0
 @export var magnet_max_speed: float = 900.0
@@ -40,6 +42,7 @@ var magnet_radius: float = 90.0
 
 signal collected(value: float)
 signal chest_collected()
+signal healed(amount: float)
 
 
 func _ready() -> void:
@@ -76,6 +79,12 @@ func spawn_chest(pos: Vector2) -> void:
 	EventBus.chest_dropped.emit(pos)
 
 
+## 위생병이 만드는 회복 오브. '짬'처럼 자석에 끌린다.
+func spawn_heal(pos: Vector2, amount: float) -> void:
+	spawn(pos, amount)
+	_kind[_count - 1] = Kind.HEAL
+
+
 func spawn(pos: Vector2, value: float) -> void:
 	if _count >= _capacity:
 		# 가장 오래된 걸 밀어낸다. 화면이 픽업으로 덮이는 것보다 낫다.
@@ -110,6 +119,7 @@ func _physics_process(delta: float) -> void:
 	var magnet_sq: float = magnet_radius * magnet_radius
 	var collect_sq: float = collect_radius * collect_radius
 	var gathered: float = 0.0
+	var healed_total: float = 0.0
 	var chests: int = 0
 
 	var i: int = 0
@@ -118,13 +128,17 @@ func _physics_process(delta: float) -> void:
 		var dy: float = ty - _py[i]
 		var dist_sq: float = dx * dx + dy * dy
 
-		var is_chest: bool = _kind[i] == Kind.CHEST
+		var kind: int = _kind[i]
+		var is_chest: bool = kind == Kind.CHEST
 		var pickup_r: float = collect_radius + (CHEST_RADIUS if is_chest else 0.0)
 		if dist_sq <= pickup_r * pickup_r:
-			if is_chest:
-				chests += 1
-			else:
-				gathered += _value[i]
+			match kind:
+				Kind.CHEST:
+					chests += 1
+				Kind.HEAL:
+					healed_total += _value[i]
+				_:
+					gathered += _value[i]
 			_swap_remove(i)
 			continue
 
@@ -155,6 +169,8 @@ func _physics_process(delta: float) -> void:
 
 	if gathered > 0.0:
 		collected.emit(gathered)
+	if healed_total > 0.0:
+		healed.emit(healed_total)
 	for _c in chests:
 		chest_collected.emit()
 
@@ -202,9 +218,15 @@ func _update_buffer() -> void:
 	_buffer = PackedFloat32Array()
 
 	for i in _count:
-		var is_chest: bool = _kind[i] == Kind.CHEST
-		var d: float = (CHEST_RADIUS if is_chest else RADIUS) * 2.0
-		var c: Color = COLOR_CHEST if is_chest else COLOR_XP
+		var kind: int = _kind[i]
+		var d: float = RADIUS * 2.0
+		var c: Color = COLOR_XP
+		if kind == Kind.CHEST:
+			d = CHEST_RADIUS * 2.0
+			c = COLOR_CHEST
+		elif kind == Kind.HEAL:
+			d = HEAL_RADIUS * 2.0
+			c = COLOR_HEAL
 		var b: int = i * BUFFER_STRIDE
 		buf[b + 0] = d
 		buf[b + 1] = 0.0

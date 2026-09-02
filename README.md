@@ -27,6 +27,7 @@ tools/playthrough.sh --runs=2 --scale=8   # 20분 한 판 끝까지 자동 플�
 
 tools/build_art.sh                       # 아트 전체 빌드 (art/raw → art/atlas)
 python3 tools/test_art_pipeline.py       # 아트 파이프라인 자체 검증
+python3 tools/art_request.py             # 필요한 그림 목록 (docs/art_request.md)
 tools/rigging_preview.sh --out=/tmp/rig  # 컷아웃 리깅 4종 애니메이션 확인
 ```
 
@@ -70,7 +71,7 @@ tools/build.sh "Linux/X11" build/d100.x86_64
 - [x] M0 — 화이트박스 프로토타입
 - [x] M1 — 코어 루프 + 성능 검증
 - [x] M2 — 아트 1차 패스
-- [ ] M3 — 콘텐츠 확장
+- [x] M3 — 콘텐츠 확장
 - [ ] M4 — 메타 진행
 - [ ] M5 — 폴리시
 - [ ] M6 — 출시 준비

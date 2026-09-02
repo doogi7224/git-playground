@@ -14,6 +14,8 @@ var _scale: float = 6.0
 var _max_frames: int = 20000
 
 var _drive: bool = true
+## 시계를 여기서부터 시작한다. 후반 웨이브나 보스를 보려고 20분을 기다릴 수는 없다.
+var _from: float = 0.0
 var _auto: AutoPlayer = AutoPlayer.new()
 var _arena: Node = null
 var _levelups: int = 0
@@ -29,6 +31,8 @@ func _ready() -> void:
 			_scale = float(arg.substr(8))
 		elif arg == "--no-drive":
 			_drive = false
+		elif arg.begins_with("--from="):
+			_from = float(arg.substr(7))
 	_run.call_deferred()
 
 
@@ -37,6 +41,8 @@ func _run() -> void:
 	get_tree().root.add_child(_arena)
 	await get_tree().process_frame
 
+	if _from > 0.0:
+		GameState.elapsed = _from
 	Engine.time_scale = _scale
 	var frames: int = 0
 	while GameState.elapsed < _seconds and frames < _max_frames:

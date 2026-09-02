@@ -12,6 +12,9 @@ class_name CharacterData
 @export var body_radius: float = 14.0
 @export var magnet_radius: float = 90.0
 @export var damage_mult: float = 1.0
+@export var cooldown_mult: float = 1.0   ## 1보다 작으면 공격이 빠르다
+@export var regen: float = 0.0           ## 초당 회복
+@export var crit_chance: float = 0.10
 @export var color: Color = Color("#B7C77A")
 
 @export_group("겉모습")

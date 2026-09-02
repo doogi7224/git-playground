@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/data/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Resource" path="res://data/weapons/helmet.tres" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"w_helmet"
+title = "방탄모"
+description = "방어 오라 + 근접 반사"
+kind = 1
+max_level = 8
+weight = 1.0
+weapon = ExtResource("2_weapon")

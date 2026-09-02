@@ -10,7 +10,12 @@ enum Behavior {
 	AURA,          ## 주변 상시 판정 (예초기 진화형, 방탄모)
 	GROUND_AREA,   ## 장판 (수통, 행군화)
 	THROWN,        ## 포물선 투척 (연막탄)
-	UTILITY,       ## 직접 피해가 아닌 것 (위생병, 기상나팔)
+	UTILITY,       ## 직접 피해가 아닌 것
+	TRAIL,         ## 지나온 자리에 장판 (행군화)
+	LURE,          ## 뒤에 흘려 적을 끌어당김 (짬통)
+	SUPPORT,       ## 회복 오브 생성 (위생병)
+	GUARD,         ## 방어 오라 + 근접 반사 (방탄모)
+	SHOUT,         ## 화면 전체 스턴/넉백 (기상나팔)
 }
 
 @export var id: StringName = &""
@@ -30,6 +35,16 @@ enum Behavior {
 ## 한 번은 앞, 한 번은 뒤로 휘두른다. 플레이어가 적보다 빠르면 적이 전부 등 뒤로
 ## 몰리기 때문에, 전방 전용으로 두면 거의 안 맞는다. (docs/performance.md 옆 M0 기록 참조)
 @export var alternate_direction: bool = true
+
+@export_group("특수")
+## GUARD — 받는 피해를 이 비율만큼 줄인다 (0.2 = 20% 감소)
+@export var damage_reduction: float = 0.0
+## GUARD 진화형 — 발동 시 무적 프레임(초)
+@export var invulnerability: float = 0.0
+## LURE — 끌어당기는 힘. 음수 넉백으로 들어간다
+@export var pull_force: float = 0.0
+## SUPPORT — 회복량
+@export var heal_amount: float = 0.0
 
 @export_group("레벨당 증가")
 @export var per_level_damage: float = 0.0

@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="MapData" load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://core/data/map_data.gd" id="1_map"]
+[ext_resource type="Resource" path="res://data/enemies/snowball.tres" id="2_snowball"]
+[ext_resource type="Resource" path="res://data/enemies/blanket.tres" id="3_blanket"]
+[ext_resource type="Resource" path="res://data/enemies/blizzard.tres" id="4_blizzard"]
+[ext_resource type="Resource" path="res://data/enemies/crate.tres" id="5_crate"]
+[ext_resource type="Resource" path="res://data/enemies/locker.tres" id="6_locker"]
+[ext_resource type="Resource" path="res://data/enemies/night_watch.tres" id="7_night_watch"]
+[ext_resource type="Resource" path="res://data/enemies/shovel_mob.tres" id="8_shovel_mob"]
+[ext_resource type="Resource" path="res://data/enemies/gas_mask.tres" id="9_gas_mask"]
+[ext_resource type="Resource" path="res://data/enemies/sergeant_major.tres" id="10_sergeant_major"]
+[ext_resource type="Resource" path="res://data/enemies/battalion_commander.tres" id="11_ebattalion_commander"]
+[ext_resource type="Resource" path="res://data/bosses/battalion_commander.tres" id="12_bbattalion_commander"]
+[ext_resource type="Resource" path="res://data/enemies/inspector.tres" id="13_einspector"]
+[ext_resource type="Resource" path="res://data/bosses/inspector.tres" id="14_binspector"]
+[ext_resource type="Resource" path="res://data/enemies/drill_week3.tres" id="15_edrill_week3"]
+[ext_resource type="Resource" path="res://data/bosses/drill_week3.tres" id="16_bdrill_week3"]
+[ext_resource type="Resource" path="res://data/enemies/discharge_delay.tres" id="17_edischarge_delay"]
+[ext_resource type="Resource" path="res://data/bosses/discharge_delay.tres" id="18_bdischarge_delay"]
+[ext_resource type="Resource" path="res://data/waves/winter_field_waves.tres" id="19_waves"]
+[ext_resource type="Resource" path="res://art/atlas/enemies_atlas.tres" id="20_atlas"]
+
+[resource]
+script = ExtResource("1_map")
+id = &"winter_field"
+display_name = "혹한기 설원"
+enemies = Array[Resource]([ExtResource("2_snowball"), ExtResource("3_blanket"), ExtResource("4_blizzard"), ExtResource("5_crate"), ExtResource("6_locker"), ExtResource("7_night_watch"), ExtResource("8_shovel_mob"), ExtResource("9_gas_mask"), ExtResource("10_sergeant_major"), ExtResource("11_ebattalion_commander"), ExtResource("13_einspector"), ExtResource("15_edrill_week3"), ExtResource("17_edischarge_delay")])
+bosses = Array[Resource]([ExtResource("12_bbattalion_commander"), ExtResource("14_binspector"), ExtResource("16_bdrill_week3"), ExtResource("18_bdischarge_delay")])
+wave_table = ExtResource("19_waves")
+sprite_atlas = ExtResource("20_atlas")
+ambient_tint = Color(0.80, 0.85, 0.95, 1)
+ground_color = Color(0.55, 0.60, 0.66, 1)

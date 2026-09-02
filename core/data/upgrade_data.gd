@@ -30,3 +30,4 @@ enum Kind {
 @export var heal_on_pick: float = 0.0
 @export var projectiles_add: int = 0      ## 탄띠 — 투사체 발수
 @export var regen_add: float = 0.0        ## 건빵 — 초당 회복
+@export var revives_add: int = 0          ## 찰떡파이 — 부활 횟수

@@ -9,6 +9,11 @@ class_name EnemyData
 @export var max_hp: float = 20.0
 @export var contact_dps: float = 5.0
 @export var xp: float = 1.0
+## 중형/장판형 적. 닿지 않아도 반경 안에 있으면 초당 이만큼 아프다 (CS가스 구름, 눈보라).
+@export var aura_dps: float = 0.0
+@export var aura_radius: float = 0.0
+## 중형 여부. HUD 표시나 드랍 판정에 쓴다.
+@export var is_elite: bool = false
 
 @export_group("이동/크기")
 @export var speed: float = 130.0

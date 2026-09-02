@@ -12,6 +12,7 @@ const ENEMY_CAPACITY: int = 4096
 @onready var pickups: PickupManager = $Pickups
 @onready var areas: AreaManager = $Areas
 @onready var projectiles: ProjectileManager = $Projectiles
+@onready var hazards: HazardManager = $Hazards
 @onready var bosses: Node2D = $Bosses
 @onready var player: Player = $Player
 @onready var director: SpawnDirector = $SpawnDirector
@@ -33,10 +34,12 @@ func _ready() -> void:
 	projectiles.enemies = enemies
 	projectiles.areas = areas
 
-	player.setup(enemies, character, projectiles, areas)
+	player.setup(enemies, character, projectiles, areas, pickups)
 	pickups.collected.connect(player.add_xp)
 	pickups.chest_collected.connect(_on_chest_collected)
-	director.setup(enemies, player, map.wave_table, pickups, bosses)
+	pickups.healed.connect(player.heal)
+	hazards.player = player
+	director.setup(enemies, player, map, pickups, bosses, hazards)
 
 	level_up.player = player
 	level_up.upgrade_table = upgrade_table

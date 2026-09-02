@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WaveTable" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="WaveTable" load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://core/data/wave_table.gd" id="1_table"]
 [ext_resource type="Script" path="res://core/data/wave_data.gd" id="2_wave"]
@@ -24,7 +24,7 @@ boss_id = &""
 [sub_resource type="Resource" id="Wave_05"]
 script = ExtResource("2_wave")
 minute = 5
-enemy_ids = Array[StringName]([&"shovel_mob", &"weed", &"leaf_pile"])
+enemy_ids = Array[StringName]([&"shovel_mob", &"weed", &"recruit"])
 spawns_per_second = 6.0
 pattern = 1
 elite_chance = 0.02
@@ -33,16 +33,25 @@ boss_id = &"battalion_commander"
 [sub_resource type="Resource" id="Wave_08"]
 script = ExtResource("2_wave")
 minute = 8
-enemy_ids = Array[StringName]([&"shovel_mob", &"weed", &"leaf_pile", &"snowball"])
+enemy_ids = Array[StringName]([&"weed", &"recruit", &"plank", &"mosquito"])
 spawns_per_second = 11.0
 pattern = 0
 elite_chance = 0.04
 boss_id = &""
 
+[sub_resource type="Resource" id="Wave_10"]
+script = ExtResource("2_wave")
+minute = 10
+enemy_ids = Array[StringName]([&"plank", &"paint_can", &"slop_can", &"duty_officer"])
+spawns_per_second = 15.0
+pattern = 2
+elite_chance = 0.06
+boss_id = &"inspector"
+
 [sub_resource type="Resource" id="Wave_12"]
 script = ExtResource("2_wave")
 minute = 12
-enemy_ids = Array[StringName]([&"weed", &"leaf_pile", &"snowball", &"blanket"])
+enemy_ids = Array[StringName]([&"leaf_pile", &"paint_can", &"supplies", &"locker"])
 spawns_per_second = 20.0
 pattern = 2
 elite_chance = 0.06
@@ -51,10 +60,19 @@ boss_id = &""
 [sub_resource type="Resource" id="Wave_15"]
 script = ExtResource("2_wave")
 minute = 15
-enemy_ids = Array[StringName]([&"shovel_mob", &"weed", &"leaf_pile", &"snowball", &"blanket"])
-spawns_per_second = 32.0
+enemy_ids = Array[StringName]([&"supplies", &"crate", &"locker", &"sergeant_major"])
+spawns_per_second = 30.0
 pattern = 0
 elite_chance = 0.08
+boss_id = &"drill_week3"
+
+[sub_resource type="Resource" id="Wave_18"]
+script = ExtResource("2_wave")
+minute = 18
+enemy_ids = Array[StringName]([&"crate", &"locker", &"mosquito", &"sergeant_major"])
+spawns_per_second = 36.0
+pattern = 1
+elite_chance = 0.1
 boss_id = &""
 
 [sub_resource type="Resource" id="Wave_19"]
@@ -64,8 +82,8 @@ enemy_ids = Array[StringName]([&"weed"])
 spawns_per_second = 6.0
 pattern = 0
 elite_chance = 0.0
-boss_id = &""
+boss_id = &"discharge_delay"
 
 [resource]
 script = ExtResource("1_table")
-waves = Array[Resource]([SubResource("Wave_00"), SubResource("Wave_02"), SubResource("Wave_05"), SubResource("Wave_08"), SubResource("Wave_12"), SubResource("Wave_15"), SubResource("Wave_19")])
+waves = Array[Resource]([SubResource("Wave_00"), SubResource("Wave_02"), SubResource("Wave_05"), SubResource("Wave_08"), SubResource("Wave_10"), SubResource("Wave_12"), SubResource("Wave_15"), SubResource("Wave_18"), SubResource("Wave_19")])

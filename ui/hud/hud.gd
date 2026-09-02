@@ -70,13 +70,9 @@ func _refresh_rank(level: int, rank_id: StringName) -> void:
 	rank_label.text = "%s  Lv.%d" % [name_kr, level]
 
 
-const BOSS_NAMES: Dictionary = {
-	&"battalion_commander": "대대장 순시",
-}
-
-
-func _on_boss_spawned(boss_id: StringName) -> void:
-	boss_label.text = BOSS_NAMES.get(boss_id, String(boss_id))
+## 보스 이름은 BossData 가 갖고 있다. HUD 가 따로 표를 들고 있으면 반드시 어긋난다.
+func _on_boss_spawned(boss_id: StringName, display_name: String) -> void:
+	boss_label.text = display_name if not display_name.is_empty() else String(boss_id)
 	boss_bar.value = 1.0
 	boss_box.visible = true
 

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/upgrade_data.gd" id="1_upgrade"]
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"vest"
+title = "방탄복"
+description = "받는 피해 -1.2"
+kind = 0
+max_level = 5
+weight = 1.0
+armor_add = 1.2

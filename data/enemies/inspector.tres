@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/enemy_data.gd" id="1_enemy"]
+
+[resource]
+script = ExtResource("1_enemy")
+id = &"inspector"
+display_name = "사단 검열관"
+max_hp = 4200.0
+contact_dps = 20.0
+xp = 90.0
+aura_dps = 0.0
+aura_radius = 0.0
+is_elite = true
+speed = 0.0
+radius = 50.0
+color = Color(0.62, 0.60, 0.55, 1)
+sprite = &""
+sprite_scale = 2.6
+atlas_index = 0

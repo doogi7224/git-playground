@@ -8,6 +8,9 @@ class_name Player
 const COLOR_HIGHLIGHT: Color = Color("#FFFFFF")
 ## 피격 연출 최소 간격(초). 접촉 피해가 매 프레임 들어와도 연출은 이 간격으로만.
 const HIT_ANIM_INTERVAL: float = 0.35
+## 찰떡파이로 일어날 때 회복량과 무적 시간
+const REVIVE_HP_RATIO: float = 0.5
+const REVIVE_INVULN: float = 1.6
 
 var character: CharacterData = null
 
@@ -26,6 +29,7 @@ var magnet_mult: float = 1.0
 var xp_mult: float = 1.0
 var armor: float = 0.0
 var luck: float = 0.0
+var revives: int = 0          ## 찰떡파이 — 쓰러져도 한 번 일어난다
 var crit_chance: float = 0.10
 var crit_mult: float = 2.0
 var extra_projectiles: int = 0   ## 탄띠
@@ -43,10 +47,14 @@ var xp_to_next: float = 10.0
 var upgrade_levels: Dictionary = {}
 
 var _hit_anim_cooldown: float = 0.0
+var _invuln_left: float = 0.0     ## 부활 직후 / 완전무장 무적 프레임
+var _slow_left: float = 0.0
+var _slow_factor: float = 1.0
 
 var enemies: EnemyManager = null
 var projectiles: ProjectileManager = null
 var areas: AreaManager = null
+var pickups: PickupManager = null
 
 @onready var weapons: Node2D = $Weapons
 @onready var rig: RiggedCharacter = $Rig
@@ -59,10 +67,12 @@ func _ready() -> void:
 
 ## 런 시작 전에 아레나가 부른다. 캐릭터 스탯을 싣고 시작 무기를 만든다.
 func setup(p_enemies: EnemyManager, p_character: CharacterData,
-		p_projectiles: ProjectileManager = null, p_areas: AreaManager = null) -> void:
+		p_projectiles: ProjectileManager = null, p_areas: AreaManager = null,
+		p_pickups: PickupManager = null) -> void:
 	enemies = p_enemies
 	projectiles = p_projectiles
 	areas = p_areas
+	pickups = p_pickups
 	character = p_character
 
 	if character != null:
@@ -71,6 +81,9 @@ func setup(p_enemies: EnemyManager, p_character: CharacterData,
 		body_radius = character.body_radius
 		magnet_radius = character.magnet_radius
 		damage_mult = character.damage_mult
+		cooldown_mult = character.cooldown_mult
+		regen = character.regen
+		crit_chance = character.crit_chance
 		body_color = character.color
 		if character.starting_weapon != null:
 			add_weapon(character.starting_weapon)
@@ -126,6 +139,12 @@ func _bind(weapon: BaseWeapon) -> void:
 		(weapon as ThrownWeapon).projectiles = projectiles
 	elif weapon is GroundAreaWeapon:
 		(weapon as GroundAreaWeapon).areas = areas
+	elif weapon is TrailWeapon:
+		(weapon as TrailWeapon).areas = areas
+	elif weapon is LureWeapon:
+		(weapon as LureWeapon).areas = areas
+	elif weapon is SupportWeapon:
+		(weapon as SupportWeapon).pickups = pickups
 
 
 ## 보유 무기 중 진화 조건을 만족한 것을 진화시킨다. 성공하면 무기 id, 없으면 빈 값.
@@ -168,6 +187,11 @@ func _physics_process(delta: float) -> void:
 	if regen > 0.0 and hp < max_hp:
 		heal(regen * delta)
 	_hit_anim_cooldown = maxf(0.0, _hit_anim_cooldown - delta)
+	_invuln_left = maxf(0.0, _invuln_left - delta)
+	if _slow_left > 0.0:
+		_slow_left = maxf(0.0, _slow_left - delta)
+		if _slow_left <= 0.0:
+			_slow_factor = 1.0
 
 
 func _move(delta: float) -> void:
@@ -175,7 +199,7 @@ func _move(delta: float) -> void:
 	if dir.length_squared() > 0.0:
 		dir = dir.normalized()
 		facing = dir
-		position += dir * move_speed * speed_mult * delta
+		position += dir * move_speed * speed_mult * _slow_factor * delta
 		if rig != null:
 			rig.play_walk()
 			rig.set_facing(dir.x)
@@ -188,22 +212,51 @@ func _move(delta: float) -> void:
 func _contact_damage(delta: float) -> void:
 	if enemies == null or enemies.get_count() == 0:
 		return
-	var n: int = enemies.query(position.x, position.y, body_radius)
+	var n: int = enemies.query(position.x, position.y, enemies.max_threat_radius())
 	if n == 0:
 		return
 	var cand: PackedInt32Array = enemies.candidates()
 	var worst: float = 0.0
 	for k in n:
 		var i: int = cand[k]
+		var dist_sq: float = position.distance_squared_to(enemies.position_of(i))
 		var reach: float = body_radius + enemies.radius_of(i)
-		if position.distance_squared_to(enemies.position_of(i)) <= reach * reach:
+		if dist_sq <= reach * reach:
 			worst = maxf(worst, enemies.contact_dps_of(i))
+		# 중형/장판형은 닿지 않아도 아프다 (CS가스 구름, 눈보라)
+		var aura: float = enemies.aura_radius_of(i)
+		if aura > 0.0 and dist_sq <= aura * aura:
+			worst = maxf(worst, enemies.aura_dps_of(i))
 	if worst > 0.0:
-		take_damage(maxf(0.0, worst - armor) * delta)
+		var reduced: float = maxf(0.0, worst - armor) * (1.0 - damage_reduction())
+		take_damage(reduced * delta)
+
+
+## 방탄모 계열이 주는 피해 감소. 여러 개면 곱으로 쌓인다(합으로 쌓으면 100%가 나온다).
+func damage_reduction() -> float:
+	var remaining: float = 1.0
+	for w: Node in weapons.get_children():
+		if w is GuardWeapon and (w as GuardWeapon).data != null:
+			remaining *= 1.0 - clampf((w as GuardWeapon).data.damage_reduction, 0.0, 0.9)
+	return 1.0 - remaining
+
+
+## 유격 3주차 보스의 이속 감소 필드 같은 것. 겹치면 더 센 쪽이 이긴다.
+func apply_slow(factor: float, duration: float) -> void:
+	_slow_factor = minf(_slow_factor, clampf(factor, 0.1, 1.0))
+	_slow_left = maxf(_slow_left, duration)
+
+
+func grant_invulnerability(duration: float) -> void:
+	_invuln_left = maxf(_invuln_left, duration)
+
+
+func is_invulnerable() -> bool:
+	return invulnerable or _invuln_left > 0.0
 
 
 func take_damage(amount: float) -> void:
-	if hp <= 0.0 or invulnerable:
+	if hp <= 0.0 or is_invulnerable():
 		return
 	hp = maxf(0.0, hp - amount)
 	EventBus.player_damaged.emit(amount, hp / max_hp)
@@ -212,10 +265,25 @@ func take_damage(amount: float) -> void:
 		_hit_anim_cooldown = HIT_ANIM_INTERVAL
 		rig.play_hit()
 	if hp <= 0.0:
+		_on_downed()
+
+
+## 쓰러졌다. 찰떡파이가 있으면 한 번 일어난다 (기획서 5.2).
+func _on_downed() -> void:
+	if revives > 0:
+		revives -= 1
+		hp = max_hp * REVIVE_HP_RATIO
+		grant_invulnerability(REVIVE_INVULN)
+		EventBus.player_healed.emit(hp, hp / max_hp)
+		EventBus.screen_shake_requested.emit(5.0, 0.3)
+		EventBus.hit_stop_requested.emit(0.12, 0.05)
 		if rig != null:
-			rig.play_die()
-		EventBus.player_died.emit()
-		GameState.end_run(false)
+			rig.revive()
+		return
+	if rig != null:
+		rig.play_die()
+	EventBus.player_died.emit()
+	GameState.end_run(false)
 
 
 func heal(amount: float) -> void:
@@ -266,6 +334,7 @@ func apply_upgrade(upgrade: UpgradeData) -> void:
 			crit_chance = minf(0.85, crit_chance + upgrade.luck_add * 0.5)
 			extra_projectiles += upgrade.projectiles_add
 			regen += upgrade.regen_add
+			revives += upgrade.revives_add
 			if upgrade.max_hp_add != 0.0:
 				max_hp += upgrade.max_hp_add
 				heal(upgrade.max_hp_add)

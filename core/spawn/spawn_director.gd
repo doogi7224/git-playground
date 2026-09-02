@@ -9,7 +9,9 @@ class_name SpawnDirector
 var enemies: EnemyManager = null
 var target: Node2D = null
 var pickups: PickupManager = null
+var hazards: HazardManager = null
 var boss_container: Node = null
+var map: MapData = null
 var enabled: bool = true
 
 var _accum: float = 0.0
@@ -19,13 +21,16 @@ var _type_cache: Dictionary = {}   ## StringName -> 타입 인덱스
 var _wall_angle: float = 0.0
 
 
-func setup(p_enemies: EnemyManager, p_target: Node2D, p_table: WaveTable,
-		p_pickups: PickupManager = null, p_boss_container: Node = null) -> void:
+func setup(p_enemies: EnemyManager, p_target: Node2D, p_map: MapData,
+		p_pickups: PickupManager = null, p_boss_container: Node = null,
+		p_hazards: HazardManager = null) -> void:
 	enemies = p_enemies
 	target = p_target
-	wave_table = p_table
+	map = p_map
+	wave_table = p_map.wave_table if p_map != null else null
 	pickups = p_pickups
 	boss_container = p_boss_container
+	hazards = p_hazards
 	_type_cache.clear()
 	_last_minute = -1
 	_wall_angle = randf() * TAU
@@ -76,7 +81,11 @@ func _spawn_one() -> void:
 
 
 func _spawn_boss() -> void:
-	if boss_container == null or target == null:
+	if boss_container == null or target == null or map == null:
+		return
+	var boss_data: BossData = map.boss_by_id(_current.boss_id)
+	if boss_data == null:
+		push_warning("웨이브가 부르는 보스가 맵에 없다: %s" % _current.boss_id)
 		return
 	var boss := BossController.new()
 	boss.name = "Boss_%s" % _current.boss_id
@@ -84,7 +93,7 @@ func _spawn_boss() -> void:
 	var angle: float = randf() * TAU
 	var pos: Vector2 = target.global_position + Vector2(cos(angle), sin(angle)) * 620.0
 	var minion: StringName = _current.enemy_ids[0] if not _current.enemy_ids.is_empty() else &""
-	if not boss.setup(enemies, target, pickups, _current.boss_id, minion, pos):
+	if not boss.setup(enemies, target, pickups, hazards, boss_data, minion, pos):
 		boss.queue_free()
 
 

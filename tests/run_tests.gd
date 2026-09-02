@@ -11,7 +11,7 @@ extends Node
 ## 스크립트 하나가 컴파일에 실패하면 그걸 쓰는 테스트 함수가 런타임 에러로 중간에 끊긴다.
 ## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 40개쯤 안 돌았다. 실제로 겪었다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 250
+const MIN_CHECKS: int = 320
 
 var _failures: int = 0
 var _checks: int = 0
@@ -47,6 +47,10 @@ func _run_all() -> void:
 	await test_rigging_template()
 	await test_camera_stability()
 	await test_sprite_atlas()
+	test_m3_content()
+	test_status_effects()
+	await test_revive()
+	await test_boss_patterns()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -431,6 +435,8 @@ func test_data_resources() -> void:
 		_check(drawn[0] != drawn[1] and drawn[1] != drawn[2] and drawn[0] != drawn[2],
 				"한 번에 같은 명령서를 두 장 내밀지 않는다")
 
+	_check_tres_syntax()
+
 	var shovel: WeaponData = load("res://data/weapons/shovel.tres") as WeaponData
 	_check(shovel != null, "shovel.tres 로드")
 	if shovel != null:
@@ -569,7 +575,7 @@ func test_boss() -> void:
 
 	var spawned: Array[StringName] = []
 	var died: Array[StringName] = []
-	var on_spawn := func(id: StringName) -> void: spawned.append(id)
+	var on_spawn := func(id: StringName, _name: String) -> void: spawned.append(id)
 	var on_die := func(id: StringName) -> void: died.append(id)
 	EventBus.boss_spawned.connect(on_spawn)
 	EventBus.boss_died.connect(on_die)
@@ -870,5 +876,264 @@ func test_sprite_atlas() -> void:
 		used[em.atlas_index_of(t)] = true
 	_check(used.size() == em.type_count(),
 			"적 %d종이 서로 다른 칸을 쓴다 (고유 %d개)" % [em.type_count(), used.size()])
+	em.queue_free()
+	await get_tree().process_frame
+
+
+## data/ 의 .tres 를 스크립트로 찍어낼 때 파이썬 리터럴(True/False/None)이 그대로 들어가는
+## 사고를 두 번 겪었다. Godot 은 로드에 실패하고, 그 리소스를 쓰는 테스트가 통째로 끊긴다.
+func _check_tres_syntax() -> void:
+	var bad: Array[String] = []
+	for path: String in _all_tres("res://data"):
+		var text: String = FileAccess.get_file_as_string(path)
+		for token: String in [" True", " False", " None"]:
+			if text.contains("=" + token):
+				bad.append("%s (%s)" % [path.get_file(), token.strip_edges()])
+	_check(bad.is_empty(), ".tres 에 파이썬 리터럴이 없다 (발견: %s)" % [bad])
+
+
+func _all_tres(root: String) -> Array[String]:
+	var out: Array[String] = []
+	var dir: DirAccess = DirAccess.open(root)
+	if dir == null:
+		return out
+	dir.list_dir_begin()
+	var name: String = dir.get_next()
+	while name != "":
+		var full: String = root.path_join(name)
+		if dir.current_is_dir():
+			out.append_array(_all_tres(full))
+		elif name.ends_with(".tres"):
+			out.append(full)
+		name = dir.get_next()
+	dir.list_dir_end()
+	return out
+
+
+## M3 콘텐츠가 기획서 분량대로 다 있고 서로 잘 가리키는지.
+func test_m3_content() -> void:
+	print("[M3 콘텐츠 분량과 참조]")
+	var weapons: Array[String] = _all_tres("res://data/weapons")
+	var upgrades: UpgradeTable = load("res://data/upgrades/upgrade_table.tres") as UpgradeTable
+	var characters: Array[String] = _all_tres("res://data/characters")
+	var maps: Array[String] = _all_tres("res://data/maps")
+	var enemies: Array[String] = _all_tres("res://data/enemies")
+	var bosses: Array[String] = _all_tres("res://data/bosses")
+
+	_check(weapons.size() == 20, "무기 10종 + 진화 10종 = 20개 (got %d)" % weapons.size())
+	_check(characters.size() == 8, "캐릭터 8종 (got %d)" % characters.size())
+	_check(maps.size() == 3, "맵 3종 (got %d)" % maps.size())
+	_check(bosses.size() == 4, "보스 4종 (got %d)" % bosses.size())
+	_check(enemies.size() >= 20, "적 20종 이상 (got %d)" % enemies.size())
+
+	# 잡몹/중형 구분 (기획서 5.3: 잡몹 15 + 중형 5)
+	var elites: int = 0
+	var mobs: int = 0
+	for path: String in enemies:
+		var e: EnemyData = load(path) as EnemyData
+		if e == null:
+			continue
+		if e.is_elite:
+			elites += 1
+		else:
+			mobs += 1
+	_check(mobs >= 15, "잡몹 15종 이상 (got %d)" % mobs)
+	_check(elites >= 5, "중형/보스 5종 이상 (got %d)" % elites)
+
+	# 진화 사슬이 끊긴 데가 없는가
+	var broken: Array[String] = []
+	var passive_ids: Array[StringName] = []
+	for u: UpgradeData in upgrades.upgrades:
+		if u.kind == UpgradeData.Kind.PASSIVE:
+			passive_ids.append(u.id)
+	_check(passive_ids.size() == 10, "패시브 10종 (got %d)" % passive_ids.size())
+
+	for path: String in weapons:
+		var w: WeaponData = load(path) as WeaponData
+		if w == null or w.evolves_into == &"":
+			continue
+		if not ResourceLoader.exists("res://data/weapons/%s.tres" % w.evolves_into):
+			broken.append("%s → %s (없는 무기)" % [w.id, w.evolves_into])
+		elif w.evolution_passive != &"" and not passive_ids.has(w.evolution_passive):
+			broken.append("%s → 패시브 %s (없는 패시브)" % [w.id, w.evolution_passive])
+	_check(broken.is_empty(), "진화 조건이 전부 실재한다 (끊긴 것: %s)" % [broken])
+
+	# 무기 동작이 전부 구현돼 있는가
+	var missing_behavior: Array[StringName] = []
+	for path: String in weapons:
+		var w: WeaponData = load(path) as WeaponData
+		if w != null and not WeaponFactory.SCRIPTS.has(w.behavior):
+			missing_behavior.append(w.id)
+	_check(missing_behavior.is_empty(), "모든 무기 동작이 구현돼 있다 (없는 것: %s)" % [missing_behavior])
+
+	# 맵마다: 웨이브가 부르는 적/보스가 그 맵에 실제로 있는가
+	for path: String in maps:
+		var m: MapData = load(path) as MapData
+		_check(m != null and m.wave_table != null, "%s 에 웨이브 테이블" % path.get_file())
+		if m == null or m.wave_table == null:
+			continue
+		var known: Array[StringName] = []
+		for e: EnemyData in m.enemies:
+			known.append(e.id)
+		var bad: Array[StringName] = []
+		for w: WaveData in m.wave_table.waves:
+			for id: StringName in w.enemy_ids:
+				if not known.has(id) and not bad.has(id):
+					bad.append(id)
+			if w.boss_id != &"":
+				if m.boss_by_id(w.boss_id) == null:
+					bad.append(w.boss_id)
+				elif not known.has(m.boss_by_id(w.boss_id).enemy.id):
+					bad.append(w.boss_id)
+		_check(bad.is_empty(), "%s: 웨이브가 부르는 적/보스가 전부 등록됨 (없는 것: %s)"
+				% [m.id, bad])
+		_check(m.enemies.size() <= EnemyManager.MAX_TYPES,
+				"%s: 적 종류가 MAX_TYPES 이하 (%d)" % [m.id, m.enemies.size()])
+
+	# 캐릭터 시작 무기
+	for path: String in characters:
+		var c: CharacterData = load(path) as CharacterData
+		_check(c != null and c.starting_weapon != null, "%s 에 시작 무기" % path.get_file())
+		_check(c != null and not c.parts.is_empty(), "%s 에 리깅 파츠" % path.get_file())
+
+
+func test_status_effects() -> void:
+	print("[상태 이상 — 스턴 / 넉백 / 흡인]")
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(64)
+	var t: int = em.register_enemy(_make_enemy(200.0, 100.0, 12.0))
+	GameState.phase = GameState.Phase.PLAYING
+	em.target_position = Vector2(1000.0, 0.0)
+
+	# 스턴: 멈춘다
+	em.clear()
+	em.spawn(t, Vector2.ZERO)
+	em.hash_grid.rebuild(PackedFloat32Array([0.0]), PackedFloat32Array([0.0]), 1)
+	em.stun_area(Vector2.ZERO, 60.0, 1.0)
+	_check(em.is_stunned(0), "스턴이 걸린다")
+	for _i in 10:
+		em._physics_process(1.0 / 60.0)
+	_check(em.position_of(0).x < 1.0, "스턴 중에는 안 움직인다 (x=%.2f)" % em.position_of(0).x)
+	for _i in 70:
+		em._physics_process(1.0 / 60.0)
+	_check(not em.is_stunned(0), "시간이 지나면 풀린다")
+	_check(em.position_of(0).x > 1.0, "풀리면 다시 추격한다 (x=%.2f)" % em.position_of(0).x)
+
+	# 넉백: 바깥으로 밀린다
+	em.clear()
+	em.spawn(t, Vector2(50.0, 0.0))
+	em.hash_grid.rebuild(PackedFloat32Array([50.0]), PackedFloat32Array([0.0]), 1)
+	em.knockback_area(Vector2.ZERO, 120.0, 900.0)
+	em._physics_process(1.0 / 60.0)
+	_check(em.position_of(0).x > 50.0, "넉백은 바깥으로 민다 (x=%.1f)" % em.position_of(0).x)
+
+	# 음수 넉백 = 흡인 (잔반차)
+	em.clear()
+	em.spawn(t, Vector2(200.0, 0.0))
+	em.hash_grid.rebuild(PackedFloat32Array([200.0]), PackedFloat32Array([0.0]), 1)
+	em.target_position = Vector2(200.0, 0.0)   # 추격 성분을 없애고 흡인만 본다
+	em.knockback_area(Vector2.ZERO, 400.0, -900.0)
+	em._physics_process(1.0 / 60.0)
+	_check(em.position_of(0).x < 200.0, "음수 넉백은 안쪽으로 빨아들인다 (x=%.1f)" % em.position_of(0).x)
+
+	em.queue_free()
+	await get_tree().process_frame
+
+
+## 찰떡파이 — 쓰러져도 한 번 일어난다 (기획서 5.2)
+func test_revive() -> void:
+	print("[부활 — 찰떡파이]")
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(8)
+	em.register_enemy(_make_enemy(0.0, 10.0, 12.0))
+
+	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	get_tree().root.add_child(player)
+	player.setup(em, load("res://data/characters/kim_private.tres") as CharacterData)
+	GameState.phase = GameState.Phase.PLAYING
+
+	player.take_damage(9999.0)
+	_check(player.hp <= 0.0, "부활이 없으면 쓰러진다")
+
+	player.hp = player.max_hp
+	player.apply_upgrade(load("res://data/upgrades/rice_cake.tres") as UpgradeData)
+	_check(player.revives == 1, "찰떡파이가 부활 1회를 준다")
+	player.take_damage(9999.0)
+	_check(player.hp > 0.0, "쓰러지지 않고 일어난다 (HP %.0f)" % player.hp)
+	_check(player.revives == 0, "부활 횟수를 소모한다")
+	_check(player.is_invulnerable(), "일어난 직후에는 잠깐 무적")
+
+	player.invulnerable = false
+	player._invuln_left = 0.0
+	player.take_damage(9999.0)
+	_check(player.hp <= 0.0, "부활을 다 쓰면 그대로 쓰러진다")
+
+	player.queue_free()
+	em.queue_free()
+	await get_tree().process_frame
+
+
+## 보스 4종의 패턴이 실제로 뭔가를 하는지. 데이터만 있고 안 도는 걸 잡는다.
+func test_boss_patterns() -> void:
+	print("[보스 4종 패턴]")
+	var map: MapData = load("res://data/maps/parade_ground.tres") as MapData
+	var em := EnemyManager.new()
+	get_tree().root.add_child(em)
+	em.set_capacity(512)
+	em.register_map(map)
+
+	var hazards := HazardManager.new()
+	get_tree().root.add_child(hazards)
+	hazards.set_capacity(256)
+
+	var target := Node2D.new()
+	get_tree().root.add_child(target)
+	target.global_position = Vector2(300.0, 0.0)
+	GameState.phase = GameState.Phase.PLAYING
+
+	for boss_data: BossData in map.bosses:
+		var boss := BossController.new()
+		get_tree().root.add_child(boss)
+		hazards.clear()
+		var ok: bool = boss.setup(em, target, null, hazards, boss_data, &"shovel_mob", Vector2.ZERO)
+		_check(ok, "%s 등장" % boss_data.id)
+		if not ok:
+			boss.queue_free()
+			continue
+
+		var before_enemies: int = em.get_count()
+		# 넉넉히 굴려서 패턴이 한 바퀴 돌게 한다
+		for _i in 900:
+			boss._physics_process(1.0 / 60.0)
+
+		match boss_data.pattern:
+			BossData.Pattern.CHARGER:
+				_check(em.get_count() > before_enemies,
+						"대대장 순시는 잡몹을 소환한다 (%d → %d)" % [before_enemies, em.get_count()])
+			BossData.Pattern.BARRAGE:
+				_check(hazards.get_count() > 0,
+						"사단 검열관은 탄막을 뿌린다 (%d발)" % hazards.get_count())
+			BossData.Pattern.FIELD:
+				_check(hazards.get_count() > 0,
+						"유격 3주차는 필드/충격파를 만든다 (%d개)" % hazards.get_count())
+			BossData.Pattern.FINALE:
+				# 절반까지 깎으면 한 번 쓰러진 척해야 한다
+				var i: int = em.index_of_handle(boss.handle)
+				_check(i >= 0, "전역 연기 통보서가 살아 있다")
+				if i >= 0:
+					em.damage(i, boss_data.enemy.max_hp * 0.6)
+					for _j in 20:
+						boss._physics_process(1.0 / 60.0)
+					_check(boss._state == BossController.State.FAKE_DEATH,
+							"절반 아래로 깎이면 쓰러진 척한다 (state=%d)" % boss._state)
+					for _j in 300:
+						boss._physics_process(1.0 / 60.0)
+					_check(boss._phase_two, "그리고 2페이즈로 일어난다")
+		boss.queue_free()
+
+	target.queue_free()
+	hazards.queue_free()
 	em.queue_free()
 	await get_tree().process_frame

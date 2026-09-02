@@ -172,6 +172,104 @@ def player_parts() -> None:
         d.polygon([(14, 104), (50, 104), (44, 168), (20, 168)], fill=(132, 134, 136))))
 
 
+# --- 나머지 적들: 표로 찍어낸다 -------------------------------------------
+# 손으로 하나씩 그릴 이유가 없다. 실루엣만 구분되면 된다 —
+# 진짜 그림은 AI로 뽑아서 같은 이름으로 덮어쓸 것이므로.
+#   name, 표시명, 모양, 색, 크기
+SHAPES: list[tuple[str, str, str, tuple[int, int, int], int]] = [
+    ("locker",            "관물대",        "tall_box",  (120, 122, 118), 256),
+    ("mosquito",          "모기",          "bug",       (86, 78, 70),    192),
+    ("night_watch",       "불침번 유령",   "ghost",     (176, 178, 186), 224),
+    ("recruit",           "신병",          "humanoid",  (118, 128, 88),  240),
+    ("plank",             "각목",          "bar",       (152, 118, 74),  240),
+    ("paint_can",         "페인트통",      "can",       (138, 132, 120), 224),
+    ("supplies",          "자재",          "stack",     (142, 118, 82),  256),
+    ("crate",             "창고박스",      "box",       (150, 122, 80),  272),
+    ("gas_mask",          "화생방 마스크", "mask",      (92, 96, 88),    224),
+    ("slop_can",          "짬통",          "can",       (108, 104, 78),  232),
+    ("duty_officer",      "당직사관",      "humanoid",  (84, 82, 64),    320),
+    ("sergeant_major",    "행보관",        "humanoid",  (96, 88, 62),    336),
+    ("drill_instructor",  "유격조교",      "humanoid",  (74, 84, 60),    320),
+    ("cs_gas",            "CS가스 구름",   "cloud",     (168, 172, 140), 352),
+    ("blizzard",          "눈보라",        "cloud",     (206, 214, 224), 360),
+    # 보스 3종 (대대장 순시는 손으로 그린 게 따로 있다)
+    ("inspector",         "사단 검열관",   "stack",     (206, 200, 182), 400),
+    ("drill_week3",       "유격 3주차",    "humanoid",  (72, 80, 58),    416),
+    ("discharge_delay",   "전역 연기 통보서", "tall_box", (214, 208, 190), 432),
+]
+
+
+def _eyes(d: ImageDraw.ImageDraw, cx: int, cy: int, r: int) -> None:
+    for ox in (-r * 2, r * 2):
+        d.ellipse((cx + ox - r, cy - r, cx + ox + r, cy + r), fill=(250, 250, 248))
+        d.ellipse((cx + ox - r // 2, cy - r // 2, cx + ox + r // 2, cy + r // 2), fill=INK)
+
+
+def shaped(name: str, kind: str, color: tuple[int, int, int], size: int) -> None:
+    im, d = canvas(size)
+    m = size / 256.0
+    rng = random.Random(hash(name) & 0xFFFF)
+
+    def s(v: float) -> int:
+        return int(v * m)
+
+    if kind == "tall_box":
+        d.rounded_rectangle((s(78), s(38), s(178), s(224)), s(10), fill=color)
+        d.line([(s(128), s(38)), (s(128), s(224))], fill=INK, width=s(4))
+        d.rectangle((s(150), s(120), s(166), s(134)), fill=INK)
+    elif kind == "box":
+        d.rounded_rectangle((s(46), s(78), s(210), s(212)), s(12), fill=color)
+        d.line([(s(46), s(118)), (s(210), s(118))], fill=INK, width=s(5))
+        d.line([(s(128), s(78)), (s(128), s(212))], fill=INK, width=s(5))
+    elif kind == "stack":
+        d.rounded_rectangle((s(52), s(130), s(204), s(216)), s(10), fill=color)
+        d.rounded_rectangle((s(70), s(70), s(186), s(136)), s(10),
+                            fill=tuple(min(255, c + 20) for c in color))
+    elif kind == "bar":
+        d.rounded_rectangle((s(34), s(104), s(222), s(152)), s(10), fill=color)
+        for x in range(60, 210, 34):
+            d.line([(s(x), s(104)), (s(x + 8), s(152))], fill=(0, 0, 0, 40), width=s(3))
+    elif kind == "can":
+        d.rounded_rectangle((s(74), s(74), s(182), s(214)), s(14), fill=color)
+        d.ellipse((s(74), s(56), s(182), s(96)), fill=tuple(min(255, c + 26) for c in color))
+        d.arc((s(60), s(96), s(196), s(160)), 200, 340, fill=INK, width=s(5))
+    elif kind == "bug":
+        d.ellipse((s(92), s(96), s(164), s(168)), fill=color)
+        for sx in (-1, 1):
+            d.polygon([(s(128), s(112)), (s(128 + sx * 78), s(66)), (s(128 + sx * 58), s(126))],
+                      fill=(214, 220, 226))
+        d.line([(s(128), s(168)), (s(128), s(206))], fill=INK, width=s(5))
+    elif kind == "ghost":
+        d.ellipse((s(62), s(52), s(194), s(182)), fill=color)
+        pts = [(s(62), s(140))]
+        for k in range(7):
+            pts.append((s(62 + k * 22), s(196 if k % 2 else 168)))
+        pts.append((s(194), s(140)))
+        d.polygon(pts, fill=color)
+    elif kind == "mask":
+        d.ellipse((s(56), s(56), s(200), s(200)), fill=color)
+        for ox in (-1, 1):
+            d.ellipse((s(128 + ox * 40 - 26), s(112), s(128 + ox * 40 + 26), s(164)),
+                      fill=(206, 210, 208), outline=INK, width=s(4))
+        d.rounded_rectangle((s(104), s(168), s(152), s(216)), s(10), fill=(70, 72, 66))
+    elif kind == "cloud":
+        for _ in range(7):
+            cx = rng.randint(72, 184)
+            cy = rng.randint(84, 172)
+            r = rng.randint(40, 62)
+            d.ellipse((s(cx - r), s(cy - r), s(cx + r), s(cy + r)),
+                      fill=tuple(max(0, min(255, c + rng.randint(-16, 16))) for c in color))
+    else:  # humanoid
+        d.rounded_rectangle((s(80), s(96), s(176), s(216)), s(16), fill=color)
+        d.rounded_rectangle((s(96), s(34), s(160), s(102)), s(16),
+                            fill=tuple(min(255, c + 40) for c in color))
+        d.rounded_rectangle((s(88), s(24), s(168), s(48)), s(8), fill=INK)
+
+    if kind not in ("cloud", "bar"):
+        _eyes(d, s(128), s(120) if kind in ("tall_box", "box", "stack") else s(74), s(9))
+    save(im, name, blur=0.8)
+
+
 def main() -> None:
     print("플레이스홀더 아트 생성 (진짜 그림으로 같은 이름으로 덮어쓰면 된다)")
     shovel_mob()
@@ -180,6 +278,8 @@ def main() -> None:
     snowball()
     weed()
     battalion_commander()
+    for name, _label, kind, color, size in SHAPES:
+        shaped(name, kind, color, size)
     player_parts()
     print("완료. 다음: tools/build_art.sh")
 

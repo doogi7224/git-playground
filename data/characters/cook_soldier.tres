@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://core/data/character_data.gd" id="1_char"]
+[ext_resource type="Resource" path="res://data/weapons/slop_bucket.tres" id="2_weapon"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_head.tres" id="3_kim_head"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_torso.tres" id="4_kim_torso"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_arm_l.tres" id="5_kim_arm_l"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_arm_r.tres" id="6_kim_arm_r"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_leg_l.tres" id="7_kim_leg_l"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_leg_r.tres" id="8_kim_leg_r"]
+[ext_resource type="Texture2D" path="res://art/atlas/kim_weapon.tres" id="9_kim_weapon"]
+
+[resource]
+script = ExtResource("1_char")
+id = &"cook_soldier"
+display_name = "취사병"
+description = "짬통으로 시작한다. 짬은 원래 취사병 관할이다."
+max_hp = 108.0
+move_speed = 200.0
+body_radius = 14.0
+magnet_radius = 175.0
+damage_mult = 1.0
+cooldown_mult = 1.0
+regen = 0.0
+crit_chance = 0.1
+color = Color(0.717647, 0.780392, 0.478431, 1)
+parts = {
+&"Head": ExtResource("3_kim_head"),
+&"Torso": ExtResource("4_kim_torso"),
+&"ArmL": ExtResource("5_kim_arm_l"),
+&"ArmR": ExtResource("6_kim_arm_r"),
+&"LegL": ExtResource("7_kim_leg_l"),
+&"LegR": ExtResource("8_kim_leg_r"),
+&"Weapon": ExtResource("9_kim_weapon")
+}
+starting_weapon = ExtResource("2_weapon")

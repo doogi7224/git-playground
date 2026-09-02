@@ -34,6 +34,10 @@ const SEPARATION_INTERVAL: int = 3
 ## 화면 반대각이 약 1,100px이다. 그보다 훨씬 먼 적은 겹쳐 보여도 아무도 모른다.
 const SEPARATION_MAX_DIST: float = 1300.0
 
+## 넉백은 초당 이 비율로 줄어든다. 너무 오래 남으면 적이 둥둥 떠다닌다.
+const KNOCKBACK_DECAY: float = 7.0
+const KNOCKBACK_MAX_SPEED: float = 1400.0
+
 ## --- 적 상태 배열 (SoA) ---
 var _px: PackedFloat32Array = PackedFloat32Array()
 var _py: PackedFloat32Array = PackedFloat32Array()
@@ -45,6 +49,10 @@ var _dying: PackedByteArray = PackedByteArray()
 ## 보스처럼 "계속 지목해야 하는" 개체용 핸들. 0이면 추적 안 함.
 ## 인덱스는 swap-remove 때문에 프레임 사이에 유지되지 않는다.
 var _handle: PackedInt64Array = PackedInt64Array()
+## 상태 이상. 기상나팔(스턴), 트랙터/폭발(넉백)이 쓴다.
+var _stun: PackedFloat32Array = PackedFloat32Array()
+var _kx: PackedFloat32Array = PackedFloat32Array()
+var _ky: PackedFloat32Array = PackedFloat32Array()
 
 var _count: int = 0
 var _capacity: int = 0
@@ -61,10 +69,13 @@ var _t_contact_dps: PackedFloat32Array = PackedFloat32Array()
 var _t_xp: PackedFloat32Array = PackedFloat32Array()
 var _t_color: PackedColorArray = PackedColorArray()
 var _t_atlas: PackedInt32Array = PackedInt32Array()
+var _t_aura_dps: PackedFloat32Array = PackedFloat32Array()
+var _t_aura_radius: PackedFloat32Array = PackedFloat32Array()
 var _t_draw_size: PackedFloat32Array = PackedFloat32Array()   ## 그릴 높이(px)
 var _t_aspect: PackedFloat32Array = PackedFloat32Array()      ## 가로/세로 비
 var _type_count: int = 0
 var _max_radius: float = 0.0
+var _max_aura: float = 0.0
 
 ## --- 렌더 / 질의 ---
 var hash_grid: SpatialHash = null
@@ -105,6 +116,9 @@ func set_capacity(p_capacity: int) -> void:
 	_type.resize(p_capacity)
 	_dying.resize(p_capacity)
 	_handle.resize(p_capacity)
+	_stun.resize(p_capacity)
+	_kx.resize(p_capacity)
+	_ky.resize(p_capacity)
 	_reap_list.resize(p_capacity)
 	_scratch.resize(p_capacity)
 	_sep_scratch.resize(64)
@@ -131,6 +145,9 @@ func register_enemy(data: EnemyData) -> int:
 	_t_xp.append(data.xp)
 	_t_color.append(data.color)
 	_t_atlas.append(0)
+	_t_aura_dps.append(data.aura_dps)
+	_t_aura_radius.append(data.aura_radius)
+	_max_aura = maxf(_max_aura, data.aura_radius)
 	_t_draw_size.append(data.radius * 2.0)
 	_t_aspect.append(1.0)
 	_max_radius = maxf(_max_radius, data.radius)
@@ -156,7 +173,13 @@ func set_atlas(p_atlas: SpriteAtlas) -> void:
 
 	var material: ShaderMaterial = (load(ATLAS_MATERIAL) as ShaderMaterial).duplicate()
 	material.set_shader_parameter(&"atlas", atlas.texture)
-	material.set_shader_parameter(&"regions", atlas.regions)
+	# 셰이더의 uniform 배열은 크기가 고정(MAX_TYPES)이다. 모자라면 채워서 넘긴다.
+	if atlas.regions.size() > MAX_TYPES:
+		push_error("아틀라스 그림이 %d장인데 셰이더 배열은 %d칸이다. enemy_atlas.gdshader 의 regions 크기를 늘려라."
+				% [atlas.regions.size(), MAX_TYPES])
+	var regions := PackedVector4Array(atlas.regions)
+	regions.resize(MAX_TYPES)
+	material.set_shader_parameter(&"regions", regions)
 	if atlas.normal_texture != null:
 		material.set_shader_parameter(&"normal_atlas", atlas.normal_texture)
 		material.set_shader_parameter(&"use_normal", true)
@@ -215,6 +238,19 @@ func contact_dps_of(i: int) -> float:
 	return _t_contact_dps[_type[i]]
 
 
+func aura_dps_of(i: int) -> float:
+	return _t_aura_dps[_type[i]]
+
+
+func aura_radius_of(i: int) -> float:
+	return _t_aura_radius[_type[i]]
+
+
+## 접촉 판정에 쓸 최대 사거리. 오라를 가진 적이 있으면 그만큼 넓게 훑어야 한다.
+func max_threat_radius() -> float:
+	return maxf(_max_radius, _max_aura)
+
+
 func spawn(type_index: int, pos: Vector2) -> int:
 	if _count >= _capacity:
 		return -1
@@ -227,6 +263,9 @@ func spawn(type_index: int, pos: Vector2) -> int:
 	_type[i] = type_index
 	_dying[i] = 0
 	_handle[i] = 0
+	_stun[i] = 0.0
+	_kx[i] = 0.0
+	_ky[i] = 0.0
 	_count += 1
 	return i
 
@@ -283,6 +322,52 @@ func damage(i: int, amount: float, is_crit: bool = false) -> void:
 			reap.call_deferred()
 
 
+## --- 상태 이상 ---
+
+## 반경 안의 적을 duration 초 동안 멈춘다. 기상나팔·국기하강식.
+## 몇 마리에게 걸었는지 돌려준다.
+func stun_area(center: Vector2, radius: float, duration: float) -> int:
+	var affected: int = 0
+	var n: int = query(center.x, center.y, radius)
+	var cand: PackedInt32Array = candidates()
+	for k in n:
+		var i: int = cand[k]
+		var reach: float = radius + _t_radius[_type[i]]
+		if center.distance_squared_to(Vector2(_px[i], _py[i])) > reach * reach:
+			continue
+		_stun[i] = maxf(_stun[i], duration)
+		affected += 1
+	return affected
+
+
+## 반경 안의 적을 중심에서 바깥으로 밀어낸다. 트랙터·폭발.
+## **force 가 음수면 안쪽으로 빨아들인다** — 잔반차의 "적 흡인"이 그거다.
+func knockback_area(center: Vector2, radius: float, force: float) -> int:
+	if is_zero_approx(force):
+		return 0
+	var affected: int = 0
+	var n: int = query(center.x, center.y, radius)
+	var cand: PackedInt32Array = candidates()
+	for k in n:
+		var i: int = cand[k]
+		var away := Vector2(_px[i] - center.x, _py[i] - center.y)
+		var dist: float = away.length()
+		var reach: float = radius + _t_radius[_type[i]]
+		if dist > reach:
+			continue
+		var dir: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) if dist < 0.001 else away / dist
+		# 가까울수록 세게 밀린다
+		var falloff: float = 1.0 - clampf(dist / maxf(radius, 1.0), 0.0, 1.0) * 0.6
+		_kx[i] += dir.x * force * falloff
+		_ky[i] += dir.y * force * falloff
+		affected += 1
+	return affected
+
+
+func is_stunned(i: int) -> bool:
+	return _stun[i] > 0.0
+
+
 func query(px: float, py: float, radius: float) -> int:
 	return hash_grid.query_circle(px, py, radius + _max_radius, _scratch)
 
@@ -331,19 +416,32 @@ func _move(delta: float) -> void:
 		var px: float = _px[i]
 		var py: float = _py[i]
 
+		# 0) 넉백은 스턴 중에도 먹는다 (밀려나는 중에 멈춰 서면 어색하다)
+		var vx: float = _kx[i]
+		var vy: float = _ky[i]
+		if vx != 0.0 or vy != 0.0:
+			var decay: float = maxf(0.0, 1.0 - KNOCKBACK_DECAY * delta)
+			_kx[i] = vx * decay
+			_ky[i] = vy * decay
+			if absf(_kx[i]) < 1.0 and absf(_ky[i]) < 1.0:
+				_kx[i] = 0.0
+				_ky[i] = 0.0
+
+		var stunned: bool = _stun[i] > 0.0
+		if stunned:
+			_stun[i] = maxf(0.0, _stun[i] - delta)
+
 		# 1) 플레이어 추격
 		var dx: float = tx - px
 		var dy: float = ty - py
 		var to_player_sq: float = dx * dx + dy * dy
-		var vx: float = 0.0
-		var vy: float = 0.0
-		if to_player_sq > 0.000001:
+		if not stunned and to_player_sq > 0.000001:
 			var inv: float = speed / sqrt(to_player_sq)
-			vx = dx * inv
-			vy = dy * inv
+			vx += dx * inv
+			vy += dy * inv
 
 		# 2) 겹친 이웃 밀어내기 (격자 셀을 직접 훑는다)
-		if has_grid and to_player_sq < far_sq and (i % SEPARATION_INTERVAL) == _sep_parity:
+		if has_grid and not stunned and to_player_sq < far_sq and (i % SEPARATION_INTERVAL) == _sep_parity:
 			var want: float = _t_radius[t] * 2.0
 			var want_sq: float = want * want
 			var min_cx: int = int(floor((px - want) * inv_cell))
@@ -382,9 +480,11 @@ func _move(delta: float) -> void:
 					cx += 1
 				cy += 1
 
-		# 속도 상한이 없으면 밀림이 폭주한다
+		# 속도 상한이 없으면 밀림이 폭주한다. 넉백 중에는 상한을 풀어준다.
 		var v2: float = vx * vx + vy * vy
 		var cap: float = speed * 1.6
+		if _kx[i] != 0.0 or _ky[i] != 0.0:
+			cap = maxf(cap, KNOCKBACK_MAX_SPEED)
 		if v2 > cap * cap:
 			var k2: float = cap / sqrt(v2)
 			vx *= k2
@@ -426,6 +526,9 @@ func _swap_remove(i: int) -> void:
 		_type[i] = _type[last]
 		_dying[i] = _dying[last]
 		_handle[i] = _handle[last]
+		_stun[i] = _stun[last]
+		_kx[i] = _kx[last]
+		_ky[i] = _ky[last]
 	_count = last
 
 

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="MapData" load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://core/data/map_data.gd" id="1_map"]
+[ext_resource type="Resource" path="res://data/enemies/weed.tres" id="2_weed"]
+[ext_resource type="Resource" path="res://data/enemies/leaf_pile.tres" id="3_leaf_pile"]
+[ext_resource type="Resource" path="res://data/enemies/mosquito.tres" id="4_mosquito"]
+[ext_resource type="Resource" path="res://data/enemies/plank.tres" id="5_plank"]
+[ext_resource type="Resource" path="res://data/enemies/night_watch.tres" id="6_night_watch"]
+[ext_resource type="Resource" path="res://data/enemies/gas_mask.tres" id="7_gas_mask"]
+[ext_resource type="Resource" path="res://data/enemies/recruit.tres" id="8_recruit"]
+[ext_resource type="Resource" path="res://data/enemies/supplies.tres" id="9_supplies"]
+[ext_resource type="Resource" path="res://data/enemies/drill_instructor.tres" id="10_drill_instructor"]
+[ext_resource type="Resource" path="res://data/enemies/cs_gas.tres" id="11_cs_gas"]
+[ext_resource type="Resource" path="res://data/enemies/battalion_commander.tres" id="12_ebattalion_commander"]
+[ext_resource type="Resource" path="res://data/bosses/battalion_commander.tres" id="13_bbattalion_commander"]
+[ext_resource type="Resource" path="res://data/enemies/inspector.tres" id="14_einspector"]
+[ext_resource type="Resource" path="res://data/bosses/inspector.tres" id="15_binspector"]
+[ext_resource type="Resource" path="res://data/enemies/drill_week3.tres" id="16_edrill_week3"]
+[ext_resource type="Resource" path="res://data/bosses/drill_week3.tres" id="17_bdrill_week3"]
+[ext_resource type="Resource" path="res://data/enemies/discharge_delay.tres" id="18_edischarge_delay"]
+[ext_resource type="Resource" path="res://data/bosses/discharge_delay.tres" id="19_bdischarge_delay"]
+[ext_resource type="Resource" path="res://data/waves/obstacle_course_waves.tres" id="20_waves"]
+[ext_resource type="Resource" path="res://art/atlas/enemies_atlas.tres" id="21_atlas"]
+
+[resource]
+script = ExtResource("1_map")
+id = &"obstacle_course"
+display_name = "유격장"
+enemies = Array[Resource]([ExtResource("2_weed"), ExtResource("3_leaf_pile"), ExtResource("4_mosquito"), ExtResource("5_plank"), ExtResource("6_night_watch"), ExtResource("7_gas_mask"), ExtResource("8_recruit"), ExtResource("9_supplies"), ExtResource("10_drill_instructor"), ExtResource("11_cs_gas"), ExtResource("12_ebattalion_commander"), ExtResource("14_einspector"), ExtResource("16_edrill_week3"), ExtResource("18_edischarge_delay")])
+bosses = Array[Resource]([ExtResource("13_bbattalion_commander"), ExtResource("15_binspector"), ExtResource("17_bdrill_week3"), ExtResource("19_bdischarge_delay")])
+wave_table = ExtResource("20_waves")
+sprite_atlas = ExtResource("21_atlas")
+ambient_tint = Color(0.82, 0.86, 0.80, 1)
+ground_color = Color(0.27, 0.30, 0.22, 1)

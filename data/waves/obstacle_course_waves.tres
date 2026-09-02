@@ -1,0 +1,89 @@
+[gd_resource type="Resource" script_class="WaveTable" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://core/data/wave_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://core/data/wave_data.gd" id="2_wave"]
+
+[sub_resource type="Resource" id="Wave_00"]
+script = ExtResource("2_wave")
+minute = 0
+enemy_ids = Array[StringName]([&"weed", &"leaf_pile"])
+spawns_per_second = 2.0
+pattern = 0
+elite_chance = 0.0
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_02"]
+script = ExtResource("2_wave")
+minute = 2
+enemy_ids = Array[StringName]([&"weed", &"leaf_pile", &"mosquito"])
+spawns_per_second = 4.0
+pattern = 1
+elite_chance = 0.0
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_05"]
+script = ExtResource("2_wave")
+minute = 5
+enemy_ids = Array[StringName]([&"mosquito", &"plank", &"recruit"])
+spawns_per_second = 7.5
+pattern = 1
+elite_chance = 0.03
+boss_id = &"battalion_commander"
+
+[sub_resource type="Resource" id="Wave_08"]
+script = ExtResource("2_wave")
+minute = 8
+enemy_ids = Array[StringName]([&"plank", &"night_watch", &"gas_mask"])
+spawns_per_second = 13.0
+pattern = 2
+elite_chance = 0.05
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_10"]
+script = ExtResource("2_wave")
+minute = 10
+enemy_ids = Array[StringName]([&"night_watch", &"gas_mask", &"cs_gas"])
+spawns_per_second = 17.0
+pattern = 1
+elite_chance = 0.07
+boss_id = &"inspector"
+
+[sub_resource type="Resource" id="Wave_13"]
+script = ExtResource("2_wave")
+minute = 13
+enemy_ids = Array[StringName]([&"gas_mask", &"supplies", &"cs_gas", &"drill_instructor"])
+spawns_per_second = 24.0
+pattern = 2
+elite_chance = 0.08
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_15"]
+script = ExtResource("2_wave")
+minute = 15
+enemy_ids = Array[StringName]([&"mosquito", &"night_watch", &"drill_instructor"])
+spawns_per_second = 33.0
+pattern = 1
+elite_chance = 0.1
+boss_id = &"drill_week3"
+
+[sub_resource type="Resource" id="Wave_18"]
+script = ExtResource("2_wave")
+minute = 18
+enemy_ids = Array[StringName]([&"cs_gas", &"drill_instructor", &"gas_mask"])
+spawns_per_second = 38.0
+pattern = 2
+elite_chance = 0.12
+boss_id = &""
+
+[sub_resource type="Resource" id="Wave_19"]
+script = ExtResource("2_wave")
+minute = 19
+enemy_ids = Array[StringName]([&"leaf_pile"])
+spawns_per_second = 7.0
+pattern = 0
+elite_chance = 0.0
+boss_id = &"discharge_delay"
+
+[resource]
+script = ExtResource("1_table")
+waves = Array[Resource]([SubResource("Wave_00"), SubResource("Wave_02"), SubResource("Wave_05"), SubResource("Wave_08"), SubResource("Wave_10"), SubResource("Wave_13"), SubResource("Wave_15"), SubResource("Wave_18"), SubResource("Wave_19")])

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/data/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"bugle"
+display_name = "기상나팔"
+description = "화면 전체를 흔들어 세운다. 아침은 원래 그렇다."
+behavior = 10
+cooldown = 9.0
+damage = 14.0
+reach = 560.0
+half_angle_deg = 1.1
+projectiles = 1
+knockback = 420.0
+alternate_direction = false
+per_level_damage = 5.0
+per_level_cooldown = -0.55
+per_level_reach = 26.0
+per_level_projectiles = 0.0
+max_level = 8
+evolves_into = &"flag_ceremony"
+evolution_passive = &"leave_pass"

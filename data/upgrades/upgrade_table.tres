@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UpgradeTable" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="UpgradeTable" load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://core/data/upgrade_table.gd" id="1_table"]
 [ext_resource type="Resource" path="res://data/upgrades/boots.tres" id="2_boots"]
@@ -6,12 +6,22 @@
 [ext_resource type="Resource" path="res://data/upgrades/rank_insignia.tres" id="4_rank_insignia"]
 [ext_resource type="Resource" path="res://data/upgrades/watch.tres" id="5_watch"]
 [ext_resource type="Resource" path="res://data/upgrades/hardtack.tres" id="6_hardtack"]
-[ext_resource type="Resource" path="res://data/upgrades/w_shovel.tres" id="7_w_shovel"]
-[ext_resource type="Resource" path="res://data/upgrades/w_k2.tres" id="8_w_k2"]
-[ext_resource type="Resource" path="res://data/upgrades/w_canteen.tres" id="9_w_canteen"]
-[ext_resource type="Resource" path="res://data/upgrades/w_brush_cutter.tres" id="10_w_brush_cutter"]
-[ext_resource type="Resource" path="res://data/upgrades/w_smoke.tres" id="11_w_smoke"]
+[ext_resource type="Resource" path="res://data/upgrades/rice_cake.tres" id="7_rice_cake"]
+[ext_resource type="Resource" path="res://data/upgrades/pc_room.tres" id="8_pc_room"]
+[ext_resource type="Resource" path="res://data/upgrades/radio.tres" id="9_radio"]
+[ext_resource type="Resource" path="res://data/upgrades/vest.tres" id="10_vest"]
+[ext_resource type="Resource" path="res://data/upgrades/leave_pass.tres" id="11_leave_pass"]
+[ext_resource type="Resource" path="res://data/upgrades/w_shovel.tres" id="12_w_shovel"]
+[ext_resource type="Resource" path="res://data/upgrades/w_k2.tres" id="13_w_k2"]
+[ext_resource type="Resource" path="res://data/upgrades/w_canteen.tres" id="14_w_canteen"]
+[ext_resource type="Resource" path="res://data/upgrades/w_brush_cutter.tres" id="15_w_brush_cutter"]
+[ext_resource type="Resource" path="res://data/upgrades/w_smoke.tres" id="16_w_smoke"]
+[ext_resource type="Resource" path="res://data/upgrades/w_march_boots.tres" id="17_w_march_boots"]
+[ext_resource type="Resource" path="res://data/upgrades/w_slop_bucket.tres" id="18_w_slop_bucket"]
+[ext_resource type="Resource" path="res://data/upgrades/w_medic.tres" id="19_w_medic"]
+[ext_resource type="Resource" path="res://data/upgrades/w_helmet.tres" id="20_w_helmet"]
+[ext_resource type="Resource" path="res://data/upgrades/w_bugle.tres" id="21_w_bugle"]
 
 [resource]
 script = ExtResource("1_table")
-upgrades = Array[Resource]([ExtResource("2_boots"), ExtResource("3_ammo_belt"), ExtResource("4_rank_insignia"), ExtResource("5_watch"), ExtResource("6_hardtack"), ExtResource("7_w_shovel"), ExtResource("8_w_k2"), ExtResource("9_w_canteen"), ExtResource("10_w_brush_cutter"), ExtResource("11_w_smoke")])
+upgrades = Array[Resource]([ExtResource("2_boots"), ExtResource("3_ammo_belt"), ExtResource("4_rank_insignia"), ExtResource("5_watch"), ExtResource("6_hardtack"), ExtResource("7_rice_cake"), ExtResource("8_pc_room"), ExtResource("9_radio"), ExtResource("10_vest"), ExtResource("11_leave_pass"), ExtResource("12_w_shovel"), ExtResource("13_w_k2"), ExtResource("14_w_canteen"), ExtResource("15_w_brush_cutter"), ExtResource("16_w_smoke"), ExtResource("17_w_march_boots"), ExtResource("18_w_slop_bucket"), ExtResource("19_w_medic"), ExtResource("20_w_helmet"), ExtResource("21_w_bugle")])
