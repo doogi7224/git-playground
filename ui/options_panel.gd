@@ -24,23 +24,27 @@ const VOLUMES: Array = [
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	hide()
+	# 메타 화면과 같은 갱지 톤. 옵션만 검은 대화상자로 남아 있으면 확 튄다.
+	var panel: PanelContainer = $Center/Panel
+	panel.add_theme_stylebox_override(&"panel", MetaUI.paper_box())
 	_build()
 
 
 func _build() -> void:
+	_box.add_child(MetaUI.title("설     정", 40))
+	_box.add_child(MetaUI.rule())
+
 	for entry: Dictionary in TOGGLES:
 		var check := CheckBox.new()
 		check.text = tr(String(entry["label"]))
 		check.button_pressed = bool(Settings.get(entry["key"]))
 		check.add_theme_font_size_override(&"font_size", 24)
+		_ink(check)
 		var key: StringName = entry["key"]
 		check.toggled.connect(func(on: bool) -> void: Settings.set_option(key, on))
 		_box.add_child(check)
 
-	var shake_label := Label.new()
-	shake_label.text = tr("화면 흔들림 강도")
-	shake_label.add_theme_font_size_override(&"font_size", 24)
-	_box.add_child(shake_label)
+	_box.add_child(MetaUI.label("화면 흔들림 강도", 24))
 
 	var slider := HSlider.new()
 	slider.min_value = 0.0
@@ -55,22 +59,35 @@ func _build() -> void:
 	low.text = tr("저사양 프리셋")
 	low.button_pressed = Settings.low_spec
 	low.add_theme_font_size_override(&"font_size", 24)
+	_ink(low)
 	low.toggled.connect(_on_low_spec)
 	_box.add_child(low)
 
-	_box.add_child(_rule())
+	_box.add_child(MetaUI.rule())
 	for entry: Dictionary in VOLUMES:
 		_add_volume(entry["key"], String(entry["label"]))
 
-	_box.add_child(_rule())
+	_box.add_child(MetaUI.rule())
 	_add_language()
 
+	_box.add_child(MetaUI.rule())
+	var close: Button = MetaUI.button("닫기", 26)
+	close.pressed.connect(func() -> void:
+		AudioManager.play_sfx(&"ui_click")
+		_close())
+	_box.add_child(close)
 
-func _rule() -> Control:
-	var line := ColorRect.new()
-	line.color = Color(1.0, 1.0, 1.0, 0.18)
-	line.custom_minimum_size = Vector2(0.0, 2.0)
-	return line
+
+## 갱지 위에서는 글자가 검정이어야 읽힌다. CheckBox 는 기본이 흰 글자다.
+##
+## ★ font_pressed_color 를 인장색으로 두면 안 된다. CheckBox 에서 "pressed" 는
+##   누르는 중이 아니라 **체크된 상태**다. 그래서 켜진 항목이 전부 빨개진다.
+##   진홍은 규칙 6 에서 "위험" 전용색이라 더 나쁘다 -- 설정 항목이 경고처럼 보인다.
+func _ink(c: Control) -> void:
+	c.add_theme_color_override(&"font_color", MetaUI.INK)
+	c.add_theme_color_override(&"font_pressed_color", MetaUI.INK)
+	c.add_theme_color_override(&"font_focus_color", MetaUI.INK)
+	c.add_theme_color_override(&"font_hover_color", MetaUI.STAMP)
 
 
 func _add_volume(key: StringName, label_text: String) -> void:
@@ -78,10 +95,8 @@ func _add_volume(key: StringName, label_text: String) -> void:
 	row.add_theme_constant_override(&"separation", 16)
 	_box.add_child(row)
 
-	var label := Label.new()
-	label.text = tr(label_text)
+	var label: Label = MetaUI.label(label_text, 24)
 	label.custom_minimum_size = Vector2(160.0, 0.0)
-	label.add_theme_font_size_override(&"font_size", 24)
 	row.add_child(label)
 
 	var slider := HSlider.new()
@@ -93,10 +108,8 @@ func _add_volume(key: StringName, label_text: String) -> void:
 	row.add_child(slider)
 
 	# 지금 몇인지 숫자로도 보여 준다. 슬라이더만 있으면 0.05 단위가 안 읽힌다.
-	var value_label := Label.new()
-	value_label.text = "%d%%" % int(round(slider.value * 100.0))
+	var value_label: Label = MetaUI.label("%d%%" % int(round(slider.value * 100.0)), 22)
 	value_label.custom_minimum_size = Vector2(60.0, 0.0)
-	value_label.add_theme_font_size_override(&"font_size", 22)
 	row.add_child(value_label)
 
 	slider.value_changed.connect(func(v: float) -> void:
@@ -111,14 +124,16 @@ func _add_language() -> void:
 	row.add_theme_constant_override(&"separation", 16)
 	_box.add_child(row)
 
-	var label := Label.new()
-	label.text = tr("언어")
+	var label: Label = MetaUI.label("언어", 24)
 	label.custom_minimum_size = Vector2(160.0, 0.0)
-	label.add_theme_font_size_override(&"font_size", 24)
 	row.add_child(label)
 
 	var option := OptionButton.new()
 	option.add_theme_font_size_override(&"font_size", 22)
+	_ink(option)
+	# 기본 회색 배경이 갱지 위에서 튄다.
+	for state: StringName in [&"normal", &"hover", &"pressed", &"focus", &"disabled"]:
+		option.add_theme_stylebox_override(state, MetaUI._button_box(MetaUI.PAPER, MetaUI.INK))
 	for i in Settings.LOCALES.size():
 		var code: String = Settings.LOCALES[i]
 		# 언어 이름은 그 언어로 적는다. 번역하지 않는다 --
@@ -149,7 +164,29 @@ func _rebuild() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"pause_game"):
-		visible = not visible
-		get_tree().paused = visible
-		get_viewport().set_input_as_handled()
+	if not event.is_action_pressed(&"pause_game"):
+		return
+	# 메타 화면 안에서는 부모(MetaRoot)가 Esc 를 처리한다. 여기서 또 잡으면
+	# 트리를 멈춘 채로 화면만 사라져 게임이 얼어붙는다.
+	# 타입 대신 메서드 유무로 본다 -- 결합을 덜 만든다.
+	var parent: Node = get_parent()
+	if parent != null and parent.has_method("show_screen_for_options"):
+		return
+	if visible:
+		_close()
+	else:
+		show()
+		get_tree().paused = true
+	get_viewport().set_input_as_handled()
+
+
+func _close() -> void:
+	hide()
+	get_tree().paused = false
+
+
+## 이 화면은 트리를 멈춘다. 다른 경로로 사라져도 얼지 않게 떠날 때 푼다.
+func _exit_tree() -> void:
+	var tree: SceneTree = get_tree()
+	if tree != null:
+		tree.paused = false

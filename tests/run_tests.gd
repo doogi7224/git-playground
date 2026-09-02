@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 524
+const MIN_CHECKS: int = 528
 
 var _failures: int = 0
 var _checks: int = 0
@@ -1496,6 +1496,32 @@ func test_meta_screens() -> void:
 	_check(SaveSystem.last_map() == &"parade_ground", "고른 맵이 저장된다")
 
 	# 화면 전환 후에도 다시 메인으로 돌아온다
+	# 옵션 화면. 여기 파스 에러가 나도 다른 테스트는 멀쩡히 돌아서
+	# "0개 실패" 가 뜬 적이 있다 -- 화면을 실제로 열어 봐야 잡힌다.
+	root._on_open_requested(&"options")
+	await get_tree().process_frame
+	var options: Control = root.get_node("OptionsPanel")
+	_check(options.visible, "설정으로 넘어간다")
+	var opt_box: VBoxContainer = options.get_node("Center/Panel/Margin/VBox")
+	_check(opt_box.get_child_count() > 10,
+			"설정 항목이 그려진다 (토글 6 + 흔들림 + 저사양 + 볼륨 3 + 언어, got %d)"
+			% opt_box.get_child_count())
+
+	# 볼륨 슬라이더가 실제로 Settings 를 움직이는가
+	var before_master: float = Settings.master_volume
+	var sliders: Array[HSlider] = []
+	for child: Node in opt_box.get_children():
+		if child is HBoxContainer:
+			for sub: Node in child.get_children():
+				if sub is HSlider:
+					sliders.append(sub as HSlider)
+	_check(sliders.size() == 3, "볼륨 슬라이더 3종 (got %d)" % sliders.size())
+	if sliders.size() == 3:
+		sliders[0].value = 0.4
+		_check(is_equal_approx(Settings.master_volume, 0.4),
+				"슬라이더가 설정을 바꾼다 (got %.2f)" % Settings.master_volume)
+	Settings.master_volume = before_master
+
 	root._go_main()
 	await get_tree().process_frame
 	_check(menu.visible and not shop.visible, "메인으로 돌아온다")

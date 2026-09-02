@@ -25,6 +25,13 @@ func _ready() -> void:
 	_go_main()
 
 
+## 옵션 패널이 "내가 메타 화면 안에 있는가" 를 이걸로 확인한다.
+## 안에 있으면 Esc 를 여기서만 처리한다 -- 둘 다 잡으면 트리가 멈춘 채로
+## 화면만 사라져 게임이 얼어붙는다.
+func show_screen_for_options() -> void:
+	_show(_options)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"pause_game") and not _main_menu.visible:
 		_go_main()
