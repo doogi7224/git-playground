@@ -15,6 +15,8 @@ var glow: bool = true
 var vignette: bool = true
 var chromatic_aberration: bool = true
 var lighting: bool = true
+## 바닥 얼룩. 끄면 단색 바닥 + 격자만 남는다 (MultiMesh 하나라 비용은 크지 않다).
+var ground_decals: bool = true
 var particle_density: float = 1.0
 ## 저사양 프리셋을 켜면 위 값들이 한꺼번에 내려간다.
 var low_spec: bool = false
@@ -46,7 +48,7 @@ const LOCALE_NAMES: Dictionary = {"ko": "한국어", "en": "English"}
 
 const KEYS: Array[StringName] = [
 	&"screen_shake", &"hit_stop", &"damage_numbers", &"glow", &"vignette",
-	&"chromatic_aberration", &"lighting", &"particle_density", &"low_spec",
+	&"chromatic_aberration", &"lighting", &"ground_decals", &"particle_density", &"low_spec",
 	&"master_volume", &"bgm_volume", &"sfx_volume", &"locale", &"max_enemies",
 ]
 
@@ -98,6 +100,7 @@ func apply_low_spec(enabled: bool) -> void:
 		damage_numbers = false
 		particle_density = 0.35
 		lighting = false
+		ground_decals = false
 		max_enemies = 800
 	else:
 		glow = true
@@ -105,6 +108,7 @@ func apply_low_spec(enabled: bool) -> void:
 		damage_numbers = true
 		particle_density = 1.0
 		lighting = true
+		ground_decals = true
 		max_enemies = 1500
 	notify_changed()
 

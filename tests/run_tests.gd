@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 584
+const MIN_CHECKS: int = 595
 
 var _failures: int = 0
 var _checks: int = 0
@@ -75,6 +75,7 @@ func _run_all() -> void:
 	test_joystick()
 	await test_results_overlap()
 	await test_spawn_ring()
+	await test_ground()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1638,6 +1639,52 @@ func test_arena_uses_selection() -> void:
 	arena.queue_free()
 	await get_tree().process_frame
 
+	SaveSystem.data = SaveSystem._default_data()
+	GameState.phase = GameState.Phase.MENU
+
+
+## 바닥. MapData.ground_color 가 **격자 선 색**으로만 쓰이던 시절에는 맵을 바꿔도
+## 바닥이 안 바뀌었다 — 혹한기와 연병장 바닥이 똑같았다. 배선과 결정성을 검사한다.
+func test_ground() -> void:
+	print("[바닥 — 맵 색이 실제로 칠해지는가]")
+
+	# 맵마다 바닥이 달라야 맵을 바꾼 티가 난다
+	var seen: Array[Color] = []
+	for id: String in ["parade_ground", "obstacle_course", "winter_field"]:
+		var m: MapData = load("res://data/maps/%s.tres" % id) as MapData
+		if m == null:
+			continue
+		for other: Color in seen:
+			_check(m.ground_color != other, "%s 바닥색이 다른 맵과 겹치지 않는다" % id)
+		seen.append(m.ground_color)
+		# 기획서 3.2: 배경은 저채도, 그리고 플레이어가 화면에서 가장 밝아야 한다.
+		# 밝은 바닥은 글로우 임계(0.85)에 걸려 화면이 하얗게 번지기도 한다.
+		var lum: float = m.ground_color.get_luminance()
+		_check(lum < 0.45, "%s 바닥이 충분히 어둡다 (휘도 %.2f)" % [id, lum])
+
+	SaveSystem.remember_selection(&"kim_private", &"winter_field")
+	var arena: Node = (load("res://maps/arena.tscn") as PackedScene).instantiate()
+	add_child(arena)
+	await get_tree().process_frame
+
+	var ground: GroundGrid = arena.get_node("Ground") as GroundGrid
+	_check(ground != null, "Ground 가 GroundGrid 다")
+	if ground != null:
+		_check(ground.ground_color.is_equal_approx(arena.map.ground_color),
+				"아레나가 맵 바닥색을 실제로 넘긴다")
+
+		# 얼룩은 좌표에서 뽑아야 한다. randf() 를 쓰면 지나갈 때마다 땅이 새로 생긴다.
+		var a: float = ground._hash(7, -3, 2)
+		var b: float = ground._hash(7, -3, 2)
+		_check(is_equal_approx(a, b), "같은 칸은 늘 같은 얼룩이 나온다")
+		_check(not is_equal_approx(ground._hash(7, -3, 2), ground._hash(8, -3, 2)),
+				"옆 칸은 다른 얼룩이 나온다")
+
+		var decals: MultiMeshInstance2D = ground.get_node_or_null("GroundDecals") as MultiMeshInstance2D
+		_check(decals != null and decals.multimesh != null, "얼룩이 MultiMesh 하나다 (규칙 1)")
+
+	arena.queue_free()
+	await get_tree().process_frame
 	SaveSystem.data = SaveSystem._default_data()
 	GameState.phase = GameState.Phase.MENU
 

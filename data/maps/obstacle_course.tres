@@ -31,4 +31,4 @@ bosses = Array[Resource]([ExtResource("13_bbattalion_commander"), ExtResource("1
 wave_table = ExtResource("20_waves")
 sprite_atlas = ExtResource("21_atlas")
 ambient_tint = Color(0.82, 0.86, 0.80, 1)
-ground_color = Color(0.27, 0.30, 0.22, 1)
+ground_color = Color(0.227, 0.251, 0.188, 1)

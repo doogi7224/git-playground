@@ -50,7 +50,8 @@ func _ready() -> void:
 	tutorial.player = player
 	debug_overlay.enemies = enemies
 	debug_overlay.pickups = pickups
-	ground.line_color = map.ground_color
+	ground.ground_color = map.ground_color
+	ground.decals_enabled = Settings.ground_decals
 	# 기획서 3.3: CanvasModulate 로 맵별 전역 톤. 야간 위병소는 짙은 남색이 된다.
 	canvas_modulate.color = map.ambient_tint
 
