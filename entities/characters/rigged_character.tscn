@@ -300,8 +300,8 @@ position = Vector2(0.0, 18.0)
 visible = false
 
 [node name="Head" type="Bone2D" parent="Skeleton2D/Hip/Torso"]
-position = Vector2(0, -30)
-rest = Transform2D(1, 0, 0, 1, 0, -30)
+position = Vector2(0, -24)
+rest = Transform2D(1, 0, 0, 1, 0, -24)
 auto_calculate_length_and_angle = false
 length = 30
 bone_angle = 90.0

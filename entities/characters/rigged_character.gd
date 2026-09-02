@@ -85,6 +85,33 @@ func set_part(part: StringName, texture: Texture2D) -> void:
 		if slot_height > 0.0:
 			sprite.scale = Vector2.ONE * (slot_height / tex_height)
 
+	# 높이만 맞추면 **폭은 그림 비율대로** 정해진다. 화이트박스 몸통은 62 넓이인데
+	# 실제 상의 그림은 48 밖에 안 돼서, 어깨(x = +-27)에 달린 팔이 옷 밖으로
+	# 튀어나와 있었다. 몸통이 바뀔 때마다 어깨를 실제 그림 폭에 다시 맞춘다.
+	if part == &"Torso":
+		_align_shoulders(sprite)
+
+
+## 어깨 관절을 상의 그림의 실제 가장자리 안쪽으로 옮긴다.
+## 팔뿌리가 옷에 묻혀야 한 사람으로 보인다 -- 이 값만큼 파고든다.
+const SHOULDER_INSET: float = 6.0
+
+
+func _align_shoulders(torso_sprite: Sprite2D) -> void:
+	if torso_sprite.texture == null:
+		return
+	var half_width: float = float(torso_sprite.texture.get_width()) * torso_sprite.scale.x * 0.5
+	var x: float = maxf(4.0, half_width - SHOULDER_INSET)
+	for side: Array in [[&"ArmL", -1.0], [&"ArmR", 1.0]]:
+		var bone: Bone2D = find_child(String(side[0]), true, false) as Bone2D
+		if bone == null:
+			continue
+		bone.position.x = x * float(side[1])
+		# rest 를 같이 안 옮기면 Skeleton2D 의 바인드 포즈와 어긋나 팔이 뒤틀린다.
+		var rest: Transform2D = bone.rest
+		rest.origin.x = bone.position.x
+		bone.rest = rest
+
 
 func _slot_height(node: Polygon2D) -> float:
 	if node.polygon.is_empty():

@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 581
+const MIN_CHECKS: int = 584
 
 var _failures: int = 0
 var _checks: int = 0
@@ -878,6 +878,31 @@ func test_rigging_template() -> void:
 	# 텍스처를 빼면 도형이 다시 나온다 — 화이트박스 폴백이 살아 있어야 한다
 	rig.set_part(&"Weapon", null)
 	_check((rig.part_node(&"Weapon") as Polygon2D).visible, "그림을 빼면 도형이 돌아온다")
+
+	# ★ 실제 아트로 이음새를 검사한다. 슬롯 높이만 맞추면 폭과 붙는 위치는
+	#   그림 비율이 정하므로, 도형만 보고는 "목이 몸에서 떠 있다" 를 못 잡는다.
+	#   실제로 못 잡았고, 3배 확대 렌더에서 4리그단위 틈을 재고서야 알았다.
+	var kim: CharacterData = load("res://data/characters/kim_private.tres") as CharacterData
+	if kim != null:
+		for part: StringName in kim.parts:
+			rig.set_part(part, kim.parts[part])
+
+		var head: Sprite2D = rig.part_sprite(&"Head")
+		var torso: Sprite2D = rig.part_sprite(&"Torso")
+		if head != null and torso != null and head.texture != null and torso.texture != null:
+			# 머리와 몸통을 같은 기준(Skeleton2D)으로 옮겨 놓고 아래위를 잰다
+			var head_bottom: float = (head.get_global_transform() * Vector2(0.0, float(head.texture.get_height()) * 0.5)).y
+			var torso_top: float = (torso.get_global_transform() * Vector2(0.0, -float(torso.texture.get_height()) * 0.5)).y
+			_check(head_bottom >= torso_top,
+					"목이 상의에 닿는다 (머리 아래 %.1f >= 몸통 위 %.1f)" % [head_bottom, torso_top])
+
+			# 어깨는 상의 그림 안쪽에 있어야 한다 -- 밖으로 나가면 팔이 떠 보인다
+			var torso_half: float = float(torso.texture.get_width()) * torso.scale.x * 0.5
+			for side: StringName in [&"ArmL", &"ArmR"]:
+				var bone: Bone2D = rig.find_child(String(side), true, false) as Bone2D
+				_check(bone != null and absf(bone.position.x) < torso_half,
+						"%s 어깨가 상의 폭 안에 있다 (%.1f < %.1f)"
+						% [side, absf(bone.position.x) if bone != null else -1.0, torso_half])
 
 	rig.queue_free()
 	await get_tree().process_frame

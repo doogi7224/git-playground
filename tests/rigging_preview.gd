@@ -3,6 +3,10 @@ extends Node
 ## 여러 시점의 스크린샷을 찍는다 — 정지 화면 한 장으로는 "움직이는지"를 못 본다.
 ##
 ##   tools/rigging_preview.sh --out=/tmp/rig --shots=4
+##   tools/rigging_preview.sh --out=/tmp/rig --character=kim_private --zoom=4
+##
+## --character 를 주면 실제 아트를 끼운 상태로 본다. 도형만 보고 "맞겠지" 하면
+## 목이 몸에서 떠 있는 것 같은 문제를 못 잡는다 -- 실제로 못 잡았다.
 
 const TEMPLATE: String = "res://entities/characters/rigged_character.tscn"
 const LABELS: Array[String] = ["걷기 walk", "공격 attack", "피격 hit", "사망 die"]
@@ -11,6 +15,10 @@ const ANIMS: Array[StringName] = [&"walk", &"attack", &"hit", &"die"]
 var _out: String = "user://rig"
 var _shots: int = 4
 var _interval: float = 0.16
+## 실제 아트를 끼울 캐릭터 id. 비우면 화이트박스 도형 그대로 본다.
+var _character: String = ""
+## 인게임 크기(96~128px)로는 이음새가 안 보인다. 크게 키워서 본다.
+var _zoom: float = 1.0
 var _rigs: Array[RiggedCharacter] = []
 
 
@@ -22,6 +30,10 @@ func _ready() -> void:
 			_shots = int(arg.substr(8))
 		elif arg.begins_with("--interval="):
 			_interval = float(arg.substr(11))
+		elif arg.begins_with("--character="):
+			_character = arg.substr(12)
+		elif arg.begins_with("--zoom="):
+			_zoom = maxf(0.2, float(arg.substr(7)))
 	_run.call_deferred()
 
 
@@ -33,17 +45,33 @@ func _run() -> void:
 	var background := ColorRect.new()
 	background.color = Color("#2A3222")
 	background.size = Vector2(1920, 1080)
+	# ★ 다리(z -2)와 왼팔(z -1)은 몸통보다 뒤에 있다. 배경을 기본 z(0)로 두면
+	#   **배경이 그것들을 덮어 버린다** -- 실제로 "다리가 사라졌다" 고 한참 헤맸다.
+	#   인게임 바닥은 z -100 이라 이 문제가 없다. 미리보기만 맞춰 준다.
+	background.z_index = -100
 	root.add_child(background)
 
+	var character: CharacterData = null
+	if _character != "":
+		var path: String = "res://data/characters/%s.tres" % _character
+		character = load(path) as CharacterData if ResourceLoader.exists(path) else null
+		if character == null:
+			push_warning("그런 캐릭터가 없다: %s" % _character)
+
+	var spacing: float = 460.0 * _zoom
 	for i in ANIMS.size():
 		var rig: RiggedCharacter = scene.instantiate()
-		rig.position = Vector2(280.0 + float(i) * 460.0, 640.0)
+		rig.scale = Vector2.ONE * _zoom
+		rig.position = Vector2(160.0 + spacing * 0.5 + float(i) * spacing, 640.0)
 		root.add_child(rig)
 		_rigs.append(rig)
+		if character != null:
+			for part: StringName in character.parts:
+				rig.set_part(part, character.parts[part])
 
 		var label := Label.new()
 		label.text = LABELS[i]
-		label.position = rig.position + Vector2(-90, 130)
+		label.position = rig.position + Vector2(-90, 130.0 * _zoom)
 		label.add_theme_font_size_override(&"font_size", 30)
 		root.add_child(label)
 
