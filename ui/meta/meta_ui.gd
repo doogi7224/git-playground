@@ -36,9 +36,19 @@ static func panel(dark: bool = false) -> PanelContainer:
 	return p
 
 
+## 번역. tr() 은 Node 메서드라 static 함수와 Resource 에서는 못 쓴다 --
+## MetaUI 는 static 이고 MetaCondition/PxUpgradeData 는 Resource 다.
+## TranslationServer.translate() 가 tr() 이 실제로 부르는 것이고 어디서나 쓸 수 있다.
+static func t(text: String) -> String:
+	return TranslationServer.translate(text)
+
+
+## 여기서 한 번 번역하면 메타 화면 전체가 덮인다. 화면마다 tr() 을 흩뿌리면
+## 새 항목을 넣을 때 빠뜨리기 쉽다.
+## 번역 키는 한국어 원문이라, 표에 없는 문자열은 그대로 한국어로 나온다.
 static func label(text: String, size: int = 24, color: Color = INK) -> Label:
 	var l := Label.new()
-	l.text = text
+	l.text = t(text)
 	l.add_theme_font_size_override(&"font_size", size)
 	l.add_theme_color_override(&"font_color", color)
 	return l
@@ -73,7 +83,7 @@ static func _button_box(bg: Color, border: Color, width: int = 2) -> StyleBoxFla
 
 static func button(text: String, size: int = 28) -> Button:
 	var b := Button.new()
-	b.text = text
+	b.text = t(text)
 	b.add_theme_font_size_override(&"font_size", size)
 	b.add_theme_color_override(&"font_color", INK)
 	b.add_theme_color_override(&"font_hover_color", STAMP)
@@ -119,4 +129,4 @@ static func grouped(amount: int) -> String:
 
 ## 월급 표기. 급여 명세서처럼 보이게 세 자리마다 끊고 "원" 을 붙인다.
 static func won(amount: int) -> String:
-	return grouped(amount) + "원"
+	return grouped(amount) + t("원")

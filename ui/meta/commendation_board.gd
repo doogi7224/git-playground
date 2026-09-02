@@ -72,7 +72,7 @@ func _refresh() -> void:
 			owned += 1
 		_list.add_child(_row(c, has, stats, dark))
 		dark = not dark
-	_summary.text = "%d장 중 %d장 발급" % [all.size(), owned]
+	_summary.text = tr("%d장 중 %d장 발급") % [all.size(), owned]
 
 
 func _row(c: CommendationData, has: bool, stats: Dictionary, dark: bool) -> Control:
@@ -89,7 +89,7 @@ func _row(c: CommendationData, has: bool, stats: Dictionary, dark: bool) -> Cont
 	if has:
 		text.add_child(MetaUI.label(c.description, 18, MetaUI.INK_FADED))
 	elif c.condition != null:
-		text.add_child(MetaUI.label("조건 — %s (%d%%)" % [
+		text.add_child(MetaUI.label(tr("조건 — %s (%d%%)") % [
 				c.condition.describe(),
 				int(round(c.condition.ratio(stats) * 100.0))], 18, MetaUI.INK_FADED))
 
@@ -106,5 +106,5 @@ func _row(c: CommendationData, has: bool, stats: Dictionary, dark: bool) -> Cont
 		bar.custom_minimum_size = Vector2(0.0, 22.0)
 		right.add_child(bar)
 	if c.salary_reward > 0:
-		right.add_child(MetaUI.label("보상 %s" % MetaUI.won(c.salary_reward), 18, MetaUI.INK_FADED))
+		right.add_child(MetaUI.label(tr("보상 %s") % MetaUI.won(c.salary_reward), 18, MetaUI.INK_FADED))
 	return row

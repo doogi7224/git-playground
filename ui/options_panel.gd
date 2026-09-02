@@ -23,7 +23,7 @@ func _ready() -> void:
 func _build() -> void:
 	for entry: Dictionary in TOGGLES:
 		var check := CheckBox.new()
-		check.text = String(entry["label"])
+		check.text = tr(String(entry["label"]))
 		check.button_pressed = bool(Settings.get(entry["key"]))
 		check.add_theme_font_size_override(&"font_size", 24)
 		var key: StringName = entry["key"]
@@ -31,7 +31,7 @@ func _build() -> void:
 		_box.add_child(check)
 
 	var shake_label := Label.new()
-	shake_label.text = "화면 흔들림 강도"
+	shake_label.text = tr("화면 흔들림 강도")
 	shake_label.add_theme_font_size_override(&"font_size", 24)
 	_box.add_child(shake_label)
 
@@ -45,7 +45,7 @@ func _build() -> void:
 	_box.add_child(slider)
 
 	var low := CheckBox.new()
-	low.text = "저사양 프리셋"
+	low.text = tr("저사양 프리셋")
 	low.button_pressed = Settings.low_spec
 	low.add_theme_font_size_override(&"font_size", 24)
 	low.toggled.connect(_on_low_spec)

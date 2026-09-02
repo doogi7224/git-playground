@@ -32,7 +32,7 @@ func _build_meta_rows() -> void:
 	box.move_child(_rewards, again.get_index())
 
 	_to_menu = Button.new()
-	_to_menu.text = "부대 복귀"
+	_to_menu.text = tr("부대 복귀")
 	_to_menu.custom_minimum_size = Vector2(280.0, 64.0)
 	_to_menu.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_to_menu.add_theme_font_size_override(&"font_size", 28)
@@ -42,11 +42,11 @@ func _build_meta_rows() -> void:
 
 func _on_run_ended(victory: bool, stats: Dictionary) -> void:
 	if victory:
-		title.text = "전 역 증"
-		body.text = "귀하는 위 기간 성실히 복무하였기에\n이 증서를 수여함.\n\n처치 %d" % int(stats.get("kills", 0))
+		title.text = tr("전 역 증")
+		body.text = tr("귀하는 위 기간 성실히 복무하였기에\n이 증서를 수여함.\n\n처치 %d") % int(stats.get("kills", 0))
 	else:
-		title.text = "전 역 연 기"
-		body.text = "D-%d 에서 쓰러졌다.\n\n처치 %d" % [GameState.days_left(), int(stats.get("kills", 0))]
+		title.text = tr("전 역 연 기")
+		body.text = tr("D-%d 에서 쓰러졌다.\n\n처치 %d") % [GameState.days_left(), int(stats.get("kills", 0))]
 	_rewards.text = _reward_text(stats)
 	show()
 	get_tree().paused = true
@@ -56,19 +56,19 @@ func _on_run_ended(victory: bool, stats: Dictionary) -> void:
 ## 이번 판에 번 월급과, 이번 판에 새로 열린 것들.
 func _reward_text(stats: Dictionary) -> String:
 	var meta: Dictionary = stats.get("meta", {})
-	var lines: Array[String] = ["월급  %s" % MetaUI.won(int(meta.get("salary", 0)))]
+	var lines: Array[String] = [tr("월급  %s") % MetaUI.won(int(meta.get("salary", 0)))]
 
 	var awarded: Array = meta.get("commendations", [])
 	for id: Variant in awarded:
 		var c: CommendationData = SaveSystem.commendations_table.find(StringName(id))
 		if c != null:
-			lines.append("표창장 발급 — %s" % c.display_name)
+			lines.append(tr("표창장 발급 — %s") % tr(c.display_name))
 
 	var opened: Array = meta.get("unlocks", [])
 	for u: Variant in opened:
 		var unlock := u as UnlockData
 		if unlock != null:
-			lines.append("해금 — %s" % unlock.display_name)
+			lines.append(tr("해금 — %s") % tr(unlock.display_name))
 	return "\n".join(lines)
 
 

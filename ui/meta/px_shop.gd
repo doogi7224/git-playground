@@ -57,7 +57,7 @@ func _build() -> void:
 
 
 func _refresh() -> void:
-	_salary_label.text = "보유 월급  %s" % MetaUI.won(SaveSystem.salary())
+	_salary_label.text = tr("보유 월급  %s") % MetaUI.won(SaveSystem.salary())
 	for child: Node in _list.get_children():
 		_list.remove_child(child)
 		child.queue_free()
@@ -90,7 +90,7 @@ func _row(item: PxUpgradeData, dark: bool) -> Control:
 	status.custom_minimum_size = Vector2(220.0, 0.0)
 	h.add_child(status)
 	status.add_child(MetaUI.label(_pips(level, item.max_level), 22))
-	status.add_child(MetaUI.label("현재 %s" % item.describe_level(level), 18, MetaUI.INK_FADED))
+	status.add_child(MetaUI.label(tr("현재 %s") % item.describe_level(level), 18, MetaUI.INK_FADED))
 
 	var buy: Button = MetaUI.button("완료" if maxed else MetaUI.won(cost), 24)
 	buy.custom_minimum_size = Vector2(200.0, 52.0)

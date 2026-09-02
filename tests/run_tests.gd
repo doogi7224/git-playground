@@ -7,11 +7,16 @@ extends Node
 ## --script 가 아니라 씬으로 도는 이유: --script 로 SceneTree를 갈아끼우면
 ## 오토로드(EventBus/GameState)가 등록되지 않아 게임 코드가 컴파일조차 안 된다.
 
-## ★ 검사 수 하한.
+## ★ 검사 수 하한. 실제 검사 수에 바짝 붙여 둔다.
+##
 ## 스크립트 하나가 컴파일에 실패하면 그걸 쓰는 테스트 함수가 런타임 에러로 중간에 끊긴다.
-## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 40개쯤 안 돌았다. 실제로 겪었다.
+## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 수십 개 안 돌았다.
+##
+## 여유를 크게 두면 이 하한이 아무것도 못 잡는다. 실제로 겪었다 --
+## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
+## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 485
+const MIN_CHECKS: int = 514
 
 var _failures: int = 0
 var _checks: int = 0
@@ -64,6 +69,7 @@ func _run_all() -> void:
 	await test_arena_uses_selection()
 	test_level_up_screen()
 	await test_results_screen_unpauses()
+	test_localization()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1607,3 +1613,57 @@ func test_results_screen_unpauses() -> void:
 	screen.get_parent().remove_child(screen)
 	screen.free()
 	_check(not get_tree().paused, "화면이 사라지면 일시정지가 풀린다")
+
+
+## 한/영 로컬라이즈.
+##
+## 번역 키는 한국어 원문이다. 그래서 표에 없는 문자열도 한국어로는 멀쩡히 나오고,
+## 영어로 바꿨을 때만 조용히 한국어가 새어 나온다 -- 눈으로는 잘 안 잡힌다.
+## 여기서 데이터에 있는 표시 문자열이 전부 영어를 갖고 있는지 기계로 확인한다.
+func test_localization() -> void:
+	print("[로컬라이즈 — 한/영]")
+	var before: String = TranslationServer.get_locale()
+
+	_check(Settings.LOCALES.has("ko") and Settings.LOCALES.has("en"), "언어 두 종이 등록돼 있다")
+	_check(ProjectSettings.get_setting("internationalization/locale/translations") != null,
+			"project.godot 에 번역 파일이 등록돼 있다")
+
+	TranslationServer.set_locale("en")
+	_check(tr("전역까지 D-100") == "D-100 to Discharge",
+			"영어로 바뀐다 (got %s)" % tr("전역까지 D-100"))
+	_check(tr("돌아가기") == "Back", "버튼도 번역된다")
+
+	# 데이터의 표시 문자열이 전부 영어를 갖고 있는가.
+	# 새 무기/적/명령서를 넣고 번역을 안 하면 여기서 걸린다.
+	var untranslated: Array[String] = []
+	for dir_name: String in ["weapons", "enemies", "upgrades", "characters", "maps",
+			"px", "commendations", "unlocks", "bosses"]:
+		for path: String in _all_tres("res://data/%s" % dir_name):
+			var res: Resource = load(path)
+			if res == null:
+				continue
+			for prop: StringName in [&"display_name", &"title", &"description"]:
+				var value: Variant = res.get(prop)
+				if typeof(value) != TYPE_STRING or String(value).is_empty():
+					continue
+				var text: String = String(value)
+				if tr(text) == text and _has_hangul(text):
+					untranslated.append("%s.%s = %s" % [path.get_file(), prop, text])
+	_check(untranslated.is_empty(),
+			"data/ 의 표시 문자열이 전부 번역돼 있다 (빠진 것 %d개: %s)"
+			% [untranslated.size(), untranslated.slice(0, 5)])
+
+	TranslationServer.set_locale("ko")
+	_check(tr("전역까지 D-100") == "전역까지 D-100", "한국어로 되돌아온다")
+	# 표에 없는 문자열은 그대로 나와야 한다 (키가 원문이라 폴백이 자연스럽다)
+	_check(tr("표에 없는 아무 문장") == "표에 없는 아무 문장", "번역이 없으면 원문 그대로 나온다")
+
+	TranslationServer.set_locale(before)
+
+
+func _has_hangul(text: String) -> bool:
+	for i in text.length():
+		var c: int = text.unicode_at(i)
+		if c >= 0xAC00 and c <= 0xD7A3:
+			return true
+	return false

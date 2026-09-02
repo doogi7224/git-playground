@@ -38,7 +38,7 @@ func _process(_delta: float) -> void:
 
 func _on_run_started(_character_id: StringName) -> void:
 	_kills = 0
-	kill_label.text = "처치 0"
+	kill_label.text = tr("처치 0")
 	hp_bar.value = 1.0
 	xp_bar.value = 0.0
 	day_label.text = "D-100"
@@ -87,9 +87,9 @@ func _on_boss_died(_boss_id: StringName) -> void:
 
 func _on_weapon_evolved(_from_id: StringName, to_id: StringName) -> void:
 	# M2에서 제대로 된 연출로 바뀐다. 지금은 처치 카운터 옆에 잠깐 띄운다.
-	kill_label.text = "진화! %s" % to_id
+	kill_label.text = tr("진화! %s") % tr(String(to_id))
 
 
 func _on_enemy_died(_pos: Vector2, _xp: float, _enemy_type: StringName) -> void:
 	_kills += 1
-	kill_label.text = "처치 %d" % _kills
+	kill_label.text = tr("처치 %d") % _kills

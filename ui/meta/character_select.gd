@@ -112,7 +112,7 @@ func _on_start() -> void:
 
 
 func _refresh() -> void:
-	_salary_label.text = "보유 월급  %s" % MetaUI.won(SaveSystem.salary())
+	_salary_label.text = tr("보유 월급  %s") % MetaUI.won(SaveSystem.salary())
 	for list: VBoxContainer in [_char_list, _map_list]:
 		for child: Node in list.get_children():
 			list.remove_child(child)
@@ -144,11 +144,11 @@ func _row(u: UnlockData, stats: Dictionary, dark: bool) -> Control:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(text)
 	var name_color: Color = MetaUI.INK if unlocked else MetaUI.INK_FADED
-	text.add_child(MetaUI.label(("▶ " if chosen else "") + u.display_name, 24, name_color))
+	text.add_child(MetaUI.label(("▶ " if chosen else "") + tr(u.display_name), 24, name_color))
 	if unlocked:
 		text.add_child(MetaUI.label(u.description, 17, MetaUI.INK_FADED))
 	else:
-		text.add_child(MetaUI.label("조건 — %s" % u.condition.describe(), 17, MetaUI.INK_FADED))
+		text.add_child(MetaUI.label(tr("조건 — %s") % u.condition.describe(), 17, MetaUI.INK_FADED))
 
 	if unlocked:
 		if chosen:
@@ -177,7 +177,7 @@ func _row(u: UnlockData, stats: Dictionary, dark: bool) -> Control:
 		right.add_child(buy)
 		if not u.condition_met(stats):
 			var note: Label = MetaUI.label(
-					"조건 %d%%" % int(round(u.condition.ratio(stats) * 100.0)),
+					tr("조건 %d%%") % int(round(u.condition.ratio(stats) * 100.0)),
 					16, MetaUI.INK_FADED)
 			note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			right.add_child(note)

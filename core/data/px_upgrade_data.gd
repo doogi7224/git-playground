@@ -47,7 +47,7 @@ func value_at(level: int) -> float:
 ## "이동속도 +12%" / "체력 +24" 처럼 사람이 읽는 문장.
 func describe_level(level: int) -> String:
 	if level <= 0:
-		return "미구매"
+		return MetaUI.t("미구매")
 	if apply == Apply.MULT:
 		return "%+.0f%%" % ((value_at(level) - 1.0) * 100.0)
 	return "%+.4g" % value_at(level)

@@ -56,7 +56,7 @@ func _add_button(text: String, screen: StringName) -> void:
 
 func _refresh() -> void:
 	var stats: Dictionary = SaveSystem.stats()
-	_salary_label.text = "보유 월급  %s\n복무 %d회 · 전역 %d회 · 표창 %d장" % [
+	_salary_label.text = tr("보유 월급  %s\n복무 %d회 · 전역 %d회 · 표창 %d장") % [
 		MetaUI.won(SaveSystem.salary()),
 		int(stats.get("total_runs", 0)),
 		int(stats.get("runs_won", 0)),

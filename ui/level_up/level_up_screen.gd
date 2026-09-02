@@ -32,7 +32,7 @@ func _show_next() -> void:
 		return
 	_clear_cards()
 
-	title.text = "병력 운용 명령서 — 진급 %d회 대기" % _pending if _pending > 1 else "병력 운용 명령서"
+	title.text = tr("병력 운용 명령서 — 진급 %d회 대기") % _pending if _pending > 1 else tr("병력 운용 명령서")
 
 	var levels: Dictionary = player.upgrade_levels if player != null else {}
 	var offered: Array[UpgradeData] = upgrade_table.roll(OFFER_COUNT, levels) if upgrade_table != null else []
@@ -46,7 +46,7 @@ func _show_next() -> void:
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(260, 300)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.text = "%s\n\n%s" % [entry.title, entry.description]
+		button.text = "%s\n\n%s" % [tr(entry.title), tr(entry.description)]
 		button.add_theme_font_size_override(&"font_size", 22)
 		button.pressed.connect(_on_card_picked.bind(entry))
 		cards.add_child(button)

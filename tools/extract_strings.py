@@ -16,6 +16,9 @@ CSV_PATH = ROOT / "locale" / "strings.csv"
 
 # 화면에 나오는 것만 모은다. 경고/어서션/디버그는 번역하지 않는다.
 GD_DIRS = ["ui"]
+# ui 밖이지만 화면에 나오는 문자열을 만드는 파일들.
+# MetaCondition.describe() 와 PxUpgradeData.describe_level() 은 해금/상점 화면에 직접 찍힌다.
+GD_FILES = ["core/data/meta_condition.gd", "core/data/px_upgrade_data.gd"]
 TRES_KEYS = ("display_name", "title", "description")
 
 HANGUL = re.compile(r"[가-힣]")
@@ -25,18 +28,29 @@ GD_STRING = re.compile(r'"([^"\\]*(?:\\.[^"\\]*)*)"')
 SKIP_PREFIX = ("res://", "user://")
 
 
+def unescape(s: str) -> str:
+    r"""소스의 \n 을 실제 줄바꿈으로 바꾼다.
+
+    GDScript 의 "a\nb" 는 실행 시 진짜 줄바꿈이 든 문자열이 되고, tr() 에는 그게
+    넘어간다. 소스에 적힌 두 글자(\ n)를 그대로 키로 쓰면 절대 안 맞는다.
+    """
+    return (s.replace("\\n", "\n").replace("\\t", "\t")
+             .replace('\\"', '"').replace("\\\\", "\\"))
+
+
 def gd_strings() -> set[str]:
     out: set[str] = set()
-    for d in GD_DIRS:
-        for path in sorted((ROOT / d).rglob("*.gd")):
-            for line in path.read_text(encoding="utf-8").splitlines():
-                stripped = line.lstrip()
-                if stripped.startswith("#") or stripped.startswith("##"):
-                    continue
-                for m in GD_STRING.finditer(line):
-                    s = m.group(1)
-                    if HANGUL.search(s) and not s.startswith(SKIP_PREFIX):
-                        out.add(s)
+    paths = [p for d in GD_DIRS for p in sorted((ROOT / d).rglob("*.gd"))]
+    paths += [ROOT / f for f in GD_FILES]
+    for path in paths:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith("#"):
+                continue
+            for m in GD_STRING.finditer(line):
+                s = m.group(1)
+                if HANGUL.search(s) and not s.startswith(SKIP_PREFIX):
+                    out.add(unescape(s))
     return out
 
 
@@ -48,7 +62,7 @@ def tres_strings() -> set[str]:
             for m in re.finditer(r'^%s = "((?:[^"\\]|\\.)*)"' % key, text, re.M):
                 s = m.group(1)
                 if HANGUL.search(s):
-                    out.add(s)
+                    out.add(unescape(s))
     return out
 
 
@@ -76,7 +90,6 @@ def main() -> int:
     added = 0
     for s in found:
         if s not in rows:
-            # 줄바꿈은 CSV 에서 \n 로 쓴다. Godot 이 그대로 읽는다.
             rows[s] = {"keys": s, "ko": s, "en": ""}
             added += 1
 

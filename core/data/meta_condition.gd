@@ -64,7 +64,7 @@ func ratio(stats: Dictionary) -> float:
 ## "누적 처치 3000" / "최장 생존 10분" 처럼 사람이 읽는 문장.
 func describe() -> String:
 	if kind == Kind.NONE:
-		return "처음부터 열려 있음"
+		return MetaUI.t("처음부터 열려 있음")
 	if kind == Kind.BEST_SURVIVE_SEC:
-		return "%s %d분" % [KIND_LABELS[int(kind)], int(threshold) / 60]
-	return "%s %s" % [KIND_LABELS[int(kind)], MetaUI.grouped(int(threshold))]
+		return MetaUI.t("%s %d분") % [MetaUI.t(KIND_LABELS[int(kind)]), int(threshold) / 60]
+	return "%s %s" % [MetaUI.t(KIND_LABELS[int(kind)]), MetaUI.grouped(int(threshold))]

@@ -16,6 +16,8 @@ var _out_dir: String = "user://menu"
 ## 잠긴 항목만 잔뜩 있는 화면은 레이아웃 확인에 쓸모가 없다. 가짜 월급/기록을 넣는다.
 var _salary: int = 0
 var _fake_progress: bool = false
+## 영어 화면은 눈으로 봐야 한다. 헤드리스 테스트는 "번역은 됐는데 글자가 넘친다" 를 못 잡는다.
+var _locale: String = ""
 
 
 func _ready() -> void:
@@ -26,6 +28,8 @@ func _ready() -> void:
 			_salary = int(arg.substr(9))
 		elif arg == "--fake-progress":
 			_fake_progress = true
+		elif arg.begins_with("--locale="):
+			_locale = arg.substr(9)
 	_run.call_deferred()
 
 
@@ -47,6 +51,8 @@ func _run() -> void:
 		SaveSystem.check_commendations()
 		SaveSystem.refresh_unlocks()
 
+	if _locale != "":
+		TranslationServer.set_locale(_locale)
 	DirAccess.make_dir_recursive_absolute(_out_dir)
 	var root: Control = load(META).instantiate()
 	get_tree().root.add_child(root)

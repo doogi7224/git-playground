@@ -69,6 +69,11 @@ pause_game={
 ]
 }
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://locale/strings.ko.translation", "res://locale/strings.en.translation")
+locale/fallback="ko"
+
 [layer_names]
 
 2d_physics/layer_1="player"
