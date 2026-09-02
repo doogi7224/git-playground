@@ -11,7 +11,7 @@ extends Node
 ## 스크립트 하나가 컴파일에 실패하면 그걸 쓰는 테스트 함수가 런타임 에러로 중간에 끊긴다.
 ## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 40개쯤 안 돌았다. 실제로 겪었다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 480
+const MIN_CHECKS: int = 485
 
 var _failures: int = 0
 var _checks: int = 0
@@ -63,6 +63,7 @@ func _run_all() -> void:
 	await test_meta_screens()
 	await test_arena_uses_selection()
 	test_level_up_screen()
+	await test_results_screen_unpauses()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1586,3 +1587,23 @@ func test_level_up_screen() -> void:
 	get_tree().paused = false
 	screen.queue_free()
 	player.queue_free()
+
+
+## 결과 화면은 트리 전체를 멈춘다. 「재입대」/「부대 복귀」 말고 다른 경로로 씬이
+## 사라지면 일시정지가 남아 게임이 통째로 얼어붙는다.
+## 자동 플레이가 두 번째 판을 0초 만에 끝내면서 이걸 드러냈다 — 앞 판의 결과 화면이
+## 멈춰 둔 트리에서 다음 판이 시작해 시계가 아예 안 흘렀다.
+func test_results_screen_unpauses() -> void:
+	print("[결과 화면 — 사라질 때 일시정지를 푸는가]")
+	var screen: Control = (load("res://ui/results/results_screen.tscn") as PackedScene).instantiate()
+	add_child(screen)
+	await get_tree().process_frame
+
+	EventBus.run_ended.emit(false, {"kills": 10, "meta": {"salary": 0}})
+	_check(screen.visible, "런이 끝나면 결과 화면이 뜬다")
+	_check(get_tree().paused, "결과 화면은 트리를 멈춘다")
+
+	# 버튼을 누르지 않고 씬만 없앤다 (씬 전환·테스트 정리와 같은 상황)
+	screen.get_parent().remove_child(screen)
+	screen.free()
+	_check(not get_tree().paused, "화면이 사라지면 일시정지가 풀린다")

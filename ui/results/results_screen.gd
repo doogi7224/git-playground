@@ -80,3 +80,12 @@ func _on_again() -> void:
 func _on_to_menu() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file(META_SCENE)
+
+
+## 이 화면은 트리 전체를 멈춘다. 두 버튼 말고 다른 경로로 씬이 사라지면
+## 일시정지가 그대로 남아서 게임이 통째로 얼어붙는다 -- 자동 플레이가 두 번째 판을
+## 0초 만에 끝내면서 이걸 드러냈다. 떠날 때는 무조건 푼다.
+func _exit_tree() -> void:
+	var tree: SceneTree = get_tree()
+	if tree != null:
+		tree.paused = false

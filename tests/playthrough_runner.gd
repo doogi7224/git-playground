@@ -53,6 +53,9 @@ func _go() -> void:
 
 
 func _play_once() -> Dictionary:
+	# 앞 판의 결과 화면이 트리를 멈춰 놓았을 수 있다. 멈춘 채로 시작하면
+	# 시계가 안 흐르고 0초짜리 가짜 결과가 나온다.
+	get_tree().paused = false
 	var arena: Node = (load(ARENA) as PackedScene).instantiate()
 	get_tree().root.add_child(arena)
 	await get_tree().process_frame
@@ -99,6 +102,7 @@ func _play_once() -> Dictionary:
 	}
 	arena.queue_free()
 	await get_tree().process_frame
+	get_tree().paused = false
 	GameState.phase = GameState.Phase.MENU
 	GameState.elapsed = 0.0
 	return result
