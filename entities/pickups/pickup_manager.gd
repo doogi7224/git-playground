@@ -7,7 +7,10 @@ class_name PickupManager
 const BUFFER_STRIDE: int = 16
 enum Kind { XP, CHEST, HEAL }
 
-const RADIUS: float = 7.0
+## 줌 1.8 을 넣으면서 화면 위 크기가 그만큼 커졌다. 한 판 중반이면 짬이 60개 넘게
+## 깔리는데, 그게 화면에서 제일 밝고 제일 많아서 플레이어와 적을 덮어 버린다.
+## 기획서의 "플레이어는 항상 화면에서 가장 밝음" 이 성립하지 않았다.
+const RADIUS: float = 4.5
 const CHEST_RADIUS: float = 18.0
 const COLOR_XP: Color = Color("#8FE388")     ## 기획서 3.2: 회복/획득 = 연녹
 const COLOR_CHEST: Color = Color("#FFC94A")  ## 보물상자는 금색

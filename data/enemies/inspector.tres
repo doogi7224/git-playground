@@ -16,5 +16,5 @@ speed = 0.0
 radius = 50.0
 color = Color(0.62, 0.60, 0.55, 1)
 sprite = &""
-sprite_scale = 2.6
+sprite_scale = 1.7
 atlas_index = 0
