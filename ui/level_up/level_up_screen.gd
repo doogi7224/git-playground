@@ -30,8 +30,7 @@ func _show_next() -> void:
 	if _pending <= 0:
 		_close()
 		return
-	for child: Node in cards.get_children():
-		child.queue_free()
+	_clear_cards()
 
 	title.text = "병력 운용 명령서 — 진급 %d회 대기" % _pending if _pending > 1 else "병력 운용 명령서"
 
@@ -59,10 +58,25 @@ func _show_next() -> void:
 		(cards.get_child(0) as Button).grab_focus()
 
 
+## 카드를 즉시 떼어낸다. queue_free 만 하면 이번 프레임 동안 자식이 그대로 남아서
+## get_child_count() 가 거짓말을 하고, 죽은 카드의 pressed 도 아직 연결돼 있다.
+## 그 '유령 카드' 가 눌리면 _pending 이 음수로 내려가고, 그 뒤 진급이 전부
+## _pending <= 0 에 걸려 삼켜진다 — 명령서가 다시는 안 뜬다.
+## 자동 플레이가 Lv.13 에 무기 1개로 죽던 원인이 이거였다. 사람이 더블클릭해도 똑같다.
+func _clear_cards() -> void:
+	for child: Node in cards.get_children():
+		cards.remove_child(child)
+		child.queue_free()
+
+
 func _on_card_picked(upgrade: UpgradeData) -> void:
+	# 한 벌에서 두 장이 눌리는 걸 막는다.
+	if not visible:
+		return
+	_clear_cards()
 	if player != null:
 		player.apply_upgrade(upgrade)
-	_pending -= 1
+	_pending = maxi(0, _pending - 1)
 	if _pending > 0:
 		_show_next()
 	else:

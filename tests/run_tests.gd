@@ -11,7 +11,7 @@ extends Node
 ## 스크립트 하나가 컴파일에 실패하면 그걸 쓰는 테스트 함수가 런타임 에러로 중간에 끊긴다.
 ## 그러면 "0개 실패"가 뜨는데 실제로는 검사가 40개쯤 안 돌았다. 실제로 겪었다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 470
+const MIN_CHECKS: int = 480
 
 var _failures: int = 0
 var _checks: int = 0
@@ -62,6 +62,7 @@ func _run_all() -> void:
 	test_run_settlement()
 	await test_meta_screens()
 	await test_arena_uses_selection()
+	test_level_up_screen()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1515,3 +1516,73 @@ func test_arena_uses_selection() -> void:
 
 	SaveSystem.data = SaveSystem._default_data()
 	GameState.phase = GameState.Phase.MENU
+
+
+## 레벨업 화면 — 유령 카드와 삼켜지는 진급.
+##
+## _show_next 가 카드를 queue_free 로만 지우던 시절, 그 프레임 동안 죽은 카드가
+## 자식으로 남아 있었다. get_child_count() 가 거짓말을 하고 pressed 도 아직 연결돼
+## 있어서, 자동 플레이나 큐에 남은 입력이 유령 카드를 눌렀다. 그러면 _pending 이
+## 음수가 되고 그 뒤 진급이 전부 _pending <= 0 에 걸려 삼켜진다 —
+## 명령서가 다시는 안 뜨고, 20분 판을 무기 1개로 돈다. 실제로 Lv.13 에 죽었다.
+func test_level_up_screen() -> void:
+	print("[레벨업 화면 — 유령 카드 / 진급이 삼켜지지 않는가]")
+	var screen: Control = (load("res://ui/level_up/level_up_screen.tscn") as PackedScene).instantiate()
+	add_child(screen)
+	var player: Player = (load("res://entities/player/player.tscn") as PackedScene).instantiate()
+	add_child(player)
+	player.setup(null, load("res://data/characters/kim_private.tres") as CharacterData)
+	screen.player = player
+	screen.upgrade_table = load("res://data/upgrades/upgrade_table.tres") as UpgradeTable
+
+	var cards: Node = screen.get_node("Center/Panel/Margin/VBox/Cards")
+
+	# 1회차: 카드가 뜨고, 한 장을 고르면 닫히고 자식이 즉시 사라져야 한다.
+	EventBus.player_leveled.emit(2)
+	_check(screen.visible, "진급하면 명령서가 뜬다")
+	_check(cards.get_child_count() == 3, "명령서가 3장 나온다 (got %d)" % cards.get_child_count())
+	(cards.get_child(0) as Button).pressed.emit()
+	_check(not screen.visible, "한 장을 고르면 닫힌다")
+	_check(cards.get_child_count() == 0,
+			"고른 즉시 카드가 사라진다 — queue_free 만으로는 이번 프레임에 안 사라진다 (got %d)"
+			% cards.get_child_count())
+
+	# 2회차: 닫힌 상태에서 유령 카드를 눌러도 _pending 이 음수가 되면 안 된다.
+	EventBus.player_leveled.emit(3)
+	_check(cards.get_child_count() == 3, "두 번째 진급에도 3장이 나온다")
+	var ghost: Button = cards.get_child(1) as Button
+	ghost.pressed.emit()          # 정상 선택
+	ghost.pressed.emit()          # 같은 카드를 한 번 더 (더블클릭 / 큐에 남은 입력)
+	_check(not screen.visible, "두 번 눌러도 닫힌 상태를 유지한다")
+
+	# 세 번째 진급이 멀쩡히 떠야 한다. 삼켜지면 여기서 걸린다.
+	EventBus.player_leveled.emit(4)
+	_check(screen.visible, "두 번 누른 뒤에도 다음 진급이 삼켜지지 않는다")
+	_check(cards.get_child_count() == 3, "세 번째 진급에도 3장이 나온다")
+	(cards.get_child(0) as Button).pressed.emit()
+
+	# 진급이 밀려 있으면 연달아 내민다.
+	EventBus.player_leveled.emit(5)
+	EventBus.player_leveled.emit(6)
+	_check(screen.visible, "진급이 밀려 있으면 계속 뜬다")
+	(cards.get_child(0) as Button).pressed.emit()
+	_check(screen.visible, "밀린 진급이 남아 있으면 닫지 않는다")
+	(cards.get_child(0) as Button).pressed.emit()
+	_check(not screen.visible, "밀린 진급을 다 쓰면 닫힌다")
+
+	# 실제로 무기가 늘어나는가 — 명령서 전체를 무작위로 30번 돌려 본다.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var table: UpgradeTable = screen.upgrade_table
+	for _i in 30:
+		var offered: Array[UpgradeData] = table.roll(3, player.upgrade_levels, rng)
+		if offered.is_empty():
+			break
+		player.apply_upgrade(offered[rng.randi() % offered.size()])
+	_check(player.weapon_ids().size() >= 4,
+			"명령서를 무작위로 골라도 무기가 여러 개 붙는다 (got %d개: %s)"
+			% [player.weapon_ids().size(), player.weapon_ids()])
+
+	get_tree().paused = false
+	screen.queue_free()
+	player.queue_free()
