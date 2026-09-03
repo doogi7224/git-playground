@@ -58,9 +58,9 @@ def main() -> int:
         make_sample(raw / "mob.png", (150, 110, 190), (63, 224, 208))
         make_sample(raw / "mob2.png", (120, 160, 90), (255, 201, 74))
 
-        print("[enemy 팔레트 — 적은 시안/금색을 쓰지 않는다]")
+        print("[예약색 회피 — 적은 시안/금색을 쓰지 않는다]")
         rc = ap.main(["--input", str(raw), "--processed", str(out), "--atlas-dir", str(atlas),
-                      "--palette", "enemy", "--normal", "--atlas", "enemies"])
+                      "--normal", "--atlas", "enemies"])
         check(rc == 0, "파이프라인이 정상 종료한다")
 
         processed = sorted(out.glob("*.png"))
@@ -76,10 +76,28 @@ def main() -> int:
             opaque = rgba[rgba[..., 3] > 200][:, :3].astype(np.float32)
             check(opaque.size > 0, f"{path.name}: 불투명 픽셀이 남아 있다")
             if opaque.size:
-                # 금지색과의 최소 거리 — enemy 팔레트에는 후보 자체가 없으므로 멀어야 한다
-                dist = np.linalg.norm(opaque[:, None, :] - forbidden[None, :, :], axis=2).min()
-                check(dist > 40.0,
-                      f"{path.name}: 적 스프라이트에 시안/금색이 남지 않는다 (최소거리 {dist:.1f})")
+                # 예약색 **그 자체**는 남으면 안 된다. 예전에는 팔레트에서 후보를
+                # 빼서 지켰고, 지금은 그 hue 구간의 픽셀을 12° 비켜 보내서 지킨다.
+                exact = np.linalg.norm(opaque[:, None, :] - forbidden[None, :, :], axis=2).min()
+                check(exact > 12.0,
+                      f"{path.name}: 예약색 원본이 그대로 남지 않는다 (최소거리 {exact:.1f})")
+
+        # 기구를 직접 검사한다. 거리 하나로 뭉뚱그리면 "왜" 통과했는지 모른다.
+        print("[예약색 hue 이동 — 기구]")
+        for label, rgb, band_lo, band_hi, target in (
+                ("시안", "#3FE0D0", 172.0, 196.0, 200.0),
+                ("금색", "#FFC94A", 38.0, 52.0, 30.0),
+                ("진홍", "#C8102E", 348.0, 8.0, 20.0)):
+            px = np.array([[list(ap.hex_to_rgb(rgb)) + [255]]], dtype=np.uint8)
+            before = ap._rgb_to_hsv(px[..., :3].astype(np.float32) / 255.0)[0, 0]
+            after = ap._rgb_to_hsv(
+                ap.correct_colors(px)[..., :3].astype(np.float32) / 255.0)[0, 0]
+            moved = ((after[0] - before[0] + 180.0) % 360.0) - 180.0
+            want = ((target - before[0] + 180.0) % 360.0) - 180.0
+            expect = max(-ap.HUE_PUSH, min(ap.HUE_PUSH, want))
+            check(abs(moved - expect) < 1.0,
+                  "%s: hue 가 %.0f° → %.0f° (목표 %.0f° 쪽으로 %.0f° 이동)"
+                  % (label, before[0], after[0], target, expect))
 
         print("[배경 제거 — 테두리에서 이어진 것만 지운다]")
         rgba = np.array(Image.open(out / "mob.png").convert("RGBA"), dtype=np.uint8)
@@ -105,7 +123,7 @@ def main() -> int:
         # --no-trim: trim 이 끝에서 여백을 잘라 좌표를 밀어 버린다. 좌표로 찍어
         # 검사하려면 잘리면 안 된다 (이걸 몰라서 한 번 헛짚었다).
         out3 = root / "processed3"
-        ap.main(["--input", str(raw), "--processed", str(out3), "--palette", "none", "--no-trim"])
+        ap.main(["--input", str(raw), "--processed", str(out3), "--no-color-correct", "--no-trim"])
         hole_out = np.array(Image.open(out3 / "holed.png").convert("RGBA"), dtype=np.uint8)
         check(hole_out[50, 128, 3] < 40,
               "배경색 구멍이 뚫린다 (알파 %d)" % hole_out[50, 128, 3])
@@ -115,7 +133,7 @@ def main() -> int:
               "흰 눈동자는 살아남는다 (알파 %d)" % eye[108, 100, 3])
         # 구멍을 끄면 그대로 남는다 — 옵션이 실제로 동작하는지
         out4 = root / "processed4"
-        ap.main(["--input", str(raw), "--processed", str(out4), "--palette", "none",
+        ap.main(["--input", str(raw), "--processed", str(out4), "--no-color-correct",
                  "--no-trim", "--punch-holes", "0"])
         kept = np.array(Image.open(out4 / "holed.png").convert("RGBA"), dtype=np.uint8)
         check(kept[50, 128, 3] > 200, "--punch-holes 0 이면 구멍이 남는다 (알파 %d)" % kept[50, 128, 3])
@@ -135,13 +153,16 @@ def main() -> int:
         check(sheet.shape[1] == 2048, "아틀라스 폭이 지정한 대로다")
         check(sheet.shape[0] & (sheet.shape[0] - 1) == 0, "아틀라스 높이가 2의 거듭제곱이다")
 
-        print("[팔레트 none — 스냅을 끄면 원본 색이 남는다]")
+        print("[--no-color-correct — 보정을 끄면 원본 색이 남는다]")
         out2 = root / "processed2"
-        ap.main(["--input", str(raw), "--processed", str(out2), "--palette", "none"])
-        a = np.array(Image.open(out / "mob.png").convert("RGB"), dtype=np.int16)
-        b = np.array(Image.open(out2 / "mob.png").convert("RGB"), dtype=np.int16)
-        check(a.shape == b.shape and np.abs(a - b).mean() > 5.0,
-              "스냅 켠 것과 끈 것의 결과가 실제로 다르다")
+        ap.main(["--input", str(raw), "--processed", str(out2), "--no-color-correct"])
+        a = np.array(Image.open(out / "mob.png").convert("RGBA"), dtype=np.int16)
+        b = np.array(Image.open(out2 / "mob.png").convert("RGBA"), dtype=np.int16)
+        # 투명 픽셀은 양쪽 다 안 건드리므로 전체 평균을 내면 차이가 묻힌다.
+        solid = (a[..., 3] > 200) & (b[..., 3] > 200)
+        diff = np.abs(a[..., :3] - b[..., :3])[solid].mean() if solid.any() else 0.0
+        check(a.shape == b.shape and diff > 5.0,
+              "보정 켠 것과 끈 것의 결과가 실제로 다르다 (불투명 평균차 %.1f)" % diff)
 
     print(f"--- {CHECKS}개 검사 중 {len(FAILURES)}개 실패 ---")
     return 1 if FAILURES else 0

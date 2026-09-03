@@ -4,7 +4,7 @@
 AI가 뽑아준 그림이 뭐가 됐든 **자동으로 우리 게임 색으로 통일**하는 장치다.
 스타일 붕괴 방지가 목적이고, 손으로 다시 칠하지 않는 게 목적이다.
 
-    python tools/art_pipeline.py --input art/raw --palette core --normal
+    python tools/art_pipeline.py --input art/raw --normal
 
 입력  art/raw/**.png
 출력  art/processed/<이름>.png          (배경 제거 + 팔레트 스냅 + 외곽선)
@@ -64,42 +64,51 @@ DANGER = ["#C8102E", "#7A0C1C"]                               # 진홍 — 무�
 HEAL = ["#8FE388"]                                            # 연녹
 INK = "#1B2016"                                               # 외곽선 잉크
 
-PALETTES: dict[str, list[str]] = {
-    # 적은 시안/금색을 쓰지 않는다 (CLAUDE.md 규칙 6) — 아예 후보에서 뺀다.
-    "enemy": ENEMY + ENEMY_EXTRA + SKIN + TERRAIN + [INK],
-    # 플레이어 이펙트는 붉은색을 쓰지 않는다 — DANGER 를 뺀다.
-    "player": PLAYER + SKIN + METAL + PLAYER_FX + TERRAIN + [INK],
-    "fx": PLAYER_FX + HEAL + [INK],
-    "danger": DANGER + [INK],
-    "terrain": TERRAIN + [INK],
-    "core": TERRAIN + ENEMY + ENEMY_EXTRA + SKIN + METAL + PLAYER + PLAYER_FX + DANGER + HEAL + [INK],
-}
-
-# 같은 색을 명암 단계로 펼친다. 6색으로 통짜 스냅하면 음영이 다 날아간다.
-SHADES = (0.42, 0.62, 0.80, 1.00, 1.22)
-
+# --------------------------------------------------------------------------
+# 색 정책 — 스냅이 아니라 보정 (docs/00_먼저읽기_진단과_컬러정책.md)
+# --------------------------------------------------------------------------
+#
+# 예전에는 위 팔레트로 **강제 스냅**을 했다. 스타일 통일이 목적이었는데 대가가
+# 너무 컸다 -- 원본 24장의 고유색이 전부 갈색으로 뭉개졌다:
+#
+#   blizzard         푸른 흰색 소용돌이  →  갈회색
+#   discharge_delay  빨간 밀랍 인장      →  갈색 (개그 소멸)
+#   weed             초록                →  카키
+#   night_watch      푸른 야간 톤        →  카키
+#   kim_head         살색 얼굴           →  초록
+#
+# 기획서 3.2("배경/지형 채도 40% 이하")와 4.3-2("팔레트 강제 스냅")를 폐기하고,
+# 색 분리를 **채도를 눌러서가 아니라 색온도와 명도를 갈라서** 만든다.
+# 바닥은 어둡고 차갑게(맵 데이터), 캐릭터는 밝고 따뜻하게(여기), FX 는 네온으로.
 
 def hex_to_rgb(value: str) -> tuple[int, int, int]:
     value = value.lstrip("#")
     return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
 
 
-def build_palette(name: str) -> np.ndarray:
-    """팔레트 이름 → (N, 3) uint8 배열. 각 색의 명암 단계까지 펼친 것."""
-    if name == "none":
-        return np.empty((0, 3), dtype=np.uint8)
-    if name not in PALETTES:
-        raise SystemExit(f"모르는 팔레트: {name}  (가능: {', '.join(PALETTES)}, none)")
-    out: list[tuple[int, int, int]] = []
-    for hex_value in PALETTES[name]:
-        base = np.array(hex_to_rgb(hex_value), dtype=np.float32)
-        for shade in SHADES:
-            out.append(tuple(np.clip(base * shade, 0, 255).astype(np.uint8)))
-    # 중복 제거 (순서 유지)
-    seen: dict[tuple[int, int, int], None] = {}
-    for color in out:
-        seen.setdefault(color, None)
-    return np.array(list(seen.keys()), dtype=np.uint8)
+SATURATION_GAIN: float = 1.15
+VALUE_MIN: float = 0.30
+VALUE_MAX: float = 0.92
+
+# 살색은 건드리지 않는다. 채도를 올리면 얼굴이 익고, 명도를 밀면 인종이 바뀐다.
+SKIN_HUE: tuple[float, float] = (20.0, 45.0)      # 도
+SKIN_SAT: tuple[float, float] = (0.15, 0.60)
+
+# 외곽선 잉크. 두꺼운 잉크 선이 이 프로젝트 아트 디렉션의 뼈대다 (기획서 3.1).
+OUTLINE_VALUE_MAX: float = 0.15
+OUTLINE_INK: str = "#14180F"
+
+# 예약색 회피 — **스냅이 아니라 hue 이동**이다. 그 구간에 들어온 픽셀만 12° 비켜
+# 보내므로 나머지 색은 원본 그대로다. 후보에서 색을 빼 버리던 방식은 그 색뿐 아니라
+# 주변 색까지 같이 끌어당겨 그림을 뭉갰다.
+#
+#   (구간 시작, 구간 끝, 최소 채도, 최소 명도, 밀어낼 목표 hue)
+RESERVED_HUES: tuple[tuple[float, float, float, float, float], ...] = (
+    (172.0, 196.0, 0.50, 0.00, 200.0),   # 시안 #3FE0D0 — 플레이어 공격 독점
+    (38.0, 52.0, 0.60, 0.70, 30.0),      # 금색 #FFC94A — 크리티컬 독점
+    (348.0, 8.0, 0.65, 0.00, 20.0),      # 진홍 — 위험 표시 독점 (0도를 넘어간다)
+)
+HUE_PUSH: float = 12.0
 
 
 # --------------------------------------------------------------------------
@@ -256,31 +265,108 @@ def clean_alpha(rgba: np.ndarray, feather: float = 0.8) -> np.ndarray:
     return out
 
 
-def snap_palette(rgba: np.ndarray, palette: np.ndarray, strength: float) -> np.ndarray:
-    """모든 픽셀을 팔레트에서 가장 가까운 색으로 끌어당긴다 (Lab 거리 기준).
+def _rgb_to_hsv(rgb: np.ndarray) -> np.ndarray:
+    """(..., 3) float 0~1 sRGB → (..., 3) float (h 0~360, s 0~1, v 0~1)."""
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    mx = np.maximum(np.maximum(r, g), b)
+    mn = np.minimum(np.minimum(r, g), b)
+    diff = mx - mn
 
-    strength 1.0 이면 완전히 갈아끼우고, 0.7 정도면 원본 질감을 조금 남긴다.
+    h = np.zeros_like(mx)
+    safe = diff > 1e-6
+    # 최대 채널별로 각도를 잡는다
+    rmax = safe & (mx == r)
+    gmax = safe & (mx == g) & ~rmax
+    bmax = safe & ~rmax & ~gmax
+    h[rmax] = ((g[rmax] - b[rmax]) / diff[rmax]) % 6.0
+    h[gmax] = ((b[gmax] - r[gmax]) / diff[gmax]) + 2.0
+    h[bmax] = ((r[bmax] - g[bmax]) / diff[bmax]) + 4.0
+    h = (h * 60.0) % 360.0
+
+    s_out = np.where(mx > 1e-6, diff / np.maximum(mx, 1e-6), 0.0)
+    return np.stack([h, s_out, mx], axis=-1)
+
+
+def _hsv_to_rgb(hsv: np.ndarray) -> np.ndarray:
+    """(..., 3) (h 0~360, s 0~1, v 0~1) → (..., 3) float 0~1 sRGB."""
+    h = (hsv[..., 0] % 360.0) / 60.0
+    s = np.clip(hsv[..., 1], 0.0, 1.0)
+    v = np.clip(hsv[..., 2], 0.0, 1.0)
+    i = np.floor(h)
+    f = h - i
+    p = v * (1.0 - s)
+    q = v * (1.0 - s * f)
+    t = v * (1.0 - s * (1.0 - f))
+    idx = (i.astype(np.int32) % 6)
+
+    r = np.select([idx == 0, idx == 1, idx == 2, idx == 3, idx == 4, idx == 5], [v, q, p, p, t, v])
+    g = np.select([idx == 0, idx == 1, idx == 2, idx == 3, idx == 4, idx == 5], [t, v, v, q, p, p])
+    b = np.select([idx == 0, idx == 1, idx == 2, idx == 3, idx == 4, idx == 5], [p, p, t, v, v, q])
+    return np.stack([r, g, b], axis=-1)
+
+
+def _in_hue_band(hue: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    """hue 구간 판정. 348~8 처럼 0도를 넘어가는 구간도 다룬다."""
+    if lo <= hi:
+        return (hue >= lo) & (hue <= hi)
+    return (hue >= lo) | (hue <= hi)
+
+
+def _push_hue(hue: np.ndarray, mask: np.ndarray, target: float, amount: float) -> np.ndarray:
+    """mask 픽셀의 hue 를 target 방향으로 amount 만큼 민다. 짧은 쪽으로 돈다."""
+    if not mask.any():
+        return hue
+    out = hue.copy()
+    delta = ((target - hue[mask] + 180.0) % 360.0) - 180.0    # -180~180
+    step = np.clip(delta, -amount, amount)
+    out[mask] = (hue[mask] + step) % 360.0
+    return out
+
+
+def correct_colors(rgba: np.ndarray, enabled: bool = True) -> np.ndarray:
+    """색 보정. **스냅이 아니다** — 원본 hue 를 지키고 채도·명도만 손본다.
+
+    순서가 중요하다:
+      1. 외곽선(명도 0.15 이하)을 잉크로 통일하고 이후 보정에서 뺀다.
+         먼저 안 빼면 명도 클램프가 검은 선을 회색으로 들어올려 그림이 흐려진다.
+      2. 살색 구간(hue 20~45°, sat 0.15~0.60)도 뺀다. 채도를 올리면 얼굴이 익는다.
+      3. 남은 픽셀에 채도 x1.15, 명도 0.30~0.92 클램프.
+      4. 예약색(시안·금색·진홍) 구간만 hue 를 12° 비켜 보낸다 (규칙 6).
     """
-    if palette.size == 0 or strength <= 0.0:
+    if not enabled:
         return rgba
-    h, w = rgba.shape[:2]
-    pixels = rgba[..., :3].reshape(-1, 3)
-    lab_pixels = srgb_to_lab(pixels)
-    lab_palette = srgb_to_lab(palette)
-
-    # (P, 3) 과 (N, 3) 의 제곱거리 — 청크로 나눠서 메모리 폭발을 막는다
-    nearest = np.empty(lab_pixels.shape[0], dtype=np.int32)
-    chunk = 200_000
-    for start in range(0, lab_pixels.shape[0], chunk):
-        block = lab_pixels[start:start + chunk]
-        d = ((block[:, None, :] - lab_palette[None, :, :]) ** 2).sum(axis=2)
-        nearest[start:start + chunk] = d.argmin(axis=1)
-
-    snapped = palette[nearest].astype(np.float32)
-    mixed = pixels.astype(np.float32) * (1.0 - strength) + snapped * strength
 
     out = rgba.copy()
-    out[..., :3] = np.clip(mixed, 0, 255).astype(np.uint8).reshape(h, w, 3)
+    rgb = rgba[..., :3].astype(np.float32) / 255.0
+    hsv = _rgb_to_hsv(rgb)
+    hue, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+
+    opaque = rgba[..., 3] > 8
+
+    # 1. 외곽선
+    ink = np.array(hex_to_rgb(OUTLINE_INK), dtype=np.float32) / 255.0
+    is_outline = opaque & (val <= OUTLINE_VALUE_MAX)
+
+    # 2. 살색 보호
+    is_skin = (_in_hue_band(hue, SKIN_HUE[0], SKIN_HUE[1])
+               & (sat >= SKIN_SAT[0]) & (sat <= SKIN_SAT[1]))
+
+    adjust = opaque & ~is_outline & ~is_skin
+
+    # 3. 채도·명도
+    sat = np.where(adjust, np.clip(sat * SATURATION_GAIN, 0.0, 1.0), sat)
+    val = np.where(adjust, np.clip(val, VALUE_MIN, VALUE_MAX), val)
+
+    # 4. 예약색 hue 이동
+    for lo, hi, min_sat, min_val, target in RESERVED_HUES:
+        band = adjust & _in_hue_band(hue, lo, hi) & (sat >= min_sat) & (val >= min_val)
+        hue = _push_hue(hue, band, target, HUE_PUSH)
+
+    fixed = _hsv_to_rgb(np.stack([hue, sat, val], axis=-1))
+    fixed = np.where(is_outline[..., None], ink, fixed)
+    out[..., :3] = np.clip(fixed * 255.0, 0, 255).astype(np.uint8)
+    # 투명 픽셀은 색을 건드리지 않는다 (clean_alpha 가 번지게 해 둔 색이 있다)
+    out[..., :3] = np.where(opaque[..., None], out[..., :3], rgba[..., :3])
     return out
 
 
@@ -508,12 +594,16 @@ region = Rect2({spot.x}, {spot.y}, {spot.w}, {spot.h})
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="AI 아트 후처리 — 배경 제거 → 팔레트 스냅 → 외곽선 → 노멀맵 → 아틀라스")
+        description="AI 아트 후처리 — 배경 제거 → 색 보정 → 외곽선 → 노멀맵 → 아틀라스")
     parser.add_argument("--input", default="art/raw", help="입력 폴더 (기본 art/raw)")
     parser.add_argument("--processed", default="art/processed", help="출력 폴더")
     parser.add_argument("--atlas-dir", default="art/atlas", help="아틀라스 출력 폴더")
-    parser.add_argument("--palette", default="core",
-                        help=f"팔레트: {', '.join(PALETTES)}, none")
+    # 팔레트 강제 스냅은 폐기됐다 (docs/00_먼저읽기_진단과_컬러정책.md).
+    # 원본 hue 를 지키는 보정이 기본 동작이고, --no-color-correct 로만 끌 수 있다.
+    parser.add_argument("--preserve-hue", action="store_true", default=True,
+                        help="원본 hue 를 지키는 색 보정 (기본값이자 유일한 정책)")
+    parser.add_argument("--no-color-correct", dest="color_correct", action="store_false",
+                        default=True, help="색 보정을 통째로 끈다 (원본 색 그대로 — 비교용)")
     # 12 는 실제 에셋으로 재서 정한 값이다. 삽 D링 안쪽은 배경(240)보다 살짝
     # 어두운 232 근처라 6 으로는 안 뚫렸다. 12 에서 구멍은 5,468px 사라지고
     # 얼굴의 밝은 픽셀은 3,729 중 3,617 이 남는다(눈은 순백 252 라 안전).
@@ -522,8 +612,6 @@ def main(argv: list[str] | None = None) -> int:
                         help="둘러싸인 배경 구멍을 지울 색 허용오차(채널당). 0이면 끔")
     parser.add_argument("--punch-holes-for", action="append", default=[], metavar="이름=허용오차",
                         help="특정 파일만 다른 허용오차로 (예: kim_weapon=20). 여러 번 쓸 수 있다")
-    parser.add_argument("--snap-strength", type=float, default=0.85,
-                        help="팔레트로 끌어당기는 정도 0~1 (기본 0.85)")
     parser.add_argument("--outline", type=float, default=0.55, help="내부 선 강도 0~1")
     parser.add_argument("--contour", type=int, default=3, help="바깥 잉크 외곽선 두께(px)")
     parser.add_argument("--normal", action="store_true", help="노멀맵도 생성")
@@ -556,7 +644,6 @@ def main(argv: list[str] | None = None) -> int:
 
     processed_dir = Path(args.processed)
     processed_dir.mkdir(parents=True, exist_ok=True)
-    palette = build_palette(args.palette)
 
     # 파일별 구멍 허용오차. 전역값 하나로는 못 맞추는 그림이 있다 --
     # 삽 D링 구멍은 안쪽에 그림자가 져서 배경(240)보다 어두운 226~233 인데,
@@ -568,7 +655,9 @@ def main(argv: list[str] | None = None) -> int:
         key, _, value = entry.partition("=")
         hole_tolerance[key.strip()] = int(value)
 
-    print(f"팔레트 '{args.palette}' — {len(palette)}색 (명암 단계 포함)")
+    print("색 보정: %s (채도 x%.2f, 명도 %.2f~%.2f, 살색 보호, 예약색 hue %.0f° 이동)"
+          % ("켬" if args.color_correct else "끔",
+             SATURATION_GAIN, VALUE_MIN, VALUE_MAX, HUE_PUSH))
     packed: list[tuple[str, np.ndarray]] = []
     normals: dict[str, np.ndarray] = {}
 
@@ -580,7 +669,7 @@ def main(argv: list[str] | None = None) -> int:
         rgba = punch_enclosed_background(rgba, hole_tolerance.get(name, args.punch_holes))
         rgba = downscale(rgba, args.max_size)
         rgba = clean_alpha(rgba)
-        rgba = snap_palette(rgba, palette, args.snap_strength)
+        rgba = correct_colors(rgba, args.color_correct)
         rgba = add_outline(rgba, args.outline, args.contour)
         if not args.no_trim:
             rgba = trim(rgba)

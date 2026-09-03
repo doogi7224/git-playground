@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # 아트 전체 빌드: art/raw → art/processed → art/atlas
 #
-# 적과 플레이어는 팔레트가 다르다. 적은 시안·금색을 못 쓰고(플레이어 이펙트 독점색),
-# 플레이어는 진홍을 못 쓴다(위험 표시 독점색). 그래서 따로 돌린다.
+# 적과 플레이어를 따로 돌리는 이유는 아틀라스를 따로 만들기 때문이다.
+# 색 정책은 이제 양쪽이 같다 — 팔레트 강제 스냅을 폐기하고 원본 hue 를 지키는
+# 보정으로 바꿨다. 예약색(시안·금색·진홍)은 그 구간에 들어온 픽셀만 12° 비켜
+# 보내므로, 팔레트를 나눠서 색을 빼 버릴 필요가 없다.
+# 경위: docs/00_먼저읽기_진단과_컬러정책.md
 set -euo pipefail
 PY="${PYTHON:-python3}"
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -11,7 +14,7 @@ echo "== 적 =="
 # --max-size 512: AI 원본이 1024~2048px 로 나온다. 그대로 packing 하면 아틀라스가
 # 1024x32768 이 되는데, 이건 흔한 GPU 최대 텍스처(16384)를 넘어서 실기에서 안 뜬다.
 # 512 는 기획서의 "캐릭터 원본 512px" 기준이자 보스(인게임 1024px)의 2배 확대 한계다.
-"$PY" tools/art_pipeline.py --input art/raw/enemies --palette enemy \
+"$PY" tools/art_pipeline.py --input art/raw/enemies \
   --normal --atlas enemies --atlas-width 2048 --max-size 512 "$@"
 
 echo "== 플레이어 =="
@@ -20,7 +23,7 @@ echo "== 플레이어 =="
 # 어두운 226~233 이라 전역 허용오차(12)로는 안 뚫린다. 그렇다고 전역을 16까지
 # 올리면 kim_head 의 흰 눈동자(252)가 깎이기 시작한다 — 그래서 이 파일만 올린다.
 # 안 뚫으면 손 옆에 밝은 삼각형이 붙어 다니고 글로우까지 먹는다.
-"$PY" tools/art_pipeline.py --input art/raw/player --palette player \
+"$PY" tools/art_pipeline.py --input art/raw/player \
   --normal --atlas player --atlas-width 1024 --max-size 512 \
   --punch-holes-for kim_weapon=20 "$@"
 
