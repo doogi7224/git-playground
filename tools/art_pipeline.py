@@ -54,6 +54,10 @@ ENEMY_EXTRA = [
 # 적 20종 중 절반이 사람이다(조교·행보관·불침번…). 살색이 팔레트에 없으면
 # 얼굴이 전부 국방색이 된다 -- 플레이어도 같은 이유로 초록 얼굴이 됐었다.
 SKIN = ["#E8C4A0", "#C99B72", "#8A5F42"]
+# 중성 회색이 팔레트에 없으면 금속이 갈 곳이 없다. 삽 손잡이(밝은 회색 D링)가
+# 통째로 순백(#FFFFFF)으로 스냅돼서, 형태가 사라진 흰 덩어리가 손 옆에 붙어 있었다.
+# 시안·금색·진홍 어느 쪽도 아니므로 규칙 6과 무관하다.
+METAL = ["#C3C7CB", "#8E949A", "#5A6066"]
 PLAYER = ["#B7C77A", "#8C9B58", "#E8F0C8", "#FFFFFF"]         # 밝은 올리브 + 흰 하이라이트
 PLAYER_FX = ["#3FE0D0", "#FFC94A"]                            # 시안 / 금색 — 적은 절대 금지
 DANGER = ["#C8102E", "#7A0C1C"]                               # 진홍 — 무조건 피해야 함
@@ -64,11 +68,11 @@ PALETTES: dict[str, list[str]] = {
     # 적은 시안/금색을 쓰지 않는다 (CLAUDE.md 규칙 6) — 아예 후보에서 뺀다.
     "enemy": ENEMY + ENEMY_EXTRA + SKIN + TERRAIN + [INK],
     # 플레이어 이펙트는 붉은색을 쓰지 않는다 — DANGER 를 뺀다.
-    "player": PLAYER + SKIN + PLAYER_FX + TERRAIN + [INK],
+    "player": PLAYER + SKIN + METAL + PLAYER_FX + TERRAIN + [INK],
     "fx": PLAYER_FX + HEAL + [INK],
     "danger": DANGER + [INK],
     "terrain": TERRAIN + [INK],
-    "core": TERRAIN + ENEMY + ENEMY_EXTRA + SKIN + PLAYER + PLAYER_FX + DANGER + HEAL + [INK],
+    "core": TERRAIN + ENEMY + ENEMY_EXTRA + SKIN + METAL + PLAYER + PLAYER_FX + DANGER + HEAL + [INK],
 }
 
 # 같은 색을 명암 단계로 펼친다. 6색으로 통짜 스냅하면 음영이 다 날아간다.
@@ -181,6 +185,40 @@ def _flood_background(rgba: np.ndarray, tolerance: int) -> np.ndarray:
 
     out = rgba.copy()
     out[..., 3] = np.where(mask, 0, out[..., 3]).astype(np.uint8)
+    return out
+
+
+def punch_enclosed_background(rgba: np.ndarray, tolerance: int) -> np.ndarray:
+    """둘러싸인 배경 구멍을 뚫는다. 삽 손잡이(D링) 안쪽 같은 것.
+
+    _flood_background 는 **테두리에서 이어진** 배경만 지운다. 눈동자나 밝은 금속을
+    지키려고 일부러 그렇게 만든 것이고, 그 판단은 옳다. 대신 손잡이 구멍처럼
+    사방이 막힌 배경은 그대로 남는다 -- 실제로 흰 삼각형이 플레이어 손 옆에
+    붙어 다녔고, 글로우까지 먹어서 화면에서 제일 밝은 물건이었다.
+
+    구분 기준은 색이다. 남아 있는 불투명 픽셀 중 **배경색과 거의 같은 것**만
+    지운다. 눈동자는 순백(255)이고 이 그림들의 배경은 240 근처라, 허용오차를
+    좁게 잡으면 눈은 살아남는다. 이 판단이 맞는지 tools/test_art_pipeline.py 가
+    합성 샘플로 검사한다.
+
+    테두리에 닿은 배경은 이미 지워졌으므로, 남은 '배경색 불투명 픽셀' 은
+    정의상 둘러싸인 것이다 -- 연결 성분을 따로 찾을 필요가 없다.
+    """
+    if tolerance <= 0:
+        return rgba
+    h, w = rgba.shape[:2]
+    corner = np.concatenate([
+        rgba[0:8, 0:8, :3].reshape(-1, 3), rgba[0:8, w - 8:w, :3].reshape(-1, 3),
+        rgba[h - 8:h, 0:8, :3].reshape(-1, 3), rgba[h - 8:h, w - 8:w, :3].reshape(-1, 3),
+    ])
+    bg = np.median(corner, axis=0)
+
+    diff = np.abs(rgba[..., :3].astype(np.int16) - bg.astype(np.int16)).max(axis=2)
+    hole = (rgba[..., 3] > 8) & (diff <= tolerance)
+    if not hole.any():
+        return rgba
+    out = rgba.copy()
+    out[..., 3] = np.where(hole, 0, out[..., 3]).astype(np.uint8)
     return out
 
 
@@ -476,6 +514,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--atlas-dir", default="art/atlas", help="아틀라스 출력 폴더")
     parser.add_argument("--palette", default="core",
                         help=f"팔레트: {', '.join(PALETTES)}, none")
+    # 12 는 실제 에셋으로 재서 정한 값이다. 삽 D링 안쪽은 배경(240)보다 살짝
+    # 어두운 232 근처라 6 으로는 안 뚫렸다. 12 에서 구멍은 5,468px 사라지고
+    # 얼굴의 밝은 픽셀은 3,729 중 3,617 이 남는다(눈은 순백 252 라 안전).
+    # 16 까지 올리면 얼굴이 613px 깎이기 시작한다 — 거기서 멈춰야 한다.
+    parser.add_argument("--punch-holes", type=int, default=12,
+                        help="둘러싸인 배경 구멍을 지울 색 허용오차(채널당). 0이면 끔")
+    parser.add_argument("--punch-holes-for", action="append", default=[], metavar="이름=허용오차",
+                        help="특정 파일만 다른 허용오차로 (예: kim_weapon=20). 여러 번 쓸 수 있다")
     parser.add_argument("--snap-strength", type=float, default=0.85,
                         help="팔레트로 끌어당기는 정도 0~1 (기본 0.85)")
     parser.add_argument("--outline", type=float, default=0.55, help="내부 선 강도 0~1")
@@ -512,6 +558,16 @@ def main(argv: list[str] | None = None) -> int:
     processed_dir.mkdir(parents=True, exist_ok=True)
     palette = build_palette(args.palette)
 
+    # 파일별 구멍 허용오차. 전역값 하나로는 못 맞추는 그림이 있다 --
+    # 삽 D링 구멍은 안쪽에 그림자가 져서 배경(240)보다 어두운 226~233 인데,
+    # 얼굴의 흰 눈동자는 252 다. 전역값을 16까지 올리면 얼굴이 깎이기 시작한다.
+    hole_tolerance: dict[str, int] = {}
+    for entry in args.punch_holes_for:
+        if "=" not in entry:
+            raise SystemExit(f"--punch-holes-for 형식은 이름=허용오차 입니다: {entry}")
+        key, _, value = entry.partition("=")
+        hole_tolerance[key.strip()] = int(value)
+
     print(f"팔레트 '{args.palette}' — {len(palette)}색 (명암 단계 포함)")
     packed: list[tuple[str, np.ndarray]] = []
     normals: dict[str, np.ndarray] = {}
@@ -520,6 +576,8 @@ def main(argv: list[str] | None = None) -> int:
         name = path.stem
         rgba = load_rgba(path)
         rgba = remove_background(rgba, args.bg_tolerance, args.force_cutout)
+        # 구멍 뚫기는 축소 전에. 줄인 뒤에는 가장자리가 섞여서 배경색과 안 맞는다.
+        rgba = punch_enclosed_background(rgba, hole_tolerance.get(name, args.punch_holes))
         rgba = downscale(rgba, args.max_size)
         rgba = clean_alpha(rgba)
         rgba = snap_palette(rgba, palette, args.snap_strength)

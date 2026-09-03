@@ -92,6 +92,34 @@ def main() -> int:
         check((inner > 200).mean() > 0.9,
               "캐릭터 안쪽 밝은 부분이 살아 있다 (불투명 비율 %.2f)" % (inner > 200).mean())
 
+        print("[둘러싸인 구멍 뚫기 — 눈동자는 살고 손잡이 구멍은 지운다]")
+        # 배경색(240)으로 채워진 둘러싸인 구멍을 하나 만들어 둔다.
+        # 삽 손잡이 D링 안쪽이 실제로 이 모양이었다 -- 흰 삼각형이 남아 있었다.
+        holed = raw / "holed.png"
+        make_sample(holed, (150, 130, 110), (120, 110, 100))
+        him = Image.open(holed).convert("RGB")
+        hd = ImageDraw.Draw(him)
+        hd.ellipse((118, 40, 138, 60), fill=(240, 240, 239))   # 배경색 구멍
+        him.save(holed)
+
+        # --no-trim: trim 이 끝에서 여백을 잘라 좌표를 밀어 버린다. 좌표로 찍어
+        # 검사하려면 잘리면 안 된다 (이걸 몰라서 한 번 헛짚었다).
+        out3 = root / "processed3"
+        ap.main(["--input", str(raw), "--processed", str(out3), "--palette", "none", "--no-trim"])
+        hole_out = np.array(Image.open(out3 / "holed.png").convert("RGBA"), dtype=np.uint8)
+        check(hole_out[50, 128, 3] < 40,
+              "배경색 구멍이 뚫린다 (알파 %d)" % hole_out[50, 128, 3])
+        # ★ 같은 실행에서 눈동자(252)는 살아 있어야 한다. 색만 보고 지우면 눈이 사라진다.
+        eye = np.array(Image.open(out3 / "mob.png").convert("RGBA"), dtype=np.uint8)
+        check(eye[108, 100, 3] > 200,
+              "흰 눈동자는 살아남는다 (알파 %d)" % eye[108, 100, 3])
+        # 구멍을 끄면 그대로 남는다 — 옵션이 실제로 동작하는지
+        out4 = root / "processed4"
+        ap.main(["--input", str(raw), "--processed", str(out4), "--palette", "none",
+                 "--no-trim", "--punch-holes", "0"])
+        kept = np.array(Image.open(out4 / "holed.png").convert("RGBA"), dtype=np.uint8)
+        check(kept[50, 128, 3] > 200, "--punch-holes 0 이면 구멍이 남는다 (알파 %d)" % kept[50, 128, 3])
+
         print("[아틀라스]")
         check((atlas / "enemies.png").exists(), "아틀라스 PNG 가 생겼다")
         check((atlas / "enemies.json").exists(), "매니페스트가 생겼다")
