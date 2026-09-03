@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://entities/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://vfx/screen_shake.gd" id="2_shake"]
 [ext_resource type="Texture2D" path="res://vfx/light_radial.tres" id="3_light"]
 [ext_resource type="Material" path="res://vfx/shaders/player_material.tres" id="4_mat"]
 [ext_resource type="PackedScene" path="res://entities/characters/rigged_character.tscn" id="5_rig"]
+[ext_resource type="Script" path="res://entities/player/player_marker.gd" id="6_marker"]
 
 [node name="Player" type="Node2D"]
 z_index = 10
@@ -20,6 +21,9 @@ color = Color(1, 0.933333, 0.803922, 1)
 energy = 0.85
 texture = ExtResource("3_light")
 texture_scale = 1.35
+
+[node name="Marker" type="Node2D" parent="."]
+script = ExtResource("6_marker")
 
 [node name="Rig" parent="." instance=ExtResource("5_rig")]
 material = ExtResource("4_mat")

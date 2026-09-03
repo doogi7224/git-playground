@@ -7,7 +7,7 @@
 script = ExtResource("2_wave")
 minute = 0
 enemy_ids = Array[StringName]([&"weed", &"leaf_pile"])
-spawns_per_second = 1.4
+spawns_per_second = 2.0
 pattern = 0
 elite_chance = 0.0
 boss_id = &""
@@ -16,7 +16,7 @@ boss_id = &""
 script = ExtResource("2_wave")
 minute = 2
 enemy_ids = Array[StringName]([&"weed", &"leaf_pile", &"mosquito"])
-spawns_per_second = 2.8
+spawns_per_second = 3.4
 pattern = 1
 elite_chance = 0.0
 boss_id = &""
