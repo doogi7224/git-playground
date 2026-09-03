@@ -10,6 +10,14 @@ class_name MeleeArcWeapon
 
 const SWIPE_TIME: float = 0.14
 const COLOR_SWIPE: Color = Color("#3FE0D0")   ## 기획서 3.2: 플레이어 이펙트는 시안/금색 독점
+const COLOR_EDGE: Color = Color("#EAFFFB")    ## 날 끝. 시안보다 밝아야 "베였다" 로 읽힌다
+
+## 휘두르는 궤적. 예전에는 부채꼴 전체에 draw_arc 로 얇은 선 하나를 긋고 알파만
+## 줄였다 -- 시간이 지나도 **같은 자리에서 옅어지기만 해서** 휘두르는 것으로 안 보였다.
+## 지금은 띠가 부채꼴을 실제로 훑고 지나간다.
+const BAND_SPAN: float = 0.55      ## 띠가 덮는 부채꼴 비율. 1.0 이면 통째로 = 예전과 같다
+const SWEEP_STEPS: int = 14        ## 띠를 몇 조각으로 나눠 그리나. 많을수록 곡선이 곱다
+const THICKNESS: float = 0.30      ## 반지름 대비 띠 두께
 
 var _swipe_left: float = 0.0
 var _swipe_dir: Vector2 = Vector2.RIGHT
@@ -63,13 +71,56 @@ func _process(delta: float) -> void:
 	queue_redraw()   # 0이 된 프레임에 한 번 더 그려서 잔상을 지운다
 
 
+## 부채꼴을 훑고 지나가는 띠. 앞쪽(날 끝)이 밝고 뒤로 갈수록 사라진다.
+##
+## draw_polygon 은 정점마다 색을 받는다. 삼각형 띠 하나를 폴리곤으로 만들고
+## 정점 알파로 꼬리를 흐리면, 파티클 없이도 휘두른 궤적이 남는다.
 func _draw() -> void:
 	if _swipe_left <= 0.0 or data == null:
 		return
-	var t: float = _swipe_left / SWIPE_TIME
-	var base_angle: float = _swipe_dir.angle()
+	var t: float = _swipe_left / SWIPE_TIME          # 1 → 0
+	var p: float = 1.0 - t                            # 0 → 1, 휘두른 진행도
 	var half: float = deg_to_rad(data.half_angle_deg)
-	var col: Color = COLOR_SWIPE
-	col.a = t * 0.85
-	var radius: float = current_reach() * (0.75 + 0.25 * (1.0 - t))
-	draw_arc(Vector2.ZERO, radius, base_angle - half, base_angle + half, 24, col, 6.0 * t + 1.0, true)
+	var base_angle: float = _swipe_dir.angle()
+	# 되돌아 베는 타이밍에는 반대로 훑는다 -- 방향이 늘 같으면 기계적으로 보인다.
+	var dir: float = -1.0 if _swing_back else 1.0
+	var span: float = half * 2.0
+
+	# 띠의 앞머리가 부채꼴을 가로지른다. 뒤꼬리는 BAND_SPAN 만큼 뒤에 붙어 온다.
+	var lead: float = lerpf(-half, half, p) * dir
+	var tail: float = lead - span * BAND_SPAN * dir
+
+	var radius: float = current_reach()
+	var inner: float = radius * (1.0 - THICKNESS)
+
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
+	points.resize((SWEEP_STEPS + 1) * 2)
+	colors.resize((SWEEP_STEPS + 1) * 2)
+
+	for i in SWEEP_STEPS + 1:
+		var k: float = float(i) / float(SWEEP_STEPS)   # 0 = 꼬리, 1 = 날 끝
+		var a: float = base_angle + lerpf(tail, lead, k)
+		var v := Vector2(cos(a), sin(a))
+		# ★ 초승달이므로 **양 끝이 다 뾰족**해야 한다. 날 끝만 뾰족하게 했더니
+		#   반대쪽이 네모나게 잘려서 미완성으로 보였다. 가운데가 가장 두껍다.
+		var fat: float = pow(sin(PI * k), 0.6)
+		var r_in: float = lerpf(radius, inner, fat)
+
+		var col: Color = COLOR_SWIPE.lerp(COLOR_EDGE, k * k)
+		# 꼬리는 사라지고, 스윙이 끝나갈수록 전체가 옅어진다
+		col.a = pow(k, 1.35) * (0.42 + 0.58 * t)
+
+		points[i] = v * radius
+		points[SWEEP_STEPS * 2 + 1 - i] = v * r_in
+		colors[i] = col
+		colors[SWEEP_STEPS * 2 + 1 - i] = Color(col.r, col.g, col.b, col.a * 0.15)
+
+	draw_polygon(points, colors)
+
+	# 날 끝의 밝은 점. 여기가 "지금 베고 있는 자리" 다.
+	# 크면 마법 구슬처럼 보인다 -- 궤적의 끝을 찍는 정도로만 둔다.
+	var tip := Vector2(cos(base_angle + lead), sin(base_angle + lead)) * radius * 0.97
+	var tip_col: Color = COLOR_EDGE
+	tip_col.a = t * 0.65
+	draw_circle(tip, radius * 0.028 * (0.5 + t), tip_col)

@@ -16,7 +16,7 @@ extends Node
 ## 하한 490 인데 508 → 506 으로 줄어든 걸 통과시켰고, 그 뒤에야 static 함수에서
 ## tr() 을 부를 수 없다는 컴파일 에러로 9개가 안 돌고 있었다는 걸 알았다.
 ## 새 테스트를 추가하면 이 숫자도 같이 올릴 것.
-const MIN_CHECKS: int = 595
+const MIN_CHECKS: int = 601
 
 var _failures: int = 0
 var _checks: int = 0
@@ -76,6 +76,7 @@ func _run_all() -> void:
 	await test_results_overlap()
 	await test_spawn_ring()
 	await test_ground()
+	await test_hit_sparks()
 	print("--- %d개 검사 중 %d개 실패, %d개 건너뜀 ---" % [_checks, _failures, _skipped])
 	if _checks < MIN_CHECKS:
 		printerr("  [FAIL] 검사가 %d개만 돌았다 (최소 %d개). 스크립트 에러로 테스트가 중간에 끊겼을 가능성이 높다."
@@ -1687,6 +1688,43 @@ func test_ground() -> void:
 	await get_tree().process_frame
 	SaveSystem.data = SaveSystem._default_data()
 	GameState.phase = GameState.Phase.MENU
+
+
+## 타격 스파크. 여기 오기 전 타격 피드백은 적의 흰 플래시 2프레임뿐이었다.
+func test_hit_sparks() -> void:
+	print("[타격 스파크]")
+	var sparks: HitSparks = HitSparks.new()
+	add_child(sparks)
+	await get_tree().process_frame
+
+	_check(sparks.get_count() == 0, "처음엔 비어 있다")
+	EventBus.enemy_damaged.emit(Vector2(120.0, -40.0), 10.0, false)
+	_check(sparks.get_count() == HitSparks.PER_HIT,
+			"평타 한 방에 %d조각 (got %d)" % [HitSparks.PER_HIT, sparks.get_count()])
+	EventBus.enemy_damaged.emit(Vector2(0.0, 0.0), 30.0, true)
+	_check(sparks.get_count() == HitSparks.PER_HIT + HitSparks.PER_CRIT,
+			"크리티컬은 더 많이 튄다 (got %d)" % sparks.get_count())
+
+	# ★ 상한이 없으면 3,000마리가 서로 맞을 때 화면이 하얗게 덮인다.
+	for _i in 200:
+		EventBus.enemy_damaged.emit(Vector2.ZERO, 1.0, true)
+	_check(sparks.get_count() <= HitSparks.MAX_SPARKS,
+			"동시 상한을 넘지 않는다 (%d <= %d)" % [sparks.get_count(), HitSparks.MAX_SPARKS])
+
+	# 수명이 지나면 사라진다. 안 지워지면 계속 쌓인다.
+	for _i in 30:
+		sparks._physics_process(HitSparks.LIFETIME * 0.2)
+	_check(sparks.get_count() == 0, "수명이 다하면 전부 사라진다 (got %d)" % sparks.get_count())
+
+	# 데미지 넘버를 끄면 같이 꺼진다 (저사양 프리셋이 둘을 같이 내린다)
+	var was: bool = Settings.damage_numbers
+	Settings.damage_numbers = false
+	EventBus.enemy_damaged.emit(Vector2.ZERO, 5.0, false)
+	_check(sparks.get_count() == 0, "데미지 넘버를 끄면 스파크도 안 튄다")
+	Settings.damage_numbers = was
+
+	sparks.queue_free()
+	await get_tree().process_frame
 
 
 ## 레벨업 화면 — 유령 카드와 삼켜지는 진급.

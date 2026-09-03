@@ -1,9 +1,6 @@
 [gd_resource type="ShaderMaterial" load_steps=2 format=3]
 
-[ext_resource type="Shader" path="res://vfx/shaders/blob_multimesh.gdshader" id="1_blob"]
+[ext_resource type="Shader" path="res://vfx/shaders/projectile_fx.gdshader" id="1_proj"]
 
 [resource]
-shader = ExtResource("1_blob")
-shader_parameter/outline_strength = 0.45
-shader_parameter/bob_speed = 0.0
-shader_parameter/bob_amount = 0.0
+shader = ExtResource("1_proj")

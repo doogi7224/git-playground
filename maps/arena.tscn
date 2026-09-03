@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://maps/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://maps/ground_grid.gd" id="2_ground"]
@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://entities/enemies/hazard_manager.gd" id="24_hazards"]
 [ext_resource type="Script" path="res://core/combat/hit_stop.gd" id="16_hitstop"]
 [ext_resource type="Script" path="res://vfx/damage_numbers.gd" id="17_damage"]
+[ext_resource type="Script" path="res://vfx/hit_sparks.gd" id="27_sparks"]
 [ext_resource type="Script" path="res://vfx/gfx_director.gd" id="18_gfx"]
 [ext_resource type="Script" path="res://vfx/post_process.gd" id="19_post"]
 [ext_resource type="Material" path="res://vfx/shaders/vignette_material.tres" id="20_vig"]
@@ -64,6 +65,9 @@ script = ExtResource("24_hazards")
 z_index = 3
 
 [node name="Player" parent="." instance=ExtResource("5_player")]
+
+[node name="HitSparks" type="MultiMeshInstance2D" parent="."]
+script = ExtResource("27_sparks")
 
 [node name="DamageNumbers" type="MultiMeshInstance2D" parent="."]
 script = ExtResource("17_damage")

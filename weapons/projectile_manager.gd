@@ -238,17 +238,35 @@ func _update_buffer() -> void:
 	for i in _count:
 		var b: int = i * BUFFER_STRIDE
 		var d: float = _radius[i] * 2.0
+		var lob: bool = _mode[i] == Mode.LOB
 		# 투척물은 날아가는 동안 커졌다 작아진다 (포물선 대신 쓰는 값싼 원근감)
-		if _mode[i] == Mode.LOB:
+		if lob:
 			var progress: float = 1.0 - _life[i] / maxf(0.001, _life0[i])
 			d *= 1.0 + 0.7 * sin(PI * clampf(progress, 0.0, 1.0))
 		var c: Color = _color[i]
-		buf[b + 0] = d
-		buf[b + 1] = 0.0
+
+		# ★ 쿼드를 진행 방향으로 돌려서 늘린다. 예전에는 순수 스케일만 넣어서
+		#   완벽한 원이 날아갔다 -- 어디로 가는 중인지가 그림에 안 나왔다.
+		#   투척물은 회전하는 덩어리라 방향이 없으니 늘이지 않는다.
+		var dx: float = 1.0
+		var dy: float = 0.0
+		var stretch: float = 1.0
+		if not lob:
+			var vx: float = _vx[i]
+			var vy: float = _vy[i]
+			var speed: float = sqrt(vx * vx + vy * vy)
+			if speed > 0.001:
+				dx = vx / speed
+				dy = vy / speed
+			# 빠를수록 길게. 느린 탄까지 늘이면 그냥 막대기로 보인다.
+			stretch = clampf(1.0 + speed / 900.0, 1.0, 3.4)
+
+		buf[b + 0] = dx * d * stretch
+		buf[b + 1] = -dy * d
 		buf[b + 2] = 0.0
 		buf[b + 3] = _px[i]
-		buf[b + 4] = 0.0
-		buf[b + 5] = d
+		buf[b + 4] = dy * d * stretch
+		buf[b + 5] = dx * d
 		buf[b + 6] = 0.0
 		buf[b + 7] = _py[i]
 		buf[b + 8] = c.r
@@ -256,8 +274,8 @@ func _update_buffer() -> void:
 		buf[b + 10] = c.b
 		buf[b + 11] = c.a
 		buf[b + 12] = _seed[i]
-		buf[b + 13] = 0.0
-		buf[b + 14] = 0.0
+		buf[b + 13] = clampf((stretch - 1.0) / 2.4, 0.08, 0.85)
+		buf[b + 14] = 1.0 if lob else 0.0
 		buf[b + 15] = 0.0
 	_renderer.multimesh.buffer = buf
 	_renderer.multimesh.visible_instance_count = _count
